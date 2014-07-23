@@ -26,14 +26,18 @@ FLAGS=-w -O0 -g3 -fmessage-length=0 `pkg-config --cflags --libs opencv` -export-
 all: $(EXECUTABLE)
 
 # Generación del ejecutable a partir de ficheros objeto.
-$(EXECUTABLE): $(OBJECTS)
+$(EXECUTABLE): $(OBJECTS) | $(BIN)
 	$(CC) -o $@ $(OBJECTS) $(INCLUDES) $(FLAGS)
 
 # Generación de ficheros objeto.
-$(OBJ)/%.o: $(SRC)/%.c $(HEADERS)
+$(OBJ)/%.o: $(SRC)/%.c $(HEADERS) | $(OBJ)
 	$(CC) -o $@ $(INCLUDES) -c $< $(FLAGS)
 
+$(BIN):
+	mkdir -p $(BIN)
 
+$(OBJ):
+	mkdir -p $(OBJ)
 
 
 # Falsos objetivos para limpieza, documentación y generacion HTML.
