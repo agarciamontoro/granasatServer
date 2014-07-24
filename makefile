@@ -19,8 +19,8 @@ OBJECTS= $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SOURCES))
 
 # Flags usados al compilar y enlazar
 CC=gcc
-INCLUDES=-I./include
-FLAGS=-w -O0 -g3 -fmessage-length=0 `pkg-config --cflags --libs opencv` -export-dynamic
+INCLUDES=-I./include `pkg-config --cflags opencv`
+FLAGS=-O0 -g3 -fmessage-length=0 `pkg-config --libs opencv` -export-dynamic
 
 # El objetivo global es el ejecutable.
 all: $(EXECUTABLE)
@@ -31,7 +31,7 @@ $(EXECUTABLE): $(OBJECTS) | $(BIN)
 
 # Generación de ficheros objeto.
 $(OBJ)/%.o: $(SRC)/%.c $(HEADERS) | $(OBJ)
-	$(CC) -o $@ $(INCLUDES) -c $< $(FLAGS)
+	$(CC) -o $@ $(INCLUDES) -c $< && scp $< pi@192.168.0.200:/home/pi/development/Final_v4/src/
 
 $(BIN):
 	mkdir -p $(BIN)

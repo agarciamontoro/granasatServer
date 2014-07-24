@@ -1,23 +1,57 @@
 #include <stdint.h>
 #include "attitude_determination.h"
 
-void enableStarTracker(int __umbral, int __umbral2,int __ROI, int __umbral3, int __centroides_considerados, int __umb, int __numFotos){
-	catalog=loadCatalog("catalogo_mag_4.txt","r");
-	k_vector = loadKVector("k_vector_mag_4.txt","r");
-	stars=loadStars("stars_mag_4.txt","r");
+void enableStarTracker(int __umbral, int __umbral2,int __ROI, int __umbral3, int __centroides_considerados, int __umb, int __mag){
 
-	umbral= __umbral; //atoi(argv[1]); // umbral para considrar pixel para centroide
-	umbral2=__umbral2;//atoi(argv[2]); // mismo que ROI
-	ROI=__ROI;//atoi(argv[3]); // Region de interes
-	umbral3=__umbral3;//atoi(argv[4]); // minimo numero de pixeles para considerar el centrodie final
-	centroides_considerados=__centroides_considerados;//atoi(argv[5]); // centroides
-	umb = __umb;//atof(argv[6]); // umbrar de los angulos
-	numFotos=__numFotos;//atoi(argv[7]); // numero de fotos
+	changeCatalogs(__mag);
+	changeParameters(__umbral, __umbral2, __ROI, __umbral3, __centroides_considerados, __umb);
 
 	numAngles=0;
 	numCenters=0;
 
 	angles=NULL;
+}
+
+void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __considered_centroids, float __thresh_angles){
+	pthread_mutex_lock ( &mutex_star_tracker );
+
+		umbral= __thresh_px; //atoi(argv[1]); // umbral para considrar pixel para centroide
+		umbral2=__thresh_ROI;//atoi(argv[2]); // mismo que ROI
+		ROI=__ROI;//atoi(argv[3]); // Region de interes
+		umbral3=__thresh_minpx;//atoi(argv[4]); // minimo numero de pixeles para considerar el centrodie final
+		centroides_considerados=__considered_centroids;//atoi(argv[5]); // centroides
+		umb = __thresh_angles;//atof(argv[6]); // umbrar de los angulos
+
+	pthread_mutex_unlock ( &mutex_star_tracker );
+
+	printf("New parameters:\n"
+					"\tPixel threshold: %d"
+					"\tROI threshold: %d"
+					"\tROI: %d"
+					"\tMin px to final centroid: %d"
+					"\tConsidered centroids: %d"
+					"\tAngle threshold: %4.3f",
+					umbral, umbral2, ROI, umbral3, centroides_considerados, umb);
+}
+
+void changeCatalogs(int magnitude){
+	char catalog_string[50];
+	char k_vector_string[50];
+	char stars_string[50];
+
+	sprintf(catalog_string, "catalogo_mag_%d.txt", magnitude);
+	sprintf(k_vector_string, "k_vector_mag_%d.txt", magnitude);
+	sprintf(stars_string, "stars_mag_%d.txt", magnitude);
+
+	pthread_mutex_lock ( &mutex_star_tracker );
+
+		catalog=loadCatalog(catalog_string, "r");
+		k_vector = loadKVector(k_vector_string,"r");
+		stars=loadStars(stars_string,"r");
+
+	pthread_mutex_unlock ( &mutex_star_tracker );
+
+	printf("New catalog magnitude: %d\n", magnitude);
 }
 
 void disableStarTracker(){
@@ -30,6 +64,8 @@ void disableStarTracker(){
 }
 
 void obtainAttitude(uint8_t* image_data){
+	pthread_mutex_lock ( &mutex_star_tracker );
+
 	//printf(" //////////////////   NUEVA IMAGEN IMAGEN  %d////////////////////////\n ",i);
 	//Primer Paso. Calcular los centroides de la imagen
 	//printf("Calculando centroides\n");
@@ -52,14 +88,16 @@ void obtainAttitude(uint8_t* image_data){
 	unitaries=ComputeUnitaryVectors(&centroids);
 	//printf("Calculados %d vectores unitarios \n");
 	//Cuarto Paso. Calculamos los angulos
-	angles=computeAngles(&unitaries,centroides_considerados,&numAngles);
+	//angles=computeAngles(&unitaries,centroides_considerados,&numAngles);
 	//printf("Calculados %d angulos\n",numAngles);
 	//Quinto Paso. Calcular las posibles estrellas centrales
 	find_star_pattern(&unitaries,centers,&numCenters,centroides_considerados,umb,catalog,k_vector,stars);
 	//printf("Posibles Centros %d\n",numCenters);
 		
-	find_match(angles,centers,numAngles,numCenters,umb,catalog,k_vector);
+	//find_match(angles,centers,numAngles,numCenters,umb,catalog,k_vector);
 	numCenters=0;
+
+	pthread_mutex_unlock ( &mutex_star_tracker );
 }
 
 float* loadCatalog( char* filename,char* opentype){

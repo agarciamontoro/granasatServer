@@ -33,6 +33,7 @@
 //#include "i2c-dev.h"
 #include "sync_control.h"
 #include "attitude_determination.h"
+ #include "protocol.h"
 
 #include <signal.h>
 #include <stdint.h>
@@ -44,8 +45,6 @@ const char* mag_file_name = "magnetometer_measurements.data";
 const int CAPTURE_RATE_NSEC = 2000000000;
 
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, sending_thread, receiving_thread;
-
-struct v4l2_parameters params;
 
 void intHandler(int dummy){
 		printf("\nFinishing all threads\n");
@@ -67,11 +66,14 @@ void* capture_images(void* useless){
 	image_data = malloc(sizeof(*image_data) * 1280*960);
 
 	//Enable DMK41BU02 sensor - Camera
+	struct v4l2_parameters params;
+
 	params.brightness_ = 0;
 	params.gamma_ = 100;
 	params.gain_ = 260;
 	params.exp_mode_ = 1;
 	params.exp_value_ = 200;
+	
 	enable_DMK41BU02(&params);
 
 	clock_gettime(CLOCK_MONOTONIC, &old);
@@ -123,8 +125,11 @@ void* send_data(void* useless){
 	newsock_small = socketTest(PORT_SMALL_DATA);
 	printf("New socket opened: %d\n", newsock_small);
 
+	char item = 'a';
+	int n;
+
 	while(keep_running){
-		usleep(50000);
+		usleep(500000);
 		sendAccAndMag(newsock_small);
 	}
 	
@@ -134,12 +139,50 @@ void* send_data(void* useless){
 
 void* receive_commands(void* useless){
 	int newsock_comm;
+	char command;
+
+	int cons_cent, magnitude, px_thresh;
 
 	newsock_comm = socketTest(PORT_COMMANDS);
 	printf("New socket opened: %d\n", newsock_comm);
 
 	while(keep_running){
 
+		command = getCommand(newsock_comm);
+
+		switch(command){
+			case MSG_PING:
+				//sendData(0, newsock_comm);
+				printf("MSG_PING received\n\n");
+				break;
+
+			case MSG_RESTART:
+				//TODO: Handle restart
+				keep_running = 0;
+				break;
+
+			case MSG_SET_STARS:
+				cons_cent = getInt(newsock_comm);
+				changeParameters(umbral, umbral2, ROI, umbral3, cons_cent, umb);
+				break;
+
+			case MSG_SET_CATALOG:
+				magnitude = getInt(newsock_comm);
+				changeCatalogs(magnitude);
+				break;
+
+			case MSG_SET_PX_THRESH:
+				px_thresh = getInt(newsock_comm);
+				changeParameters(px_thresh, umbral2, ROI, umbral3, centroides_considerados, umb);
+				break;
+
+			case 4:
+				break;
+
+			case 5:
+				break;
+
+		}
 	}
 
 	close(newsock_comm);
@@ -267,15 +310,15 @@ void* process_images(void* useless){
 				n_nsec = elapsed.tv_sec * NANO_FACTOR + elapsed.tv_nsec;
 				n_nsec_mean += n_nsec;
 
-				fprintf(stderr, "Attitude obtained in %ld s %ldns = %ldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
-				fprintf(raw_measurements_log, "%ld\n", n_nsec);
+				fprintf(stderr, "Attitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
+				fprintf(raw_measurements_log, "%lld\n", n_nsec);
 			}
 
 			fprintf(raw_measurements_log, "\n");
 
 
-			fprintf(stderr, "###\n%ld\n###\n\n", n_nsec_mean/ITER);
-			fprintf(mean_measurements_log, "%ld\n", n_nsec_mean/ITER);
+			fprintf(stderr, "###\n%lld\n###\n\n", n_nsec_mean/ITER);
+			fprintf(mean_measurements_log, "%lld\n", n_nsec_mean/ITER);
 		}
 
 		first = 0;
@@ -305,6 +348,7 @@ int main(int argc, char** argv){
 	keep_running = 1;
 
 	pthread_rwlock_init( &camera_rw_lock, NULL );
+	pthread_mutex_init( &mutex_star_tracker, NULL );
 
 	//Initilize clock
 	clock_gettime(CLOCK_MONOTONIC, &T_ZERO);
@@ -330,6 +374,7 @@ int main(int argc, char** argv){
 	pthread_join( receiving_thread, NULL );
 
 	pthread_rwlock_destroy( &camera_rw_lock );
+	pthread_mutex_destroy( &mutex_star_tracker );
 
 	return 0;
 }

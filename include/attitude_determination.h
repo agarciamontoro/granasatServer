@@ -11,6 +11,8 @@
 
 #include <math.h>
 
+#include <sync_control.h>
+
 //#include "DMK41BU02.h"
 
 #define WIDTH 1280
@@ -32,10 +34,14 @@ int ROI; // Region de interes
 int umbral3; // minimo numero de pixeles para considerar el centrodie final
 int centroides_considerados; // centroides
 float umb; // umbrar de los angulos
+
 int numFotos; // numero de fotos
 
-void enableStarTracker(int __umbral, int __umbral2,int __ROI, int __umbral3, int __centroides_considerados, int __umb, int __numFotos);
+void enableStarTracker(int __umbral, int __umbral2,int __ROI, int __umbral3, int __centroides_considerados, int __umb, int __mag);
 void disableStarTracker();
+
+void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __considered_centroids, float __thresh_angles);
+void changeCatalogs(int magnitude);
 
 void obtainAttitude(uint8_t* image_data);
 

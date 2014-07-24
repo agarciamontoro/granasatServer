@@ -6,6 +6,7 @@
 #define PORT_SMALL_DATA	 51719
 
 #include <netinet/in.h>
+#include <errno.h>
 
 struct communication{
 	int sockfd;
@@ -15,6 +16,8 @@ struct communication{
 
 void error(char *msg);
 int getData(int sockfd);
+char getCommand(int sockfd);
+int getInt(int sockfd);
 void sendData(int x, int sockfd);
 void enableConnection(int* sockfd, int portno, int* clilen, struct sockaddr_in* cli_addr );
 void sendImage(int sockfd, uint8_t* image_stream);

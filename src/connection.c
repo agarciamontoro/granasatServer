@@ -25,6 +25,28 @@ int getData(int sockfd) {
 	return atoi(buffer);
 }
 
+char getCommand(int sockfd){
+	char command;
+
+	if (recv(sockfd, &command, 1, 0) < 0){
+		perror("ERROR reading from socket");
+	}
+
+	printf("Command received: %d\n", command);
+	return command;
+}
+
+int getInt(int sockfd){
+	int value;
+
+	if (recv(sockfd, &value, sizeof(int), 0) < 0)
+		perror("ERROR reading from socket");
+
+
+	printf("\tValue received: %d\n", value);
+	return value;
+}
+
 void sendData(int x, int sockfd) {
 	char buffer[32];
 	int n;
@@ -112,7 +134,7 @@ void sendAccAndMag(int sockfd){
 	int i;
 	for (i = 0; i < 12; ++i){
 		buffer[i] = count*i;//(uint8_t)rand()%100;
-		printf("%d\t", buffer[i]);
+		//printf("%d\t", buffer[i]);
 	}
 	printf("\n");
 

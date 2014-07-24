@@ -6,6 +6,7 @@
 
 extern struct timespec T_ZERO;
 extern pthread_rwlock_t camera_rw_lock;
+extern pthread_mutex_t mutex_star_tracker;
 extern int new_frame_proc;
 extern int new_frame_send;
 

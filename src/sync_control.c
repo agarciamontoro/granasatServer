@@ -2,6 +2,7 @@
 
 struct timespec T_ZERO;
 pthread_rwlock_t camera_rw_lock;
+pthread_mutex_t mutex_star_tracker;
 int new_frame_proc = 0;
 int new_frame_send = 0;
 

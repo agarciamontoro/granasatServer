@@ -149,7 +149,7 @@ void readAndStoreAccelerometer(FILE* file){
 	*(accF+0) = (float) *(accelerometer+0)*A_GAIN;
 	*(accF+1) = (float) *(accelerometer+1)*A_GAIN;
 	*(accF+2) = (float) *(accelerometer+2)*A_GAIN;
-    fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", timestamp.tv_sec, timestamp.tv_nsec, accF[0],accF[1],accF[2]);
+    fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, accF[0],accF[1],accF[2]);
 	
 }
 
@@ -172,7 +172,7 @@ void readAndStoreMagnetometer(FILE* file){
 	*(MAG+1) = (float) *(m+1)/M_XY_GAIN;
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
-	fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", timestamp.tv_sec, timestamp.tv_nsec, MAG[0],MAG[1],MAG[2]);	
+	fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, MAG[0],MAG[1],MAG[2]);	
 }
 
 int sendImage_old(int sockfd, unsigned char* image_data) {
