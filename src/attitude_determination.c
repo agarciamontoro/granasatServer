@@ -1,37 +1,36 @@
 #include <stdint.h>
 #include "attitude_determination.h"
 
-void enableStarTracker(int __umbral, int __umbral2,int __ROI, int __umbral3, int __centroides_considerados, int __umb, int __mag){
-
-	changeCatalogs(__mag);
-	changeParameters(__umbral, __umbral2, __ROI, __umbral3, __centroides_considerados, __umb);
-
-	numAngles=0;
-	numCenters=0;
-
-	angles=NULL;
-}
-
-void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __considered_centroids, float __thresh_angles){
+void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err){
 	pthread_mutex_lock ( &mutex_star_tracker );
 
-		umbral= __thresh_px; //atoi(argv[1]); // umbral para considrar pixel para centroide
-		umbral2=__thresh_ROI;//atoi(argv[2]); // mismo que ROI
-		ROI=__ROI;//atoi(argv[3]); // Region de interes
-		umbral3=__thresh_minpx;//atoi(argv[4]); // minimo numero de pixeles para considerar el centrodie final
-		centroides_considerados=__considered_centroids;//atoi(argv[5]); // centroides
-		umb = __thresh_angles;//atof(argv[6]); // umbrar de los angulos
+		threshold = __thresh_px; //atoi(argv[1]); // threshold para considrar pixel para centroide
+		threshold2 = __thresh_ROI;//atoi(argv[2]); // mismo que ROI
+		ROI = __ROI;//atoi(argv[3]); // Region de interes
+		threshold3 = __thresh_minpx;//atoi(argv[4]); // minimo numero de pixeles para considerar el centrodie final
+		stars_used = __stars_used;//atoi(argv[5]); // centroides
+		err = __err;//atof(argv[6]); // umbrar de los angulos
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
 
 	printf("New parameters:\n"
-					"\tPixel threshold: %d"
-					"\tROI threshold: %d"
-					"\tROI: %d"
-					"\tMin px to final centroid: %d"
-					"\tConsidered centroids: %d"
+					"\tPixel threshold: %d\n"
+					"\tROI threshold: %d\n"
+					"\tROI: %d\n"
+					"\tMin px to final centroid: %d\n"
+					"\tConsidered centroids: %d\n"
 					"\tAngle threshold: %4.3f\n",
-					umbral, umbral2, ROI, umbral3, centroides_considerados, umb);
+					threshold, threshold2, ROI, threshold3, stars_used, err);
+}
+
+void enableStarTracker(int __threshold, int __threshold2,int __ROI, int __threshold3, int __stars_used, float __err, int __mag){
+
+	changeCatalogs(__mag);
+	changeParameters(__threshold, __threshold2, __ROI, __threshold3, __stars_used, __err);
+
+	catalog = NULL;
+	k_vector = NULL;
+	stars = NULL;
 }
 
 void changeCatalogs(int magnitude){
@@ -45,8 +44,13 @@ void changeCatalogs(int magnitude){
 
 	pthread_mutex_lock ( &mutex_star_tracker );
 
+		free(catalog);
 		catalog=loadCatalog(catalog_string, "r");
+
+		free(k_vector);
 		k_vector = loadKVector(k_vector_string,"r");
+
+		free(stars);
 		stars=loadStars(stars_string,"r");
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
@@ -60,56 +64,35 @@ void disableStarTracker(){
 	free(stars);
 	free(centroids.ptr);
 	free(unitaries.ptr);
-	free(angles);
 }
 
 void obtainAttitude(uint8_t* image_data){
 	pthread_mutex_lock ( &mutex_star_tracker );
 
-	//printf(" //////////////////   NUEVA IMAGEN IMAGEN  %d////////////////////////\n ",i);
-	//Primer Paso. Calcular los centroides de la imagen
-	//printf("Calculando centroides\n");
-	centroids = centroiding(umbral,umbral2,umbral3,ROI,image_data);
-	//printf("Centroides calculados\n");
-	//Segundo Paso. Ordenar los centroides.
-	//printf("Promediando centroides calculados\n");
-	sort_centroids(&centroids);
-	//printf("\t\t\tNumero de centroides  finalmente calculados %d\n",centroids.elem_used);
 
-	/*
-	for(j=0;j < centroids.elem_used;j++){
-			
-		printf("Centroide %d\t %f %f\n",j,centroids.ptr[j].x,centroids.ptr[j].y);
+		centroids = centroiding(threshold,threshold2,threshold3,ROI,image_data);
+		sort_centroids(&centroids);
+		unitaries=ComputeUnitaryVectors(&centroids);
+		vector = find_star_pattern(&unitaries, stars_used, err, catalog, k_vector, stars );
+		free(vector.ptr); //Maybe outside the semaphore??
 
-	}
-	*/	
 	
-	//Tercer Paso. Calcular los vectores unitarios.
-	unitaries=ComputeUnitaryVectors(&centroids);
-	//printf("Calculados %d vectores unitarios \n");
-	//Cuarto Paso. Calculamos los angulos
-	//angles=computeAngles(&unitaries,centroides_considerados,&numAngles);
-	//printf("Calculados %d angulos\n",numAngles);
-	//Quinto Paso. Calcular las posibles estrellas centrales
-	find_star_pattern(&unitaries,centers,&numCenters,centroides_considerados,umb,catalog,k_vector,stars);
-	//printf("Posibles Centros %d\n",numCenters);
-		
-	//find_match(angles,centers,numAngles,numCenters,umb,catalog,k_vector);
-	numCenters=0;
-
 	pthread_mutex_unlock ( &mutex_star_tracker );
+
 }
 
-float* loadCatalog( char* filename,char* opentype){
+unsigned char * loadImage(char * filename, char * opentype){
 
+	//variable declaration
 
-	float * catalog = malloc(sizeof(float)*3*43477);
-	float star1,star2,angle;
+	unsigned char * image = malloc(sizeof(unsigned char)*960*1280);
 	int i;
+	int value;
+
 	char string[100];
 
 	FILE *fp;
-	fp=fopen(filename,opentype);
+	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
 		fputs("File error",stderr);
@@ -119,7 +102,66 @@ float* loadCatalog( char* filename,char* opentype){
 		i=0;
 		while(fgets(string,100,fp)!=NULL ){
 
-			sscanf(string,"%f\t%f\t%f\n",&star1,&star2,&angle);
+			sscanf(string,"%d\n",&value); // We obtain the catalog entry
+			// Store the generated catalog entry
+			image[i] =(unsigned char)value;
+			
+			i++;
+		}
+
+
+	}
+
+	fclose(fp); // close the .txt file
+	return image; // return the catalog. REMEMBER THAT NEEDS TO BE FREED.
+
+
+}
+
+
+/*	funcion loadCatalog 	*/
+/*
+
+	Input arguments:
+
+	char* filename:	Generated catalog file path.	
+	char* opentype: read only recommended
+
+	Output:
+
+	The output is a  vector that contains the
+	generated catalog.
+
+	Notes:
+
+	The output needs to be freed before the 
+	end of the execution program.
+*/
+	
+
+
+float* loadCatalog( char* filename,char* opentype){
+
+	
+	//variable declaration
+	float * catalog = malloc(sizeof(float)*3*43477); //43477 represents the rows of the generated catalog . 3 represents the colums 
+	float star1,star2,angle;
+	int i;
+	char string[100];
+
+	FILE *fp;
+	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
+
+	if(fp==NULL){
+		fputs("File error",stderr);
+		exit(1);
+	}else{
+
+		i=0;
+		while(fgets(string,100,fp)!=NULL ){
+
+			sscanf(string,"%f\t%f\t%f\n",&star1,&star2,&angle); // We obtain the catalog entry
+			// Store the generated catalog entry
 			catalog[i*3 ] =star1;
 			catalog[i*3 + 1]=star2;			
 			catalog[i*3 + 2]=angle;
@@ -129,22 +171,43 @@ float* loadCatalog( char* filename,char* opentype){
 
 	}
 
-	fclose(fp);
-	return catalog;
+	fclose(fp); // close the .txt file
+	return catalog; // return the catalog. REMEMBER THAT NEEDS TO BE FREED.
 
 }
 
-float* loadKVector(char* filename,char* opentype){
+/*	funcion loadKVector 	*/
+/*
 
+	Input arguments:
+
+	char* filename:	Generated k_vector file path.	
+	char* opentype: read only recommended
+
+	Output:
+
+	The output is a  vector that contains the
+	generated k_vector.
+
+	Notes:
+
+	The output needs to be freed before the 
+	end of the execution program.
+*/
+	
+
+
+float* loadKVector(char* filename,char* opentype){
+	//Variable declaration
 	float* k_vector=malloc(sizeof(float)*43477);
 	float value;
 	int i;
 	char string[100];
 
 	FILE *fp;
-	fp=fopen(filename,opentype);
+	fp=fopen(filename,opentype); // Open file
 
-	if(fp==NULL){
+	if(fp==NULL){ // error checking
 		fputs("File error",stderr);
 		exit(1);
 	}else{
@@ -152,7 +215,7 @@ float* loadKVector(char* filename,char* opentype){
 		i=0;
 		while(fgets(string,100,fp)!=NULL ){
 
-			sscanf(string,"%f\n",&value);
+			sscanf(string,"%f\n",&value); //Obtain the k_vector entry
 			k_vector[i]=value;
 			i++;
 		}
@@ -161,31 +224,52 @@ float* loadKVector(char* filename,char* opentype){
 	
 	}
 
-	fclose(fp);
-	return k_vector;
+	fclose(fp); //close the file.
+	return k_vector; // return the k_vector. REMEMBER THAT NEEDS TO BE FREED.
 
 
 }
 
+/*	funcion loadStars 	*/
+/*
+
+	Input arguments:
+
+	char* filename:	This is the path that contais the .txt file
+	with all the stars present in the Generated Catalog.	
+	char* opentype: read only recommended
+
+	Output:
+
+	The output is a  vector that contains the
+	stars present in the Generated Catalog.
+
+	Notes:
+
+	The output needs to be freed before the 
+	end of the execution program.
+*/
+	
 float * loadStars(char *filename,char*opentype){
 
-	float* stars=malloc(sizeof(float)*909);
+	//Variable declaration
+	float* stars=malloc(sizeof(float)*909); //909 is the number of stars in the catalog
 	float value;
 	int i;
 	char string[100];
 
-	FILE *fp;
+	FILE *fp; //open file
 	fp=fopen(filename,opentype);
 
-	if(fp==NULL){
+	if(fp==NULL){ // error checking
 		fputs("File error",stderr);
 		exit(1);
 	}else{
 
 		i=0;
 		while(fgets(string,100,fp)!=NULL ){
-
-			sscanf(string,"%f\n",&value);
+			
+			sscanf(string,"%f\n",&value); //Store entry
 			stars[i]=value;
 			i++;
 		}
@@ -194,144 +278,477 @@ float * loadStars(char *filename,char*opentype){
 	
 	}
 
-	fclose(fp);
-	return stars;
+	fclose(fp);//close .txt file
+	return stars; // return the stars. REMEMBER THAT NEEDS TO BE FREED.
 
 
 
 }
 
+/////////////////////////// End load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-float* k_vector_search(float min,float max,float* catalog,float* k_vector,long * elementos){
-
-	if(min<0){min=0;}	
-	float* search=NULL;
-	long n=43477;
-	float m=(catalog[43476*3 + 2]-catalog[0+2])/(n-1);
-	float q=catalog[2]-m;
-
-	long j_b=floor( (min-q)/m);
-	long j_t=ceil( (max-q)/m);
-
-	long k_start=k_vector[j_b]+1;
-	long k_end=k_vector[j_t];
+/////////////////////////// Centroiding functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 
-	long elements = (k_end-k_start)+1;
+/*	funcion compute_I_border	*/
+/*
+
+	Input arguments:
+
+	x_start,y_xtart: coordinates of the upper left corner of a ROI.
+	x_end,y_end: coordinates of the lower right corner of a ROI.
+	ROI: Region Of Interest used to compurte a centroid.
+	image: Pointer to the image vector. 
+
+	Output:
+
+	The output is a number that represent the ROI's intensity 
+
+	Notes:
+
+	The output value is a floating number between 0-255
+*/
 
 
-	if(min>max || max > 32 ){
-		
-		search=NULL;
-		//if(min<0){printf("MIN < 0 \n");}
-		if(min>max){printf("MIN > MAX \n");}
-		if(max>32){printf("MAX > 32 \n" );}
-
-	}else{
+float compute_I_border(int x_start,int x_end,int y_start,int y_end,int ROI,unsigned char* image){
 	
+	//Variable declaration
+	int i,j;
+	unsigned int I_bottom,I_top,I_left,I_right; // The I_border is an average of the intensity of the ROI's sides.
+	float I_border;
+
+		I_bottom=0;
 		
+		for (i=x_start;i<=x_end;i++){
 	
-	*elementos=elements;
-
-	search=malloc(sizeof(float)*3*elements);
-
-		int i;
-		int j=0;
-		for(i=k_start;i<=k_end;i++){
-
-			search[j*3]=catalog[i*3];
-			search[j*3 + 1]=catalog[i*3 + 1];
-			search[j*3 + 2]=catalog[i*3 + 2];
-			j++;
-
+			I_bottom=I_bottom+image[y_end*WIDTH + i];
+		
 		}
 
+		I_top=0;
 	
+		for (i=x_start;i<=x_end;i++){
+			
+			I_top=I_top+image[y_start*WIDTH + i];
+		
+		}
+		I_left=0;
+		
+		for (j=y_start+1;j<y_end;j++){
+			
+			I_left=I_left+image[j*WIDTH + x_start];
+		
+		}
 	
-	
-	}
+		I_right=0;
+		
+		for (j=y_start+1;j<y_end;j++){
+			
+			I_right=I_right+image[j*WIDTH + x_end];
+		
+		}
 
-	quicksort(search,elements);
+			
+		I_border =((float)(I_top+I_bottom+I_left+I_right))/( 4*(ROI-1) ); // Averaging the intensity of the sides
 
-	return search;
+		return I_border; //return the value
+
 
 }
 
-void qs(float * search, long left_limit, long right_limit){
+/*	funcion compute_xcm_ycm_B*/
+/*
 
-	long left,right,position;
-	float pivot,tmp1,tmp2,tmp3;
+	Input arguments:
 
+	x_start,y_xtart: coordinates of the upper left corner of a ROI.
+	x_end,y_end: coordinates of the lower right corner of a ROI.
+	I_border: border intensity of a ROI
+	image: Pointer to the image vector. 
 
-	left=left_limit;
-	right=right_limit;
+	Output:
+
+	The output is a pointer to a vector that represents the 
+	x,y and Brightness coordinates of a centroid. 
+
+	Notes:
+
+	Remember to free the coordinates vector before the end of the execution.
+*/
+
+float* compute_xcm_ycm_B(int x_start,int x_end,int y_start,int y_end,float I_border,unsigned char* image){
+	//variable declaration
+	float B,x_cm,y_cm,pixel_value; //Brightness,x_cm,y_cm
 	
-	position=(left+right)/2;
+	int i,j;
+	
 
-	pivot=search[position*3];
-	
-	do{
-	
-		while(search[left*3] < pivot && left<right_limit) left++;
-		while(pivot<search[right*3] &&  right>left_limit) right--;
-		if(left <= right){
-			tmp1 = search[left*3];
-			tmp2 = search[left*3 + 1];
-			tmp3 = search[left*3 + 2]; 		
+	float mass=0;
+		//We compute brightness from I_border information
+		
+			B=0;
+			
+
+			for(i=y_start+1;i<y_end;i++){
+				for(j=x_start+1;j<x_end;j++){
+
+					pixel_value=(float)image[i*WIDTH + j];
+					
+					B = B + (pixel_value-I_border);
+					mass=mass+(float)image[i*WIDTH + j];
+
+				}								
+			}
+
+			x_cm=0;
+			y_cm=0;
+			
+			// if I_border is equal to 255 and all the pixels in the border are 255 to
+			// we consider that the x and y coordinates of the centroid are in the center
+			// of the ROI.			
+
+			if(B != 0){
+				for(i=y_start+1;i<y_end;i++){
+					for(j=x_start+1;j<x_end;j++){
+
+						pixel_value=(float)image[i*WIDTH + j]-I_border;					
+					
+						x_cm = x_cm +  (j*(pixel_value))/B;
+						y_cm = y_cm +  (i*(pixel_value))/B;
+						
+
+					}				
 				
-			search[left*3]=search[right*3];
-			search[left*3 + 1]=search[right*3 + 1];
-			search[left*3 + 2]=search[right*3 + 2];
 
-			search[right*3]=tmp1;
-			search[right*3 +1]=tmp2;
-			search[right*3 +2]=tmp3;
-			left++;
-			right--;
+				}
+			}else{
+				x_cm=x_start+(x_end-x_start)/2;
+				y_cm=y_start+(y_end-y_start)/2;
+			
 
-		}
+			}
 
+		// store and return the coordinates
+		float* coordinates = malloc(sizeof(float)*3);
+		coordinates[0]=x_cm;
+		coordinates[1]=y_cm;
+		coordinates[2]=B;
 
-	}while(left<right);
-	if(left_limit<right){qs(search,left_limit,right);}
-	if(right_limit>left){qs(search,left,right_limit);}
-
-}
-
-void quicksort(float * search,long elements){
-
-	qs(search,0,elements-1);
-
+		return coordinates;
 
 }
 
-int search_star_position(float starID,int left_limit,int right_limit,float * stars_vector){
+/*	funcion SymplifyVectorOfCentroids*/
+/*
 
-	int left,right,position;
+	Input arguments:
+
+	Pointer to vector_of_centroids: vector_of_centroids to be symplified.
+	thress: Maximun distance in pixels of centroids that belongs to same star.
+	thress2: Minimum pixels needed to detect a star.
+
+	Output:
+
+	The output is a new centroid vector that contains the clustered centroids.
+	These centroids are finally treated as a stars 
+
+	Notes:
+
+	Remember to free the symplifiedVectorOfCentroids.ptr.
+*/
+
+
+struct CentroidVector SimplifyVectorOfCentroids(struct CentroidVector* vector_of_centroids,int thress,int thress2){
+
+	//variable declaration
+	struct CentroidVector symplified_vector_of_centroids;
+	struct Centroid cent;
+	//first of all we intialise the simplified vector of centroids
+	if(!initialiseVector(&symplified_vector_of_centroids, 100)){ //we dont expect to have more than 100 stars or objects in the image taken
+		printf("ERROR allocating symplified vector of centroids.\n");
+	}
+	float new_xcm,new_ycm,new_B;
 	
+	int pixels,i=0,j,suma_x,suma_y,suma_B;
 
-	left=left_limit;
-	right=right_limit;
-
-	if((right-left)==1){
-
-		if(starID==stars_vector[right]){return right;}
-		if(starID==stars_vector[left]){return left;}
-	}else{	
 		
-	
-		position=(left+right)/2;
-		
-		if(starID==stars_vector[position]){return position;}
-		else{
-			if(starID > stars_vector[position]){search_star_position(starID,position,right,stars_vector);}
-			else{search_star_position(starID,left,position,stars_vector);}
-		}
-	
 
+	int total_centroids=vector_of_centroids->elem_used; //extract the number of centrois in vector_of_centroids
+
+	
+	while(i<total_centroids){
+		
+		suma_x=0;
+		suma_y=0;
+		suma_B=0;
+		//The value 2000 is a dummy value used to discrimine those centroids that are still to be processed
+		if(vector_of_centroids->ptr[i].x != 2000 && vector_of_centroids->ptr[i].y != 2000){
+
+			new_xcm=vector_of_centroids->ptr[i].x;
+			new_ycm=vector_of_centroids->ptr[i].y;
+			new_B=vector_of_centroids->ptr[i].brightness;
+			pixels=1;
+		
+			suma_x=new_xcm;
+			suma_y=new_ycm;	
+			suma_B=new_B;
+
+			for(j=i+1;j<total_centroids;j++){
+				//if centroids are close enough...
+				if( abs(new_xcm-vector_of_centroids->ptr[j].x)<= thress && abs(new_ycm-vector_of_centroids->ptr[j].y)<=thress ){
+
+
+					suma_x= suma_x + vector_of_centroids->ptr[j].x;
+					suma_y= suma_y + vector_of_centroids->ptr[j].y;
+					suma_B= suma_B + vector_of_centroids->ptr[j].brightness;
+
+					pixels++;
+					vector_of_centroids->ptr[j].x=2000; //dummy value for centroids processed
+					vector_of_centroids->ptr[j].y=2000;
+					
+				}
+
+			}
+			
+			vector_of_centroids->ptr[i].x=2000; //dummy value for centroids processed
+			vector_of_centroids->ptr[i].y=2000;
+				
+				///if(pixels > thress2){ //if a centroroid has enough pixels...
+					
+					cent=createCentroid(suma_x/pixels,suma_y/pixels,suma_B);
+					if(!addElementToVector(&symplified_vector_of_centroids, cent)){
+					printf("ERROR reallocating new_centroid.\n");
+					}
+				//}
+					
+			
+		}//end if
+
+
+		
+	i=i+1;
+
+	}//end while
+
+	
+	
+	
+return symplified_vector_of_centroids; // free the original vector of centroids and this vector!!
+
+
+}
+
+
+/*	funcion centroiding*/
+/*
+
+	Input arguments:
+
+	thresh: Value of the minimum value necessary to compute a centroid.
+	thresh2: Maximun distance in pixels of centroids that belongs to same star.
+	thress2: Minimum pixels needed to detect a star.
+	ROI: Region of interest
+	image: Pointer to an image vector. 
+
+	Output:
+
+	The output is a centroid vector that represent the detected stars.
+
+	Notes:
+
+	Remember to free the centroid_vector.ptr before the execution ends.
+*/
+
+struct CentroidVector centroiding(int thresh,int thresh2,int thresh3,int ROI,unsigned char* image){
+
+	
+	//Variable declaration
+	int x_start,x_end,y_start,y_end;
+	float I_border;
+
+	//We need a centroid to store the varialbes computed 
+	//and a vector of centroids
+
+	struct Centroid new_centroid;
+	struct CentroidVector vector_of_centroids;
+
+	//First of all, we initialise the vector_of_centroids
+
+	if(!initialiseVector(&vector_of_centroids, 1024)){
+		printf("ERROR allocating the vector of centroids.\n");
 	}
 	
+
+	//Loop setup
+	unsigned int i;
+	unsigned int j;
+	unsigned int limit=(ROI-1)/2;
+
+	for(i=limit;i < HEIGHT-limit ;i++){
+		for( j=limit;j< WIDTH-limit;j++){	
+			//printf("%d\t",image[i*WIDTH +j]);
+			//pixel which value > Thresh		
+			if(image[ i*WIDTH + j]>= thresh){
+			// Initialite values
+				x_start=j-limit;
+				y_start=i-limit;
+				x_end=x_start+(ROI-1);
+				y_end=y_start+(ROI-1);				
+			//Compute the average intensity value of the border pixels
+				I_border=compute_I_border(x_start,x_end,y_start,y_end,ROI,image);				
+		        //We compute brigthness,x_cm and y_cm				
+				float * coordinates=compute_xcm_ycm_B(x_start,x_end,y_start,y_end,I_border,image);
+			//We create a new centroid with the coordinates previously computed	
+				new_centroid = createCentroid(coordinates[0],coordinates[1],coordinates[2]);
+				free(coordinates); //free coodinates. See compute_xcm_ycm_B function
+			//Adding the centroid to the vector of centroids	
+				if(!addElementToVector(&vector_of_centroids, new_centroid)){
+				printf("ERROR reallocating new_centroid.\n");
+				}		
+			}// end if 
+		}//end j
+		//printf("\n");		
+	}//end i
+
+	//We cluster the centroids with te SymplifyVectorOfCentroids function
+	//printf("DEBUG : Centroids created %d\n",vector_of_centroids.elem_used);
+	struct CentroidVector symplified=SimplifyVectorOfCentroids(&vector_of_centroids,thresh2,thresh3);
+	free(vector_of_centroids.ptr);//free memory of vector_of_centroids.ptr since this vector_of_centroids is no longer usefull
+
+return symplified; //return the symplified vector of centroids
+		
+}//end function centroiding
+
+/*	funcion sort_centroids*/
+/*
+
+	Input arguments:
+
+	*vector: Pointer to a centroid vector. 
+
+	Output:
+
+	The function does not generate any output, but it sort the centroids
+	according with their brightness.
+
+	Notes:
+
+	We consider that the image center is the intersection of the image 
+	plane with the focal axis.
+*/
+
+void sort_centroids(struct CentroidVector * vector){
+
+	//variable declaration
+	int i,j,position;
+
+	struct  Centroid centroid_aux;
+
+
+	for(i=0;i<vector->elem_used;i++){
+		
+		for(j=i+1;j<vector->elem_used;j++){
+			
+			if(vector->ptr[j].brightness>vector->ptr[i].brightness){
+				
+	
+				
+				position=j;
+				centroid_aux=vector->ptr[i];
+				vector->ptr[i]=vector->ptr[position];
+				vector->ptr[position]=centroid_aux;
+							
+				
+
+			}
+
+
+		}
+
+		
+		
+		
+	}
+
+
+
 }
+
+
+/////////////////////////// End Centroiding functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+////////////////////////// Create fucntions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+
+
+struct Centroid createCentroid(float my_x, float my_y, float my_brightness){
+	struct Centroid centroid;
+
+	centroid.x = my_x;
+	centroid.y = my_y;
+	centroid.brightness = my_brightness;
+
+	return centroid;
+}
+
+struct UnitaryVector createUnitaryVector(float my_x,float my_y){
+
+	struct UnitaryVector unitaryVector;
+	float x,y,f=0.01225; // this is the focal length of the camera used
+
+	x=(my_x-640)*0.00000465; // 0.00000465 is the length in m of a pixel in the image plane
+	y=(my_y-480)*0.00000465;
+	
+	float x_u= cos( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/f,2)+pow(y/f,2) ) ) );
+	float y_u= sin( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/f,2)+pow(y/f,2) ) ) );
+	float z_u=sin(3.14159265/2 - atan( sqrt( pow(x/f,2)+pow(y/f,2) ) ) );
+	unitaryVector.x= x_u;
+	unitaryVector.y= y_u;
+	unitaryVector.z= z_u;
+
+	return unitaryVector;
+
+
+}
+
+
+struct center createCenter(float center,float * pair,int num){
+
+	struct center c;
+	int i;
+	c.center=center;
+	for(i=0;i<num;i++){
+
+		c.pairs[i]=pair[i];
+
+
+	}
+	c.numPairs=num;
+
+	return c;
+
+}
+
+
+/////////////////////////  End create functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+
+/////////////////////////  Initialise functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+/*Function to initialise a centroids vector
+
+  It reserves *num* positions of *struct Centroid* data type and stores
+  them in the ptr member of *vector*.
+  It also initialise the total_elem and elem_used members of vector
+  to num and 0, respectively.
+
+  The return value is 0 if an error in the memory allocation occured
+  and 1 in any other case.
+
+*/
+
 int initialiseVector(struct CentroidVector* vector, int num){
 	int success;
 
@@ -355,6 +772,19 @@ int initialiseVector(struct CentroidVector* vector, int num){
 
 	return success;
 }
+
+/*Function to initialise a vector of unitary vectors
+
+  It reserves *num* positions of *struct Vector_UnitaryVector* data type and stores
+  them in the ptr member of *vector*.
+  It also initialise the total_elem and elem_used members of vector
+  to num and 0, respectively.
+
+  The return value is 0 if an error in the memory allocation occured
+  and 1 in any other case.
+
+*/
+
 
 int initialiseVectorUnitary(struct Vector_UnitaryVector* vector, int num){
 	int success;
@@ -380,61 +810,51 @@ int initialiseVectorUnitary(struct Vector_UnitaryVector* vector, int num){
 	return success;
 }
 
-int initialiseVectorPairs(struct Vector_Pairs * vector,int num){
+/*Function to initialise a vector of centers
+
+  It reserves *num* positions of *struct centerVector* data type and stores
+  them in the ptr member of *vector*.
+  It also initialise the total_elem and elem_used members of vector
+  to num and 0, respectively.
+
+  The return value is 0 if an error in the memory allocation occured
+  and 1 in any other case.
+*/
+
+int initialiseCenterVector(struct centerVector * vector,int num){
 
 	int success;
 	
-	if(num >= 0){
-		
-		vector->ptr=malloc(sizeof(struct Pairs)*num);
-		if(vector->ptr== NULL){
-			success=0;
+	//Argument checking
+	
+	if(num >=0){
 
+		vector->ptr=malloc(sizeof(struct center)*num);
+
+		//ERROR handling
+		if(vector->ptr == NULL){
+			success==0;
+		
 		}else{
 			vector->total_elem=num;
 			vector->elem_used=0;
 			success=1;
+		
 		}
-		
 
-	}else{
+	}else{success=0;}
 
-		success=0;
-	}
-
-
-return success;
+	return success;
 
 }
 
-struct Pairs createPairs(float angle,float umb,float*catalog,float*k_vector){
+
+////////////////////////  End initialise functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 
-	struct Pairs pairs;
-	float * searchElements;
-	float * ptr;
-	long elements;
-	int i;
-	
-	pairs.ptr=NULL;
-	pairs.numPairs=0;
-	searchElements=k_vector_search(angle-umb*angle,angle+umb*angle,catalog,k_vector,&elements);
-	
-	if(searchElements != NULL){
-	
-		pairs.ptr=searchElements;
-		pairs.numPairs=elements;
-		
-		return pairs;
-	}else{
 
-		printf("Unable to create Pairs \n");
-		return pairs;
-	
-	}
+///////////////////////   AddElement functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-
-}
 
 /*Function to add a centroid to a centroids vector
 
@@ -474,42 +894,21 @@ int addElementToVector(struct CentroidVector* vector, struct Centroid centroid){
 	return success;
 }
 
-int addElementToVectorPairs(struct Vector_Pairs * vector,struct Pairs search){
+/*Function to add a unitary vector to a vector of unitary vectors
 
-	int success =1;
+  It adds a copy of *centroid* at the final available position of the *ptr* member of
+  *vector*.
+  It handles, autonomously, the possible reallocation of memory, consulting
+  the total_elem and elem_used members of *vector*.
 
-	if(vector->elem_used == vector->total_elem){
-		printf("entro \n");
-		int new_size=vector->total_elem*2;
-		vector->ptr = realloc(vector->ptr,sizeof(struct Pairs)*new_size);
+  In success, the *vector* argument is updated
 
-		if(vector->ptr == NULL){
-	
-			success=0;
-
-		}else{
-			vector->total_elem = new_size;
-
-		}
-	}
+  The return value is 0 if an error in the memory reallocation occured
+  and 1 in any other case.
+*/
 
 
-	if(success){
-
-		vector->ptr[vector->elem_used]=search;
-		vector->elem_used++;
-
-
-
-	}
-
-
-	return success;
-
-}
-
-
-int addElementToVectorUnitary(struct Vector_UnitaryVector* vector, struct UnitaryVector centroid){
+int addElementToVectorUnitary(struct Vector_UnitaryVector* vector, struct UnitaryVector unitary){
 	int success = 1;
 
 	//Size checking. If the elements used equals the elements allocated, it's necessary to allocate more memory
@@ -527,386 +926,74 @@ int addElementToVectorUnitary(struct Vector_UnitaryVector* vector, struct Unitar
 	}
 
 	if(success){
-		vector->ptr[vector->elem_used] = centroid;
+		vector->ptr[vector->elem_used] = unitary;
 		vector->elem_used++;
 	}
 
 	return success;
 }
 
-//Example function to create a new Centroid. The structs, in C, can be
-//returned from a function. THey behaves as a data type like any other.
-struct Centroid createCentroid(float my_x, float my_y, float my_brightness){
-	struct Centroid centroid;
+/*Function to add a center to a center vector
 
-	centroid.x = my_x;
-	centroid.y = my_y;
-	centroid.brightness = my_brightness;
+  It adds a copy of *center* at the final available position of the *ptr* member of
+  *vector*.
+  It handles, autonomously, the possible reallocation of memory, consulting
+  the total_elem and elem_used members of *vector*.
 
-	return centroid;
-}
+  In success, the *vector* argument is updated to the new state, with *center* at the
+  *elem_used* position of the vector.
 
-struct UnitaryVector createUnitaryVector(float my_x,float my_y){
-
-	struct UnitaryVector unitaryVector;
-	float x,y,z,modulus,f=0.01215;
-
-	x=(my_x-640)*0.00000465;
-	y=(my_y-480)*0.00000465;
-	
-	float x_u= cos( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/f,2)+pow(y/f,2) ) ) );
-	float y_u= sin( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/f,2)+pow(y/f,2) ) ) );
-	float z_u=sin(3.14159265/2 - atan( sqrt( pow(x/f,2)+pow(y/f,2) ) ) );
-	/*
-	z=12;
-	
-	modulus=sqrt( pow(x,2)+pow(y,2)+pow(z,2) );
-	
-	unitaryVector.x= x/modulus;
-	unitaryVector.y= y/modulus;
-	unitaryVector.z= z/modulus;
-	*/
-	
-	unitaryVector.x= x_u;
-	unitaryVector.y= y_u;
-	unitaryVector.z= z_u;
-
-	return unitaryVector;
-
-
-}
-
-	
-/*
-
-	This function compute I_border, value needed in order to compute a centroid.
-	The function stimated it from the border of a ROI, which coordinates are specified
-	by x_start,x_end,y_start and y_end.
-
+  The return value is 0 if an error in the memory reallocation occured
+  and 1 in any other case.
 */
 
-float compute_I_border(int x_start,int x_end,int y_start,int y_end,int ROI,unsigned char* image){
 
-	int i,j;
-	unsigned int I_bottom,I_top,I_left,I_right;
-	float I_border;
 
-		//I_bottom
-		I_bottom=0;
-		//printf("Bottom\n");
-		for (i=x_start;i<=x_end;i++){
-			
-			//printf("%d %d\n",y_end,i);
-			I_bottom=I_bottom+image[y_end*WIDTH + i];
-			
-			//printf("Ibottom fila columna  %d %d\n",y_end,i);
-		
+
+int addElementToCenterVector(struct centerVector * vector,struct center c){
+
+	int success =1;
+	//Size checking
+	if(vector -> elem_used == vector->total_elem){
+		int new_size = vector->total_elem+1;
+		vector->ptr = realloc(vector->ptr,sizeof(struct center)*new_size);
+
+		//ERROR handling
+		if(vector->ptr == NULL){
+			success=0;
+		}else{
+			vector->total_elem=new_size;
 		}
+	}
 
-		//printf("El i \n",i);
-		//I_top
-		I_top=0;
-		//printf("TOP\n");
-		for (i=x_start;i<=x_end;i++){
-			//printf("%d %d\n",y_start,i);
-			I_top=I_top+image[y_start*WIDTH + i];
-			//printf("Itop fila columna %d %d \n",y_start,i);
-		
-		}
-		//I_left
-		I_left=0;
-		//printf("Left\n");
-		for (j=y_start+1;j<y_end;j++){
-			//printf("%d %d\n",j,x_start);
-			I_left=I_left+image[j*WIDTH + x_start];
-			//printf("Ileft  fila columna %d %d \n",j,x_start);
-		
-		}
-		//I_right
-		I_right=0;
-		//printf("Right\n");
-		for (j=y_start+1;j<y_end;j++){
-			//printf("%d %d\n",j,x_end);
-			I_right=I_right+image[j*WIDTH + x_end];
-			//printf("Iright  fila columna %d %d \n",j,x_end);
-		
-		}
+	if(success){
 
-			
-		I_border = (float)(I_top+I_bottom+I_left+I_right)/( 4*(ROI-1) );
-
-		return I_border;
-
+		vector->ptr[vector->elem_used]=c;
+		vector->elem_used++;
+	}
+	
+	return success;
 
 }
 
-/*
-	This function will compute the centroid infromation from I_border
+
+/////////////////////    End AddElement functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+/*function	ComputeUnitaryVectors		*/
+
+
+
+/*	Input arguments:
+
+	vector: a vector of centroids
+
+	Output:
+
+	This function returns a vector of unitary vectors.
+		
+
 
 */
-
-float* compute_xcm_ycm_B(int x_start,int x_end,int y_start,int y_end,float I_border,unsigned char* image){
-
-
-	float B,x_cm,y_cm,pixel_value; //Brightness,x_cm,y_cm
-	float mass;
-	int i,j;
-
-
-		//We compute brightness from I_border information
-		
-			B=0;
-			mass=0;
-
-			for(i=y_start+1;i<y_end;i++){
-				for(j=x_start+1;j<x_end;j++){
-
-					pixel_value=(float)image[i*WIDTH + j];
-					mass=mass+pixel_value;
-								
-					//printf("El i j pixel_value %d  %d  %f \n",i,j,pixel_value);
-					B = B + (pixel_value-I_border);
-
-	
-
-				}				
-				
-
-			}
-
-			x_cm=0;
-			y_cm=0;
-			
-			if(B != 0){
-				for(i=y_start+1;i<y_end;i++){
-					for(j=x_start+1;j<x_end;j++){
-
-						pixel_value=(float)image[i*WIDTH + j]-I_border;					
-					
-						x_cm = x_cm +  (j*(pixel_value))/B;
-						y_cm = y_cm +  (i*(pixel_value))/B;
-
-					}				
-				
-
-				}
-			}else{
-				x_cm=x_start+(x_end-x_start)/2;
-				y_cm=y_start+(y_end-y_start)/2;
-				B=(x_end-x_start)*(y_end-y_start)*255;
-
-			}
-
-		float* coordinates = malloc(sizeof(float)*3);
-		coordinates[0]=x_cm;
-		coordinates[1]=y_cm;
-		coordinates[2]=mass;
-
-		return coordinates;
-
-}
-
-
-
-struct CentroidVector SimplifyVectorOfCentroids(struct CentroidVector* vector_of_centroids,int thress,int thress2){
-
-	struct CentroidVector symplified_vector_of_centroids;
-	struct Centroid cent;
-	
-
-	//first of all we intialise the simplified vector of centroids
-	if(!initialiseVector(&symplified_vector_of_centroids, 100)){ //we dont expect to have more than 100 stars or objects in the image taken
-		printf("ERROR allocating symplified vector of centroids.\n");
-	}
-	
-	float new_xcm,new_ycm,new_B,old_xcm,old_ycm,old_B;
-	int pixels;	
-
-	int total_centroids=vector_of_centroids->elem_used;
-	
-
-	int i=0;
-	int steps,j,n;
-	float suma_x,suma_y;
-	
-	while(i<total_centroids){
-		
-		suma_x=0;
-		suma_y=0;
-
-		if(vector_of_centroids->ptr[i].x != 2000 && vector_of_centroids->ptr[i].y != 2000){
-
-			new_xcm=vector_of_centroids->ptr[i].x;
-			new_ycm=vector_of_centroids->ptr[i].y;
-			//new_B=vector_of_centroids->ptr[i].brightness;
-			pixels=1;
-		
-			suma_x=new_xcm;
-			suma_y=new_ycm;	
-			//printf("Nuevo centroide\n");
-			//printf("%f %f \n",new_xcm,new_ycm);
-
-			for(j=i+1;j<total_centroids;j++){
-				
-				if( abs(new_xcm-vector_of_centroids->ptr[j].x)<= thress && abs(new_ycm-vector_of_centroids->ptr[j].y)<=thress ){
-
-					//printf("%f %f \n",vector_of_centroids->ptr[j].x,vector_of_centroids->ptr[j].y);
-
-					suma_x= suma_x + vector_of_centroids->ptr[j].x;
-					suma_y= suma_y + vector_of_centroids->ptr[j].y;
-
-					//new_B= (1/(n+1))*vector_of_centroids->ptr[j].brightness + (n/(n+1))*new_B;
-					pixels++;
-					vector_of_centroids->ptr[j].x=2000;
-					vector_of_centroids->ptr[j].y=2000;
-					//printf("Pixels %d\n",pixels);
-					
-				}
-				
-
-
-			}
-			
-			vector_of_centroids->ptr[i].x=2000;
-			vector_of_centroids->ptr[i].y=2000;
-				
-				if(pixels > thress2){
-					
-					cent=createCentroid(suma_x/pixels,suma_y/pixels,pixels);
-					if(!addElementToVector(&symplified_vector_of_centroids, cent)){
-					printf("ERROR reallocating new_centroid.\n");
-					}
-				}
-					
-			
-		}//end if
-
-
-		
-	i=i+1;
-
-	}//end while
-
-	
-	
-	
-return symplified_vector_of_centroids; // free the original vector of centroids and this vector!!
-
-
-}
-
-
-void sort_centroids(struct CentroidVector * vector){
-
-//Encontramos el centroide mas cercano al centro de la imagen
-		
-	int position,i,j;
-	float modulo1=10000,modulo2;
-	float aux1,aux2,aux3;
-
-	//printf("DEBG: Elem used: %d\n", symplified_vector_of_centroids.elem_used);
-
-	for(i=0;i<vector->elem_used;i++){
-
-		//modulo1= sqrt(pow(symplified_vector_of_centroids.ptr[i].x-640,2)+pow(symplified_vector_of_centroids.ptr[i].y-480,2));
-		modulo2= sqrt(pow(vector->ptr[i].x-640,2)+pow(vector->ptr[i].y-480,2));
-
-		//printf("DEBUG: Modulo 2: %d\n", modulo2);
-
-		if(modulo2<modulo1){
-				
-		modulo1=modulo2;			
-		position=i;
-
-		}
-
-	}
-			aux1=vector->ptr[position].x;
-			aux2=vector->ptr[position].y;
-			aux3=vector->ptr[position].brightness;
-			
-						
-			vector->ptr[position].x=vector->ptr[0].x;
-			vector->ptr[position].y=vector->ptr[0].y;
-			vector->ptr[position].brightness=vector->ptr[0].brightness;
-			
-			vector->ptr[0].x=aux1;
-			vector->ptr[0].y=aux2;
-			vector->ptr[0].brightness=aux3;
-			
-
-			modulo1=10000;
-			
-			float coordx,coordy,coordB,x,y,brightness,angle,angle2;
-			int inicio=0;
-			x=vector->ptr[0].x;
-			y=vector->ptr[0].y;
-			brightness=vector->ptr[0].brightness;
-			
-			//printf("Centro %f %f \n",x,y);	
-
-			for(i=0;i<vector->elem_used-1;i++){
-				angle=10000;
-				inicio=i+1;
-				for(j=i+1;j<vector->elem_used;j++){
-				
-					coordx=vector->ptr[j].x-x;
-					coordy=vector->ptr[j].y-y;
-					coordB=vector->ptr[j].brightness;
-
-					if(coordx>0 && coordy>0){
-					
-					angle2=atan(coordy/coordx)*360/(2*3.1416);
-					}
-					
-					if(coordx<0 && coordy >0){
-					
-					angle2=180+atan(coordy/coordx)*360/(2*3.1416);
-					
-					}
-
-					if(coordx<0 && coordy <0){
-
-					angle2=180+atan(coordy/coordx)*360/(2*3.1416);
-
-					}
-
-					
-					if(coordx>0 && coordy <0){
-
-					angle2=360+atan(coordy/coordx)*360/(2*3.1416);
-
-					}
-					
-					if(angle2<angle){
-					
-					
-					angle=angle2;
-					position=j;
-					
-					}		
-
-				}
-
-				aux1=vector->ptr[position].x;
-				aux2=vector->ptr[position].y;
-				aux3=vector->ptr[position].brightness;
-				
-						
-				vector->ptr[position].x=vector->ptr[inicio].x;
-				vector->ptr[position].y=vector->ptr[inicio].y;
-				vector->ptr[position].brightness=vector->ptr[inicio].brightness;
-			
-				vector->ptr[inicio].x=aux1;
-				vector->ptr[inicio].y=aux2;
-				vector->ptr[inicio].brightness=aux3;
-			
-				
-				
-			}
-
-
-}
 
 
 
@@ -941,402 +1028,695 @@ struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector)
 }
 
 
+///////////////////////// Star Pattern Maching Functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-struct CentroidVector centroiding(int thresh,int thresh2,int thress3,int ROI,unsigned char* image){
+/*	funcion interchange_unitary_vectors*/
+/*
+
+	Input arguments:
+
+	*vector: Pointer to a vector of unitary vectors.
+	position1,position2: Positions of the unitary_vectors to be interchanged
+	 
+	Output:
+
+	The function does not generate any output, but interchange the position of two
+	unitary vectors.
 
 	
-	//Variable declaration
-	int x_start,x_end,y_start,y_end;
-	float I_border;
+*/
 
-	//We need a centroid to store the varialbes computed 
-	//and a vector of centroids
+void interchange_unitary_vectors(struct Vector_UnitaryVector* vector,int position1,int position2){
 
-	struct Centroid new_centroid;
-	struct CentroidVector vector_of_centroids;
+	float aux1,aux2,aux3;
 
-	//First of all, we initialise the vector_of_centroids
+	aux1=vector->ptr[position2].x;
+	aux2=vector->ptr[position2].y;
+	aux3=vector->ptr[position2].z;
 
-	if(!initialiseVector(&vector_of_centroids, 1024)){
-		printf("ERROR allocating the vector of centroids.\n");
-		//return 1;
-	}
+	vector->ptr[position2].x=vector->ptr[position1].x;
+	vector->ptr[position2].y=vector->ptr[position1].y;
+	vector->ptr[position2].z=vector->ptr[position1].z;
 	
 
-	//Loop setup
-	unsigned int i;
-	unsigned int j;
-	unsigned int limit=(ROI-1)/2;
+	vector->ptr[position1].x=aux1;
+	vector->ptr[position1].y=aux2;
+	vector->ptr[position1].z=aux3;
 
-	for(i=limit;i < HEIGHT-limit ;i++){
-		for( j=limit;j< WIDTH-limit;j++){
-			//pixel which value > Thresh		
-			if(image[ i*WIDTH + j]>= thresh){
+	
 
-			// Initialite values
-				x_start=j-limit;
-				y_start=i-limit;
-				x_end=x_start+(ROI-1);
-				y_end=y_start+(ROI-1);
-				
-			//Compute the average intensity value of the border pixels
+}
 
-				I_border=compute_I_border(x_start,x_end,y_start,y_end,ROI,image);
-				
-		        //We compute brigthness,x_cm and y_cm
-				
-				float * coordinates=compute_xcm_ycm_B(x_start,x_end,y_start,y_end,I_border,image);
-			//We create a new centroid with the coordinates previously computed	
-				new_centroid = createCentroid(coordinates[0],coordinates[1],coordinates[2]);
-				free(coordinates);
-				
-				if(!addElementToVector(&vector_of_centroids, new_centroid)){
-				printf("ERROR reallocating new_centroid.\n");
-				//return 1;
-				}		
-			}// end if 
-		}//end j		
-	}//end i
+/*	funcion initialise_verification_matrix*/
+/*
 
-	//We cluster the centroids with te SymplifyVectorOfCentroids function
-	struct CentroidVector symplified=SimplifyVectorOfCentroids(&vector_of_centroids,thresh2,thress3);
-	free(vector_of_centroids.ptr);
+	Input arguments:
 
-return symplified;
+	rows,colums,z: The three dimensions of the verification matrix
 		
-}//end function centroiding
+			rows: This matrix has 909 rows (we have 909 stars in the generated catalog)
+			colums: One colum per angle considered in the pattern maching algorithm
+			z:	This variable represent the pairs of a star that match an angle. We
+			use 50 as a value.
+	 
+	Output:
 
-float* computeAngles(struct Vector_UnitaryVector* unitaries,int num,int * numAngles){
+	The function does not generate any output, initialise the verivication_matrix to zero.
 
-int i;
-float angle;
 	
-	if(num>unitaries->elem_used){*numAngles=unitaries->elem_used;num=unitaries->elem_used;}
-	else{*numAngles=num;}
-	float * angles=malloc(sizeof(float)*(num));
+*/
 
-	for(i=0;i<num;i++){
+void initialise_verification_matrix(int rows,int z,int verification_matrix[rows][z]){
 
-		if(i < num-1){
-		angle=(unitaries->ptr[i].x*unitaries->ptr[i+1].x)+(unitaries->ptr[i].y*unitaries->ptr[i+1].y)+(unitaries->ptr[i].z*unitaries->ptr[i+1].z);
-		angles[i]=(acos(angle)*180)/(3.14159265);
-		}else{
-
-		angle=(unitaries->ptr[i].x*unitaries->ptr[0].x)+(unitaries->ptr[i].y*unitaries->ptr[0].y)+(unitaries->ptr[i].z*unitaries->ptr[0].z);
-		angles[i]=(acos(angle)*180)/(3.14159265);
-		}
-	}
+	int i,j;
+			//initialization to zero
+			for(i=0;i<rows;i++){
+				for(j=0;j<z;j++){
+					
+					verification_matrix[i][j]=0;
+					
+				}
+			}
 
 
-return angles;
+}
+
+/*	funcion fill_verification_matrix		*/
+/*
+
+	Input arguments:
+
+	*vector: Pointer to a vector of unitary vectors
+	num: number of angles to be searched
+	rows,colums,z: The three dimensions of the verification matrix
+		
+			rows: This matrix has 909 rows (we have 909 stars in the generated catalog)
+			colums: One colum per angle considered in the pattern maching algorithm
+			z:	This variable represent the pairs of a star that match an angle. We
+			use 50 as a value.
+
+	verification_matrix: verification_matrix to be filled.
+	catalog: Generated star catalg. See loadCatalog function
+	k_vector: Generated k_vector. See loadKVevtor function
+	stars:	Stars in the generated star catalog. See loadStars function
+	 
+	Output:
+
+	This function fills the verification matrix. Each row of the verification matrix represents
+	a star. Each colum represent an angle and the z dimension is the stars pairs for a star in
+	an specific angle.
+
+	
+*/
 
 
-}//End function computeAngles
+void fill_verification_matrix(struct Vector_UnitaryVector * vector,int num,int rows,int z,int verification_matrix[rows][z],float umb,float *catalog,float *k_vector,float * stars){
 
-int compare (const void *_a, const void *_b){
+//variable definition
+int i;
+long search_elements;
+float angle;
+float * pairs_in_catalog;
 
-
-	float *a,*b;
-
-	a = (float*)_a;
-	b = (float*)_b;
-
-	if(*a<*b){
-		return -1;
+		for(i=0;i<num;i++){
 			
+			//Compute angle
+			angle=(acos(((vector->ptr[0].x*vector->ptr[i+1].x)+(vector->ptr[0].y*vector->ptr[i+1].y)+(vector->ptr[0].z*vector->ptr[i+1].z)))/3.1416)*180;
+			//printf("Angle 0 con %d es %f\n",i+1,angle);
+			//find the star pairs that are inside the umb
+			pairs_in_catalog=k_vector_search(angle-angle*umb,angle+angle*0.005,catalog,k_vector,&search_elements);
+			//Adding the pairs to the verification matrix
+			add_search_to_verification_matrix(pairs_in_catalog,search_elements,909,100, verification_matrix,stars);		
+			//free pairs in catalog
+			free(pairs_in_catalog);
+		}
+		
+}
+
+/*	function k_vector_search 	*/
+
+/*	Input arguments:
+
+	min: minimum value of the search range
+	max: maximum value of the search range
+	k_vector: Generated k_vector. See loadKVector function.
+	*elem: this is the total entries found
+	 
+	Output:
+
+	This fucntion returns the results of a k vector searching in the Generated Catalog.
+	
+	Notes:
+
+	The result has to be freed.
+
+*/
+
+float* k_vector_search(float min,float max,float* catalog,float* k_vector,long * elem){
+	
+	//argument checking
+	float aux;
+	if(min<0){min=0;}
+	if(min>max){
+		
+		aux=max;
+		min=max;
+		max=min;
+
+	}	
+	if(max>32){max=32;}
+	if(min >32 || max >32){min=31;max=32;}
+
+
+	//Variable declaration
+	float Eps=catalog[43476*3 + 2]*1.19209E-07;
+	float* search=NULL;
+	long n=43477;
+	float m=(catalog[43476*3 + 2]-catalog[0+2] + 2*Eps)/(n-1);
+	float q=catalog[2]-m-Eps;
+
+	long j_b=floor( (min-q)/m);
+	
+
+	long j_t=ceil( (max-q)/m);
+
+
+	long k_start=k_vector[j_b]+1;
+	
+	long k_end=k_vector[j_t];
+	
+
+	long elements = (k_end-k_start)+1;
+	
+
+	if(max>1){
+	
+	*elem=elements;
+
+	search=malloc(sizeof(float)*3*elements);
+
+		//loop set up
+		int i;
+		int j=0;
+		//search filling
+		for(i=k_start;i<=k_end;i++){
+
+			search[j*3]=catalog[i*3];
+			search[j*3 + 1]=catalog[i*3 + 1];
+			search[j*3 + 2]=catalog[i*3 + 2];
+			j++;
+
+		}
 	}else{
-		return 1;
+
+
+	*elem=59;
+
+		search=malloc(sizeof(float)*3*59);
+		int i,j=0;	
+		
+		for(i=0;i<59;i++){
+
+			search[j*3]=catalog[i*3];
+			search[j*3 + 1]=catalog[i*3 + 1];
+			search[j*3 + 2]=catalog[i*3 + 2];
+			j++;
+
+		}
+
+
+
 	}
- 
+	
+	return search; //Remember to free this search
 
 }
 
 
+/*	function  search_star_position	*/
 
-float * encontrar_parejas(float star,struct Vector_Pairs * vector,int vector_position,int * parejas){
+/*	Input arguments:
 
-int i,k,pairs,tamano;
-float * coincidences=malloc(sizeof(float)*2);
-	k=0;
-	//printf("DEBUG buscando entre %d parejas\n",vector->ptr[vector_position].numPairs);
-	for(i=0;i<vector->ptr[vector_position].numPairs;i++){
+	starID: Hipparcos ID of a star
+	left_limit : 0
+	right_limit: 909
+	stars_vector: Vector containing all the possible stars
 
-		if(vector->ptr[vector_position].ptr[i*3]==star){
-			//printf("DEBUB entro\n");
-			if(k==0){
-			
-				coincidences[0]=star;			
-				coincidences[1]=vector->ptr[vector_position].ptr[i*3+1];
-				k++;
-			}else{
-				coincidences=realloc(coincidences,sizeof(float)*(k*2+2));
-				coincidences[k*2]=star;
-				coincidences[k*2+1]=vector->ptr[vector_position].ptr[i*3+1];
-				k++;
-			}
+
+
+	
+	 
+	Output:
+
+	The position of star in the stars vector
+	
+
+*/
+
+
+int search_star_position(float starID,int left_limit,int right_limit,float * stars_vector){
+
+	int left,right,position; // variable declaration
+	
+
+	left=left_limit;
+	right=right_limit;
+
+	if((right-left)==1){
+
+		if(starID==stars_vector[right]){return right;}
+		if(starID==stars_vector[left]){return left;}
+	}else{	
 		
+	
+		position=(left+right)/2;
+		
+		if(starID==stars_vector[position]){return position;}
+		else{
+			if(starID > stars_vector[position]){search_star_position(starID,position,right,stars_vector);}
+			else{search_star_position(starID,left,position,stars_vector);}
 		}
+	
+
+	}
+	
+}
+
+/*	function  add_search_to_verification_matrix	*/
+
+/*	Input arguments:
+
+	search:	See k_vector_search fucntion
+	search_elements: entries in search
+
+	rows,colums,z: The three dimensions of the verification matrix
 		
-		if(vector->ptr[vector_position].ptr[i*3+1]==star){
-			//printf("DEBUB entro\n");
-			if(k==0){
+		rows: This matrix has 909 rows (we have 909 stars in the generated catalog)
+		colums: One colum per angle considered in the pattern maching algorithm
+		z:	This variable represent the pairs of a star that match an angle. We
+			use 50 as a value.	
+
+
+	verification_matrix: The verification matrix used.
+	stars: See loadStars function.
+	
+	 
+	Output:
+
+	This fucntion add the search to the verification matrix. It assures that no repeated star pairs
+	appears in the verification matrix.
+	
+
+*/
+
+void add_search_to_verification_matrix(float * search,long search_elements,int rows,int z,int verification_matrix[rows][z],float *stars){
+
+	//variable declaration
+	int i,w,k=0;
+	int posicion;
+	int row1,row2;
+
+	for(i=0;i<search_elements;i++){
+		row1=search_star_position(search[i*3],0,908,stars); //extract the position of a star in the stars vector.
+		row2=search_star_position(search[i*3+1],0,908,stars);
+		for(w=0;w<verification_matrix[row1][0];w++){ // check if we have a repeated star pair
 			
-				coincidences[0]=star;			
-				coincidences[1]=vector->ptr[vector_position].ptr[i*3];
-				k++;
-			}else{
-				coincidences=realloc(coincidences,sizeof(float)*(k*2+2));
-				coincidences[k*2]=star;
-				coincidences[k*2+1]=vector->ptr[vector_position].ptr[i*3];
-				k++;
-			}
+				if(verification_matrix[row1][w+1]==stars[row2]){
+				k=1;
+				}
+
+		}
+			
 		
+		
+
+		if(k==0){ // if the pair is not repeated, add to the verification matrix
+
+			verification_matrix[row1][0]=verification_matrix[row1][0]+1;
+			posicion=verification_matrix[row1][0];
+			verification_matrix[row1][posicion]=stars[row2];
+		}
+		k=0;
+		//repeat for the second star
+		for(w=0;w<verification_matrix[row1][0];w++){
+			
+			
+		
+				if(verification_matrix[row2][w+1]==stars[row1]){
+				k=1;
+				}
+			
+		
+				
 		}
 
+		if(k==0){
 
+			verification_matrix[row2][0]=verification_matrix[row2][0]+1;
+			posicion=verification_matrix[row2][0];
+			verification_matrix[row2][posicion]=stars[row1];
+		}
+
+		k=0;
+
+	}//end for i
+
+
+}
+
+/*	function  create_centers	*/
+
+/*	Input arguments:
+
+	vector: this is a initialised center of vector
+	num: number of stars consider by the matching group algoritm
+	z: 50
+	stars: stars vector
+
+	Output:
+
+	This fucntion creates centers through the verification matrix. It stores
+	them in the center vector.
+	
+
+*/
+
+void create_centers(struct centerVector * vector ,int num,int rows,int z,int verification_matrix[rows][z],float * stars){
+
+	int l,i,row;
+	int numPairs=0;
+	float pairs[100];
+	struct center c;
+
+
+	for(i=0;i<909;i++){
+		if(verification_matrix[i][0]>=num){
+
+			row=search_star_position(stars[i],0,908,stars);			
+			numPairs=0;			
+
+			for(l=0;l<verification_matrix[i][0];l++){
+	
+				pairs[numPairs]=verification_matrix[row][l+1];
+				numPairs++;
+			
+			}
+
+			c=createCenter(stars[row],pairs,numPairs);
+			addElementToCenterVector(vector,c);
+			
+		}//end if
 	}//end for
 
-	*parejas=k;
-
-	//for(i=0;i<k;i++){
-
-	//	printf("Pareja %f %f\n",coincidences[i*2],coincidences[i*2+1]);
-	
-	//}	
-
-	return coincidences;
-
-}
-
-
-void find_match(float * angles,float * centers,int numAngles,int numCenters,float umb,float * catalog,float*k_vector){
-
-	struct Pairs pairs;
-	struct Vector_Pairs vector_of_pairs;
-	long min_stars=999999;
-	float starID;
-	float * pairsID1;
-	float * pairsID2;
-	float*finalPairs;
-	long elementos;
-	float * uniq=NULL;
-	int i,j,k,l, pos,stars,lem_in_pairsID=0,elem_in_angle=0,matches_found=0;
-	struct chainVector c_vector;
-	struct chain c;
-	
-	if(numAngles<2){printf("Unable to create pattern. Not enough centers\n");return;}
-	else{
-
-	// We initialise the vector of pairs	
-	initialiseVectorPairs(&vector_of_pairs,numAngles);
-
-	//Initialis the vector of chain
-	//initialiseChainVector(&c_vector,1000);	
-	
-	//for(i=0;i<numAngles;i++){
-	
-	float chain[100]={};
-	int chain_elem=0;
-	int iteration=1;
-	int chain_complete=0;
-	int chain_break=0;
-	
-	//We CREATE THE PAIRS
-	for (i=0;i<numAngles;i++){
-		pairs=createPairs(angles[i],umb,catalog,k_vector);		
-		if(pairs.ptr != NULL){
-		addElementToVectorPairs(&vector_of_pairs,pairs); // add the pairs created to the vector of pairs
-		}
-	}
-	
-	float soluciones[100]={};
-
-	//printf("Buscando soluciones para centro \t");
-	for(i=0;i<numCenters;i++){
-		//printf("%f\n",centers[i]);
-
-		soluciones[0]=centers[i];	
-		intento(soluciones,1,1,numAngles,&vector_of_pairs );
-	}
-	
-	for(i=0;i<numAngles;i++){
-
-	free(vector_of_pairs.ptr[i].ptr);
-
-	}
-
-	free(vector_of_pairs.ptr);
-	}
 	
 }
 
+/*	function find_star_pattern	*/
 
-void intento(float * soluciones, int fila, int elementos,int stars,struct Vector_Pairs * vector ){
+/*	Input arguments:
 
-int i,j,k,repetido=0,my_elementos;
+
+	vector: A vector of previously computed unitary vectors
+	numUnitaries: The number of stars that we want to detect
+	umb: The expected error
+	catalog: The generated catalog
+	k_vector: the k_vector associated with the generated catalg
+	stars:	the total stars in the catalog
+
+	Output:
+
+	The output is a solution computed with the matching
+	group algorithm.
+
+		
+
+
+*/
+
+
+
+
+struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector,int numUnitaries,float umb,float *catalog,float *k_vector,float * stars ){
+
+	//Variable declaration
+	int i,j,k,stars_cosider;
+	float pairs[100];
+	struct center c;
+	struct centerVector center_vector,center_vector2,center_vector3;
+
+		
+		//argument checking
+
+		if(vector->elem_used<3){printf("Unable to find centers\n");return center_vector;}
+		if(numUnitaries>=3 && vector->elem_used<3){printf("Unable to find centers"); return center_vector;}
+		if(numUnitaries >=3 && vector->elem_used>=numUnitaries){stars_cosider=numUnitaries-1;}
+		if(numUnitaries >=3 && vector->elem_used<=numUnitaries){stars_cosider=vector->elem_used-1;}
+		int verification_matrix[909][100]; //This matrix is used to find the star pattern
+
+		
+		//finding centers			
+		for(i=0;i<stars_cosider;i++){
+
+		initialiseCenterVector(&center_vector,1); //initialise center_vector
 	
-		//printf("DEBUG nivel %d\n",elementos);
+		
+		interchange_unitary_vectors(vector,0,i); // interchange the position of unitary vectors	
+		initialise_verification_matrix(909,100,verification_matrix); //initialise verification matrix
+		fill_verification_matrix(vector,stars_cosider,909,100,verification_matrix,umb,catalog,k_vector,stars); // fill the verification matrix
+		create_centers(&center_vector ,stars_cosider,909,100,verification_matrix,stars);//create the center vector through verification matrix
+					/*
+					for(j=0;j<center_vector.elem_used;j++){
 
-								
-					//for(k=0;k<elementos;k++){
-					//	printf("%f\t",soluciones[k]);
-
-					//}
+						printf("Center %f Pairs\t",center_vector.ptr[j].center);
 				
-					//printf("\n");
-		//Generamos los posibles nodos
-		int nodos;
-		float * posibles_nodos=encontrar_parejas(soluciones[elementos-1],vector,elementos-1,&nodos);
-		//printf("Posibles nodos %d\n",nodos);
+						for(k=0;k<center_vector.ptr[j].numPairs;k++){
 
-		//si soluciones es una solucion valida.		
-		if(elementos==stars){
-			
-					//for(k=0;k<nodos;k++){
-					//	printf("nodo %f\t",posibles_nodos[k*2+1]);
+						printf("%f\t",center_vector.ptr[j].pairs[k]);
+						
 
-					//}
-			//printf("\n");
-			printf("Hemos encontrado una solucion\n");
-					for(k=0;k<elementos;k++){
-						printf("%f\t",soluciones[k]);
-						if(k==elementos-1 && posibles_nodos[(nodos-1)*2+1]==soluciones[0]){
-							printf("Cadena cerrada");
+						}
+		
+						printf("\n");
+					}
+					*/
+	
+			if(i==0){ //the first time we create center_vector 2 through center vector 
+
+
+				initialiseCenterVector(&center_vector2,1);
+
+				for(j=0;j<center_vector.elem_used;j++){
+
+						
+
+						for(k=0;k<center_vector.ptr[j].numPairs;k++){
+						
+							pairs[k]=center_vector.ptr[j].pairs[k];	
+				
+						}
+					
+						c=createCenter(center_vector.ptr[j].center,pairs,center_vector.ptr[j].numPairs);
+						addElementToCenterVector(&center_vector2,c);			
+
+				}				
+
+				free(center_vector.ptr); //free memory
+
+
+			}else{
+
+				initialiseCenterVector(&center_vector3,1); //initialise center vector 3
+				for(j=0;j<center_vector.elem_used;j++){
+
+					for(k=0;k<center_vector2.elem_used;k++){
+
+
+						if(compare_centers(&center_vector.ptr[j],&center_vector2.ptr[k],stars_cosider)){//Compare centers in order to look for those which are 	repeated
+
+							c=createCenter(center_vector2.ptr[k].center,center_vector2.ptr[k].pairs,center_vector2.ptr[k].numPairs);
+							
+							addElementToCenterVector(&center_vector3,c);
+							
 
 						}
 
 
 					}
-				
-					printf("\n");
 
 				
-			
-			return;
+				}
+				// free memory
+				free(center_vector.ptr);
+				free(center_vector2.ptr);
 
+				center_vector2=center_vector3; //reasign center vector 2
+					/*
+					for(j=0;j<center_vector2.elem_used;j++){
+
+						printf("Center %f Pairs\t",center_vector2.ptr[j].center);
 				
-		}
+						for(k=0;k<center_vector2.ptr[j].numPairs;k++){
 
-		//printf("DEBUG Buscando nodos para %f\n",soluciones[elementos-1]);
-		//float * posibles_nodos=encontrar_parejas(soluciones[elementos-1],vector,elementos-1,&nodos);
-		//printf("DEBUG %d nodos encontrados\n",nodos);	
+						printf("%f\t",center_vector2.ptr[j].pairs[k]);
+						
 
-				//for(k=0;k<nodos;k++){
-				//	printf("%f\n",posibles_nodos[k*2+1]);
-
-				//	}
-				
-				//printf("\n");
-
-	
-		//Comprobamos los nodos generados
-		if(nodos !=0){		
+						}
 		
-			for(i=0;i<nodos;i++){
+						printf("\n");
+					}
+					*/
 
-				//printf("DEBUG nivel %d nodos encntrados %d para %f\n",elementos,nodos,posibles_nodos[i*2+1]);
-				//Comprobamos que el nodo no se ha aparecido anteriormente
-				repetido=0;
-				for(j=0;j<elementos;j++){
 
-					if(soluciones[j]==posibles_nodos[i*2+1]){
-					
-						repetido=1;
+
+			}
+
+		
+		
+		}//end for i
+
+
+
+		
+		//Symplify centers before return
+		struct centerVector final;
+		int changes=0;
+		initialiseCenterVector(&final,1); //initialise center_vector
+		if(center_vector2.elem_used !=0){
+		int repeated=0;
+		
+		for (i=0;i<center_vector2.elem_used-1;i++){
+
+			for(j=i+1;j<center_vector2.elem_used;j++){
+
+			
+				if(center_vector2.ptr[i].center !=0){
+
+
+					if(center_vector2.ptr[j].center != 0){
+					if(compare_centers(&center_vector2.ptr[i],&center_vector2.ptr[j],stars_cosider)){//Compare centers in order to look for those which are 	repeated
+
+							
+							center_vector2.ptr[j].center=0;
+							repeated=1;
+							changes++;
 
 					}
-				
+					}
 
-				}	
-				
-				if(repetido==0){
-					soluciones[elementos]=posibles_nodos[i*2+1];
-					my_elementos=elementos+1;
-					intento(soluciones,1,my_elementos,stars,vector);		
 				}
+
+			
+
+
+
+			}//end for j
+
+		if(repeated==1){
+
+
+			repeated=0;
+
+			c=createCenter(center_vector2.ptr[i].center,center_vector2.ptr[i].pairs,center_vector2.ptr[i].numPairs);
+							
+			addElementToCenterVector(&final,c);
+
+			center_vector2.ptr[i].center=0;
+
+		}
+
+		}//end for i
+	
+		}//end if center_vector2 !=0
+
+
+		if(changes==0){
+
+			for(i=0;i<center_vector2.elem_used;i++){
+				c=createCenter(center_vector2.ptr[i].center,center_vector2.ptr[i].pairs,center_vector2.ptr[i].numPairs);
+				addElementToCenterVector(&final,c);
+			}
+		
+		}
+		
+		free(center_vector2.ptr);
+
+	return final; // return the solution
+
+
+
+}
+
+
+
+
+
+
+/*function	compare_centers		*/
+
+/*	function compare_centers	*/
+
+/*	Input arguments:
+
+
+	c1,c2: Center to be compared
+	minimunHits: Minimum number of similar stars
+	Output:
+
+	1: if success
+	0: if no success
+		
+
+
+*/
+
+
+int compare_centers(struct center *c1,struct center *c2,int minimumHits){
+
+	//Variable declaration
+	int success=0;
+	int i,j,numStars1,numStars2,hits=0;
+	float stars1[100];
+	float stars2[100];
+	
+	
+		//Extract stars in c1
+
+		stars1[0]=c1->center;
+		for(i=0;i<c1->numPairs;i++){
+		
+			stars1[i+1]=c1->pairs[i];		
+	
+		}
+
+		numStars1=1+c1->numPairs; //center + pairs
+
+		//Extract stars in c2
+
+		stars2[0]=c2->center;
+		for(i=0;i<c2->numPairs;i++){
+		
+			stars2[i+1]=c2->pairs[i];		
+	
+		}
+
+		numStars2=1+c2->numPairs;//center + pairs
+	
+	
+		for(i=0;i<numStars1;i++){
+			for(j=0;j<numStars2;j++){
+
+				if(stars1[i]==stars2[j]){
+			
+					hits++;				
+				}	
+			
 
 			}
 		}
-		//if(nodos==0){printf("Cadena rota\n");}	
-
-		free(posibles_nodos);
-
-		return;
-
-
-
-}
-
-void find_star_pattern(struct Vector_UnitaryVector * vector, float * centers,int *numCenters,int numUnitaries,float umb,float *catalog,float *k_vector,float * stars ){
-
-	//Variable declaration
-	int i,j,stars_cosider,colum=0;
-	long rows; // This variable stores the number of pairs that match an angle
-	int verification_matrix[909][3]={}; //This matrix is used to find the star pattern
-	float *pairs_in_catalog;
-	float angle;
-		
-		//argument checking		
-		if(vector->elem_used<3){stars_cosider=vector->elem_used;}else{stars_cosider=3;}		
-		if(vector->elem_used==0){printf("Unable to find star pattern. No centroids\n");*numCenters=0;return;}
-
-		for(i=0;i<stars_cosider;i++){
-		//Compute an angle
-		angle=(acos(((vector->ptr[0].x*vector->ptr[i+1].x)+(vector->ptr[0].y*vector->ptr[i+1].y)+(vector->ptr[0].z*vector->ptr[i+1].z)))/3.1416)*180;
-		//printf("Angulo %f\n",angle);
-		//find the star pairs that are inside the umb
-		pairs_in_catalog=k_vector_search(angle-angle*umb,angle+angle*umb,catalog,k_vector,&rows);
-		//printf("Numero de parejas %d\n",rows);
-		//Adding the pairs to the verification matrix
-		add_search_to_verification_matrix(pairs_in_catalog,rows,colum,909,3,verification_matrix,stars);		
-		colum++;
-		free(pairs_in_catalog);
-		}
 	
-		//printf("Matriz de verificacion creada\n");
-	for(i=0;i<909;i++){
-
-		if(verification_matrix[i][0]>=1 && verification_matrix[i][1]>=1 && verification_matrix[i][2]>=1){
-			//printf("Numero de centro %d\n",*numCenters);
-			centers[*numCenters]=stars[i];
-			*numCenters=*numCenters+1;
-			
-
-		}
-
-	}
-
-	//printf("Numero de centros %d\n",*numCenters);
 	
-}
-
-void add_search_to_verification_matrix(float * search,long search_elements,int colum,int rows,int colums,int verification_matrix[rows][colums],float *stars){
-
-	//variable declaration
-	int i;
-	int row;
-
-	for(i=0;i<search_elements;i++){
-
-		//printf("Estrella %f\n",search[i*3]);
-
-
-		row=search_star_position(search[i*3],0,908,stars);
-		
-		verification_matrix[row][colum]=verification_matrix[row][colum]+1;
-		//printf("Estrella %f\n",search[i*3+1]);
-		row=search_star_position(search[i*3+1],0,908,stars);
-
-		verification_matrix[row][colum]=verification_matrix[row][colum]+1;
-		
-
-	}
-
+	if(hits>=minimumHits){success=1;}
+	
+	return success;
 
 }
-
-
-
-
-
-
-

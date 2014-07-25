@@ -9,6 +9,7 @@
 #define DS_1621_H__
 
 int ds1621_setup();
+
 int readTempSensor(int fd, signed char* highByte, unsigned char* lowByte);
 
 #endif

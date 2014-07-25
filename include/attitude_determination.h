@@ -2,15 +2,10 @@
 #define ATTITUDE_H_
 
 #include <stdint.h>
-
 #include <stdio.h>
-
 #include <stdlib.h>
-
 #include <unistd.h>
-
 #include <math.h>
-
 #include <sync_control.h>
 
 //#include "DMK41BU02.h"
@@ -21,32 +16,23 @@
 float* catalog;
 float* k_vector;
 float* stars;
-long elementos;
-int i,j,numAngles,numCenters;
-float centers[1000];
-float * angles;
-struct CentroidVector centroids;
-struct Vector_UnitaryVector unitaries;
 
-int umbral; // umbral para considrar pixel para centroide
-int umbral2; // mismo que ROI
-int ROI; // Region de interes
-int umbral3; // minimo numero de pixeles para considerar el centrodie final
-int centroides_considerados; // centroides
-float umb; // umbrar de los angulos
+struct CentroidVector centroids; //structure CentroidVector to store the detected centroids by the algorithm
+struct Vector_UnitaryVector unitaries; //structure Vector_UniratyVector to store the unitary vector of centroids
+struct centerVector vector; // This structure is used to store the posible match
 
-int numFotos; // numero de fotos
 
-void enableStarTracker(int __umbral, int __umbral2,int __ROI, int __umbral3, int __centroides_considerados, int __umb, int __mag);
-void disableStarTracker();
 
-void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __considered_centroids, float __thresh_angles);
-void changeCatalogs(int magnitude);
-
-void obtainAttitude(uint8_t* image_data);
-
+int threshold; // minimum value to consider a pixel as a possible centroid
+int threshold2; // maximum distance between two centroids to cluster them together. The recommended value is ROI
+int ROI; // Region Of Interest
+int threshold3; // Minimum number of pixels to compute a centroid
+int stars_used; // Number of stars that the star tracker algorithm will try to find
+float err;
 
 	//Structure to store the centroid info
+	//Every centroid has a x,y coordinates in the image
+	//and a brightness value.
 	struct Centroid{
 
 		float x; //x coordinate
@@ -54,6 +40,10 @@ void obtainAttitude(uint8_t* image_data);
 		float brightness; //Value of the brightness
 	};
 
+	//Structure to store the information of a unitary vector.
+	//Unitary vectors are computed through a centroid and
+	//they represent the x,y,z coordinates of a vector in 
+	//the focal plane.	
 	struct UnitaryVector{
 
 		float x;//x coordinate in the focal plane
@@ -62,20 +52,9 @@ void obtainAttitude(uint8_t* image_data);
 
 	};
 
-
-
-	struct Vector_UnitaryVector{
-		
-		struct  UnitaryVector * ptr;
-		int total_elem;
-		int elem_used;
-		
-	};
-
-	//Structure to store the possible closest star to the image frame center.
-	//Variable center is a possible star close to the image center.
-	//Variable pairs is a vector which their elements are the pairs of center.
-
+	
+	//Structure to store center information.
+	//A center is a possible star an its respective pairs	
 	struct center{
 
 		float center; 
@@ -83,25 +62,8 @@ void obtainAttitude(uint8_t* image_data);
 		int numPairs;	
 	};
 
-	//Structure to store a vector of centers
-	struct centerVector{
 
-		struct center * ptr;
-		int elem_used;
-		int total_elem;
-
-
-	};
-
-	struct Vector_Pairs{
-
-		int total_elem;
-		int elem_used;
-		struct Pairs * ptr;
-
-	};
-
-
+	
 	/*Structure to store the centroids vector header.
 
 	  The main member is ptr, which points to the
@@ -118,78 +80,256 @@ void obtainAttitude(uint8_t* image_data);
 		int elem_used; //Number of elements which contains real data
 	};
 
-	struct Pairs{
-
-	long numPairs;
-	float * ptr;
 
 
+	/*Structure to store the unitary_vector vector header.
+
+	  The main member is ptr, which points to the
+	  first position of the unitary vector.
+	  The other two members, total_elem and elem_used, are
+	  used only for internal stuff, and they store, respectively,
+	  the number of positions reserved in the vector and the number
+	  of cells actually used.
+	*/
+
+	struct Vector_UnitaryVector{
+		
+		struct  UnitaryVector * ptr; 
+		int total_elem;
+		int elem_used;
+		
 	};
 
 
-	struct chain{
-	
-		int elements;
-		float c[100];
+	//Structure to store a vector of centers
+	struct centerVector{
 
-	};
-
-	struct chainVector{
-
+		struct center * ptr;
 		int elem_used;
 		int total_elem;
 
-		struct chain * ptr;
 
-	
 	};
 
 
-	
-	
-/*	function loadCatalog */
-/* This function is used at the beginning of the program. 
-   It loads the catalog from a .txt file, the result has to be
-   freed before the programs's end. 
-*/			
+/////////////////////////// configuration functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err);
+void changeCatalogs(int magnitude);
+void disableStarTracker();
+void obtainAttitude(uint8_t* image_data);
+
+
+/////////////////////////// load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+unsigned char * loadImage(char * filename, char * opentype);
+
+/*	funcion loadCatalog 	*/
+/*
+
+	Input arguments:
+
+	char* filename:	Generated catalog file path.	
+	char* opentype: read only recommended
+
+	Output:
+
+	The output is a  vector that contains the
+	generated catalog.
+
+	Notes:
+
+	The output needs to be freed before the 
+	end of the execution program.
+*/
+		
 float* loadCatalog( char* filename,char* opentype);
+/*	funcion loadKVector 	*/
+/*
 
-/*	function loadKVector */
-/* This function is used at the beginning of the program. 
-   It loads the k vector associated to a catalog from a .txt file. 
-   The result has to be freed before the programs's end. 
+	Input arguments:
+
+	char* filename:	Generated k_vector file path.	
+	char* opentype: read only recommended
+
+	Output:
+
+	The output is a  vector that contains the
+	generated k_vector.
+
+	Notes:
+
+	The output needs to be freed before the 
+	end of the execution program.
 */
+	
+
 float* loadKVector(char* filename,char* opentype);
+/*	funcion loadStars 	*/
+/*
 
-/* function loadStars */
-/* This function is used at the beginning of the program.
-   It loads all the different stars in the catalog from a .txt file.
-   The result has to be freed before the program's end. 
+	Input arguments:
+
+	char* filename:	This is the path that contais the .txt file
+	with all the stars present in the Generated Catalog.	
+	char* opentype: read only recommended
+
+	Output:
+
+	The output is a  vector that contains the
+	stars present in the Generated Catalog.
+
+	Notes:
+
+	The output needs to be freed before the 
+	end of the execution program.
 */
+	
 
 float* loadStars(char *filename,char*opentype);
 
-/*	function k_vector_search */
-/* This function used the k vector and the catalog to search these
-   stars which the angle between them match angle>min and angle<max.
-   The result used the malloc function, then, it needs to be freed  
-   when the data is no longer useful.
- 
+/////////////////////////// End load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+/////////////////////////// Centroiding functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+/*	funcion compute_I_border	*/
+/*
+
+	Input arguments:
+
+	x_start,y_xtart: coordinates of the upper left corner of a ROI.
+	x_end,y_end: coordinates of the lower right corner of a ROI.
+	ROI: Region Of Interest used to compurte a centroid.
+	image: Pointer to the image vector. 
+
+	Output:
+
+	The output is a number that represent the ROI's intensity 
+
+	Notes:
+
+	The output value is a floating number between 0-255
 */
 
-float* k_vector_search(float min,float max,float* catalog,float* k_vector,long * elementos);
+float compute_I_border(int x_start,int x_end,int y_start,int y_end,int ROI,unsigned char* image);
 
+/*	funcion compute_xcm_ycm_B*/
+/*
 
-/* 	function qs 	*/
-/* 	This function implements the quickshort algorithim . It is used
-	recursively in quickshort function.
+	Input arguments:
+
+	x_start,y_xtart: coordinates of the upper left corner of a ROI.
+	x_end,y_end: coordinates of the lower right corner of a ROI.
+	I_border: border intensity of a ROI
+	image: Pointer to the image vector. 
+
+	Output:
+
+	The output is a pointer to a vector that represents the 
+	x,y and Brightness coordinates of a centroid. 
+
+	Notes:
+
+	Remember to free the coordinates vector before the end of the execution.
 */
-void qs(float * search, long left_limit, long right_limit);
 
-/*	function quicksort	*/
-/*	This function sorts a shearch in the catalog by the angle value.
-*/ 	
-void quicksort(float * search,long elements);
+float* compute_xcm_ycm_B(int x_start,int x_end,int y_start,int y_end,float I_border,unsigned char* image);
+/*	funcion centroiding*/
+/*
+
+	Input arguments:
+
+	thresh: Value of the minimum value necessary to compute a centroid.
+	thresh2: Maximun distance in pixels of centroids that belongs to same star.
+	thress2: Minimum pixels needed to detect a star.
+	ROI: Region of interest
+	image: Pointer to an image vector. 
+
+	Output:
+
+	The output is a centroid vector that represent the detected stars.
+
+	Notes:
+
+	Remember to free the centroid_vector.ptr before the execution ends.
+*/
+
+struct CentroidVector centroiding(int thresh,int thresh2,int thresh3,int ROI,unsigned char* image);
+/*	funcion SymplifyVectorOfCentroids*/
+/*
+
+	Input arguments:
+
+	Pointer to vector_of_centroids: vector_of_centroids to be symplified.
+	thress: Maximun distance in pixels of centroids that belongs to same star.
+	thress2: Minimum pixels needed to detect a star.
+
+	Output:
+
+	The output is a new centroid vector that contains the clustered centroids.
+	These centroids are finally treated as a stars 
+
+	Notes:
+
+	Remember to free the symplifiedVectorOfCentroids.ptr.
+*/
+struct CentroidVector SimplifyVectorOfCentroids(struct CentroidVector* vector_of_centroids,int thress,int thress2);
+
+/*	funcion sort_centroids*/
+/*
+
+	Input arguments:
+
+	*vector: Pointer to a centroid vector. 
+
+	Output:
+
+	The function does not generate any output, but it sort the centroids
+	in the vector in this way. The first centroid that appear is the closest
+	centroid to image center. The second one is the closest centroid to the first one,
+	the third is the second closest centroid to the first one and so on.
+
+	Notes:
+
+	We consider that the image center is the intersection of the image 
+	plane with the focal axis.
+*/
+void sort_centroids(struct CentroidVector * vector);
+
+////////////////////////// End Centroiding functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+////////////////////////// Create fucntions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+/*  These functions are used to create a centroid struct, UnitaryVector struct and
+	center struct */
+
+struct Centroid createCentroid(float my_x, float my_y, float my_brightness);
+struct UnitaryVector createUnitaryVector(float my_x,float my_y);
+struct center createCenter(float center,float * pair,int num);
+
+/*function	ComputeUnitaryVectors		*/
+
+
+
+/*	Input arguments:
+
+	vector: a vector of centroids
+
+	Output:
+
+	This function returns a vector of unitary vectors.
+		
+
+
+*/
+
+
+struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector);
+
+/////////////////////////  End create functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+/////////////////////////  Initialise functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 /*Function to initialise a centroids vector
 
@@ -201,22 +341,9 @@ void quicksort(float * search,long elements);
   The return value is 0 if an error in the memory allocation occured
   and 1 in any other case.
 
+*/
 int initialiseVector(struct CentroidVector* vector, int num);
 
-/*	function search_star_position	*/
-
-/*	This function search in the stars vector the position of an specific star */
-
-int search_star_position(float starID,int left_limit,int right_limit,float * stars_vector);
-
-/*	function find_star_pattern	*/
-/*	This function finds the star pattern	*/
-
-void find_star_pattern(struct Vector_UnitaryVector * vector,float* centers,int *numCenters, int numUnitaries,float umb,float *catalog,float *k_vector,float * stars );
-
-/*	function add_search_to_verification_matrix	*/
-
-void add_search_to_verification_matrix(float * search,long search_elements,int colum,int rows,int colums,int verification_matrix[rows][colums],float *stars);
 
 /*Function to initialise a vector of unitary vectors
 
@@ -230,29 +357,7 @@ void add_search_to_verification_matrix(float * search,long search_elements,int c
 */
 int initialiseVectorUnitary(struct Vector_UnitaryVector* vector, int num);
 
-/*Function to initialise a vector of Pairs
 
-  It reserves *num* positions of *struct Vector_Pairs* data type and stores
-  them in the ptr member of *vector*.
-  It also initialise the total_elem and elem_used members of vector
-  to num and 0, respectively.
-
-  The return value is 0 if an error in the memory allocation occured
-  and 1 in any other case.
-*/
-int initialiseVectorPairs(struct Vector_Pairs * vector,int num);
-
-/*Function to initialise a vector of chains
-
-  It reserves *num* positions of *struct chainVector* data type and stores
-  them in the ptr member of *vector*.
-  It also initialise the total_elem and elem_used members of vector
-  to num and 0, respectively.
-
-  The return value is 0 if an error in the memory allocation occured
-  and 1 in any other case.
-*/
-int initialiseChainVector(struct chainVector * c_vector,int num);
 
 /*Function to initialise a vector of centers
 
@@ -267,50 +372,281 @@ int initialiseChainVector(struct chainVector * c_vector,int num);
 
 int initialiseCenterVector(struct centerVector * vector,int num);
 
+
+////////////////////////  End initialise functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+////////////////////////   AddElement functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+
+
 /* 	Adds functions */
 /* 	The following four functions add elements of an specificf struct to their corresponding vectors */
 
+/*Function to add a centroid to a centroids vector
+
+  It adds a copy of *centroid* at the final available position of the *ptr* member of
+  *vector*.
+  It handles, autonomously, the possible reallocation of memory, consulting
+  the total_elem and elem_used members of *vector*.
+
+  In success, the *vector* argument is updated to the new state, with *centroid* at the
+  *elem_used* position of the vector.
+
+  The return value is 0 if an error in the memory reallocation occured
+  and 1 in any other case.
+*/
+
 int addElementToVector(struct CentroidVector* vector, struct Centroid centroid);
-int addElementToVectorUnitary(struct Vector_UnitaryVector* vector, struct UnitaryVector centroid);
+
+/*Function to add a unitary vector to a vector of unitary vectors
+
+  It adds a copy of *centroid* at the final available position of the *ptr* member of
+  *vector*.
+  It handles, autonomously, the possible reallocation of memory, consulting
+  the total_elem and elem_used members of *vector*.
+
+  In success, the *vector* argument is updated
+
+  The return value is 0 if an error in the memory reallocation occured
+  and 1 in any other case.
+*/
+
+
+int addElementToVectorUnitary(struct Vector_UnitaryVector* vector, struct UnitaryVector unitary);
+
+/*Function to add a center to a center vector
+
+  It adds a copy of *center* at the final available position of the *ptr* member of
+  *vector*.
+  It handles, autonomously, the possible reallocation of memory, consulting
+  the total_elem and elem_used members of *vector*.
+
+  In success, the *vector* argument is updated to the new state, with *center* at the
+  *elem_used* position of the vector.
+
+  The return value is 0 if an error in the memory reallocation occured
+  and 1 in any other case.
+*/
+
+
+
+
 int addElementToCenterVector(struct centerVector * vector,struct center c);
-int addElementToChainVector(struct chainVector * c_vector,struct chain c );
-int addElementToVectorPairs(struct Vector_Pairs * vector,struct Pairs search);
+
+////////////////////////   End AddElement functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 
-/*	Create functions	*/
+///////////////////////// Star Pattern Maching Functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+/*	funcion interchange_unitary_vectors*/
+/*
+
+	Input arguments:
+
+	*vector: Pointer to a vector of unitary vectors.
+	position1,position2: Positions of the unitary_vectors to be interchanged
+	 
+	Output:
+
+	The function does not generate any output, but interchange the position of two
+	unitary vectors.
+
+	
+*/
+void interchange_unitary_vectors(struct Vector_UnitaryVector* vector,int position1,int position2);
+
+/*	funcion initialise_verification_matrix*/
+/*
+
+	Input arguments:
+
+	rows,colums,z: The three dimensions of the verification matrix
+		
+			rows: This matrix has 909 rows (we have 909 stars in the generated catalog)
+			colums: One colum per angle considered in the pattern maching algorithm
+			z:	This variable represent the pairs of a star that match an angle. We
+			use 50 as a value.
+	 
+	Output:
+
+	The function does not generate any output, initialise the verivication_matrix to zero.
+
+	
+*/
+void initialise_verification_matrix(int rows,int z,int verification_matrix[rows][z]);
+
+/*	funcion fill_verification_matrix		*/
+/*
+
+	Input arguments:
+
+	*vector: Pointer to a vector of unitary vectors
+	num: number of angles to be searched
+	rows,colums,z: The three dimensions of the verification matrix
+		
+			rows: This matrix has 909 rows (we have 909 stars in the generated catalog)
+			colums: One colum per angle considered in the pattern maching algorithm
+			z:	This variable represent the pairs of a star that match an angle. We
+			use 50 as a value.
+
+	verification_matrix: verification_matrix to be filled.
+	umb: the expected error
+	catalog: Generated star catalg. See loadCatalog function
+	k_vector: Generated k_vector. See loadKVevtor function
+	stars:	Stars in the generated star catalog. See loadStars function
+	 
+	Output:
+
+	This function fills the verification matrix. Each row of the verification matrix represents
+	a star. Each colum represent an angle and the z dimension is the stars pairs for a star in
+	an specific angle.
+
+	
+*/
+
+void fill_verification_matrix(struct Vector_UnitaryVector * vector,int num,int rows,int z,int verification_matrix[rows][z],float umb,float *catalog,float *k_vector,float * stars);
+
+/*	function k_vector_search 	*/
+
+/*	Input arguments:
+
+	min: minimum value of the search range
+	max: maximum value of the search range
+	k_vector: Generated k_vector. See loadKVector function.
+	*elem: this is the total entries found
+	 
+	Output:
+
+	This fucntion returns the results of a k vector searching in the Generated Catalog.
+	
+	Notes:
+
+	The result has to be freed.
+
+*/
+
+float* k_vector_search(float min,float max,float* catalog,float* k_vector,long * elem);
+/*	function  add_search_to_verification_matrix	*/
+
+/*	Input arguments:
+
+	search:	See k_vector_search fucntion
+	search_elements: entries in search
+
+	rows,colums,z: The three dimensions of the verification matrix
+		
+		rows: This matrix has 909 rows (we have 909 stars in the generated catalog)
+		colums: One colum per angle considered in the pattern maching algorithm
+		z:	This variable represent the pairs of a star that match an angle. We
+			use 50 as a value.	
 
 
-struct Centroid createCentroid(float my_x, float my_y, float my_brightness);
-struct UnitaryVector createUnitaryVector(float my_x,float my_y);
-struct center createCenter(float center,float pair);
-struct Pairs createPairs(float angle,float umb,float*catalog,float*k_vector);
+	verification_matrix: The verification matrix used.
+	stars: See loadStars function.
+	
+	 
+	Output:
+
+	This fucntion add the search to the verification matrix. It assures that no repeated star pairs
+	appears in the verification matrix.
+	
+
+*/
+void add_search_to_verification_matrix(float * search,long search_elements,int rows,int z,int verification_matrix[rows][z],float *stars);
+
+
+/*	function  search_star_position	*/
+
+/*	Input arguments:
+
+	starID: Hipparcos ID of a star
+	left_limit : 0
+	right_limit: 909
+	stars_vector: Vector containing all the possible stars
 
 
 
-/*	function sort_centroids		*/
+	
+	 
+	Output:
 
-/*	This function sort centrids according with the criteria described in the thesis	*/
+	The position of star in the stars vector
+	
 
-void sort_centroids(struct CentroidVector * vector);
-
-/*	function compute_I_border	*/
-/* This function computes the intensity of the border pixles of a ROI */
-float compute_I_border(int x_start,int x_end,int y_start,int y_end,int ROI,unsigned char* image);
-float* compute_xcm_ycm_B(int x_start,int x_end,int y_start,int y_end,float I_border,unsigned char* image);
-struct CentroidVector SimplifyVectorOfCentroids(struct CentroidVector* vector_of_centroids,int thress,int thress2);
-struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector);
-struct CentroidVector centroiding(int thresh,int thresh2,int thress3,int ROI,unsigned char* image);
-float* computeAngles(struct Vector_UnitaryVector* unitaries,int num,int * numAngles);
-int compare (const void *_a, const void *_b);
-float * unique( struct Pairs * pairs,int * stars);
+*/
 
 
-int build_chain(float * chain,int * chain_elem,int * iteration,int * chain_complete,int * chain_break,struct Vector_Pairs * vector);
-int is_center(float star,float * centers,struct Vector_Pairs * vector,int pos1,int pos2,int*numCenters);
+int search_star_position(float starID,int left_limit,int right_limit,float * stars_vector);
 
-float * encontrar_parejas(float star,struct Vector_Pairs * vector,int vector_position,int * parejas);
-void intento(float * soluciones, int fila, int elementos,int stars,struct Vector_Pairs * vector );
-void find_match(float * angles,float * centers,int numAngles,int numCenters,float umb,float * catalog,float*k_vector);
-void match(struct Vector_UnitaryVector* unitaries,int num,float umb,float* catalog,float* k_vector);
+
+/*	function  create_centers	*/
+
+/*	Input arguments:
+
+	vector: this is a initialised center of vector
+	num: number of stars consider by the matching group algoritm
+	z: 50
+	stars: stars vector
+
+	Output:
+
+	This fucntion creates centers through the verification matrix. It stores
+	them in the center vector.
+	
+
+*/
+
+void create_centers(struct centerVector * vector,int num,int rows,int z,int verification_matrix[rows][z],float * stars);
+
+
+/*	function find_star_pattern	*/
+
+/*	Input arguments:
+
+
+	vector: A vector of previously computed unitary vectors
+	numUnitaries: The number of stars that we want to detect
+	umb: The expected error
+	catalog: The generated catalog
+	k_vector: the k_vector associated with the generated catalg
+	stars:	the total stars in the catalog
+
+	Output:
+
+	The output is a solution computed with the matching
+	group algorithm.
+
+		
+
+
+*/
+
+
+struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector, int numUnitaries,float umb,float *catalog,float *k_vector,float * stars );
+
+/*function	compare_centers		*/
+
+/*	function compare_centers	*/
+
+/*	Input arguments:
+
+
+	c1,c2: Center to be compared
+	minimunHits: Minimum number of similar stars
+	Output:
+
+	1: if success
+	0: if no success
+		
+
+
+*/
+
+
+
+int compare_centers(struct center * c1,struct center * c2,int minimumHits);
+
+////////////////////////  End Star Pattern Maching Functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 #endif

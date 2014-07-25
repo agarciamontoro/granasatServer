@@ -44,22 +44,17 @@ const char* acc_file_name = "accelerometer_measurements.data";
 const char* mag_file_name = "magnetometer_measurements.data";
 const int CAPTURE_RATE_NSEC = 2000000000;
 
-static int listen_socket;
-
-pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, sending_thread, receiving_thread;
+pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread;
 
 void intHandler(int dummy){
 		printf("\nFinishing all threads\n");
+		
         keep_running = 0;
-
-        //sleep(3);
 
         //pthread_cancel(capture_thread);
         //pthread_cancel(LS303DLHC_thread);
-        //pthread_cancel(connection_thread);
+        pthread_cancel(connection_thread);
         //pthread_cancel(processing_thread);
-        pthread_cancel(sending_thread);
-        pthread_cancel(receiving_thread);
 }
 
 void* capture_images(void* useless){
@@ -120,18 +115,14 @@ void* control_LS303DLHC(void* useless){
 	
 }
 
-void* send_data(void* useless){
+void* control_connection(void* useless){
+	int listen_socket;
 	int newsock_big, newsock_small, newsock_commands;
 	int command, value;
 
 	int cons_cent, magnitude, px_thresh;
 
-	/*newsock_big = openSocket(PORT_COMMANDS);
-	printf("New socket opened: %d\n", newsock_big);
-
-	newsock_small = openSocket(PORT_COMMANDS);
-	printf("New socket opened: %d\n", newsock_small);
-	*/
+	listen_socket = prepareSocket(PORT_COMMANDS);
 
 	newsock_commands = connectToSocket(listen_socket);
 	printf("New socket opened: %d\n", newsock_commands);
@@ -151,20 +142,23 @@ void* send_data(void* useless){
 		switch(command){
 			case MSG_PASS:
 				break;
-
-			case MSG_PING:
-				//sendData(0, newsock_comm);
-				printf("MSG_PING received\n\n");
+				
+			case MSG_END:
+				keep_running = 0;
 				break;
 
 			case MSG_RESTART:
-				//TODO: Handle restart
 				keep_running = 0;
+				break;
+
+			case MSG_PING:
+				sendData(0, newsock_commands);
+				printf("MSG_PING received\n\n");
 				break;
 
 			case MSG_SET_STARS:
 				cons_cent = getInt(newsock_commands);
-				changeParameters(umbral, umbral2, ROI, umbral3, cons_cent, umb);
+				changeParameters(threshold, threshold2, ROI, threshold3, cons_cent, err);
 				break;
 
 			case MSG_SET_CATALOG:
@@ -174,7 +168,19 @@ void* send_data(void* useless){
 
 			case MSG_SET_PX_THRESH:
 				px_thresh = getInt(newsock_commands);
-				changeParameters(px_thresh, umbral2, ROI, umbral3, centroides_considerados, umb);
+				changeParameters(px_thresh, threshold2, ROI, threshold3, stars_used, err);
+				break;
+
+			case MSG_SET_ROI:
+				break;
+
+			case MSG_SET_POINTS:
+				break;
+
+			case MSG_SET_ERROR:
+				break;
+
+			default:
 				break;
 		}
 	}
@@ -183,121 +189,6 @@ void* send_data(void* useless){
 	close(newsock_small);
 	close(newsock_commands);
 }
-
-void* receive_commands(void* useless){
-	int newsock_comm;
-	char command;
-
-	int cons_cent, magnitude, px_thresh;
-
-	newsock_comm = openSocket(PORT_COMMANDS);
-	printf("New socket opened: %d\n", newsock_comm);
-
-	while(keep_running){
-
-		command = getCommand(newsock_comm);
-
-		switch(command){
-			case MSG_PING:
-				//sendData(0, newsock_comm);
-				printf("MSG_PING received\n\n");
-				break;
-
-			case MSG_RESTART:
-				//TODO: Handle restart
-				keep_running = 0;
-				break;
-
-			case MSG_SET_STARS:
-				cons_cent = getInt(newsock_comm);
-				changeParameters(umbral, umbral2, ROI, umbral3, cons_cent, umb);
-				break;
-
-			case MSG_SET_CATALOG:
-				magnitude = getInt(newsock_comm);
-				changeCatalogs(magnitude);
-				break;
-
-			case MSG_SET_PX_THRESH:
-				px_thresh = getInt(newsock_comm);
-				changeParameters(px_thresh, umbral2, ROI, umbral3, centroides_considerados, umb);
-				break;
-
-			case 4:
-				break;
-
-			case 5:
-				break;
-
-		}
-	}
-
-	close(newsock_comm);
-}
-
-void* connection_test(void* useless){
-	int newsock_comm, newsock_big, newsock_small;
-
-	close(newsock_comm);
-	close(newsock_big);
-	close(newsock_small);
-
-}
-
-/*
-void* control_connection(void* useless){
-	struct communication big_data, small_data, commands;
-	int clilen;
-	struct sockaddr_in cli_addr;
-
-	big_data.portno = PORT_BIG_DATA;
-	small_data.portno = PORT_SMALL_DATA;
-	commands.portno = PORT_COMMANDS;
-
-	createCommChannel(&big_data, &clilen, &cli_addr);
-	createCommChannel(&small_data, &clilen, &cli_addr);
-	createCommChannel(&commands, &clilen, &cli_addr);
-
-	pthread_t sending_thread, receiving_thread;
-
-	pthread_create( &sending_thread, NULL, send_data, NULL );
-	pthread_create( &receiving_thread, NULL, receive_commands, NULL );
-
-	pthread_join( sending_thread, NULL );
-	pthread_join( receiving_thread, NULL );
-
-
-	uint8_t* image_stream;
-	image_stream = malloc(sizeof(*image_stream) * 1280*960);
-	///*
-	//WAIT ON A CONECTION
-
-	printf("waiting for new client...\n");
-
-	if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, (socklen_t*) &clilen)) < 0)
-		error(("ERROR on accept"));
-
-	printf("opened new communication with client\n");
-
-	sleep(5);
-
-	//SEND DATA IN AN INFINITE LOOP
-	while(keep_running){
-		sendImage(newsockfd, image_stream);
-	}
-
-	printf("FINISHED\n");
-
-	free(image_stream);
-	///
-
-	close(big_data.sockfd);
-	close(small_data.sockfd);
-	close(commands.sockfd);
-
-	return NULL;
-}
-*/
 
 void* process_images(void* useless){
 	uint8_t* image;
@@ -383,33 +274,32 @@ void* process_images(void* useless){
 
 int main(int argc, char** argv){
 	// *******************************
-    // ******** START  THREADS *******
+    // ***** SYNC  INITIALISATION ****
     // *******************************
 
-    //pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread;
-    //pthread_t changeparam_thread;
-
+	//Initialise signal
 	signal(SIGINT, intHandler);
 	signal(SIGTERM, intHandler);
 
+	//Loop control
 	keep_running = 1;
 
+	//Semaphores for reading/writing frames and for changing algorithms parameters
 	pthread_rwlock_init( &camera_rw_lock, NULL );
 	pthread_mutex_init( &mutex_star_tracker, NULL );
 
-	//Initilize clock
+	//Initilise clock
 	clock_gettime(CLOCK_MONOTONIC, &T_ZERO);
 
-	listen_socket = prepareSocket(PORT_COMMANDS);
+	// *******************************
+    // ******** START  THREADS *******
+    // *******************************
 
 	//pthread_create( &capture_thread, NULL, capture_images, NULL );
 	//pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &changeparam_thread, NULL, control_parameters, NULL );
 	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
-	//pthread_create( &connection_thread, NULL, control_connection, NULL );
-	pthread_create( &sending_thread, NULL, send_data, NULL );
-	//pthread_create( &receiving_thread, NULL, receive_commands, NULL );
-	//pthread_create( &receiving_thread, NULL, connection_test, NULL );
+	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 	// *******************************
     // ********  JOIN THREADS  *******
@@ -418,10 +308,11 @@ int main(int argc, char** argv){
 	//pthread_join( processing_thread, NULL );
 	//pthread_join( changeparam_thread, NULL );
 	//pthread_join( LS303DLHC_thread, NULL );
-	//pthread_join( connection_thread, NULL );
-	pthread_join( sending_thread, NULL );
-	//pthread_join( receiving_thread, NULL );
+	pthread_join( connection_thread, NULL );
 
+	// *******************************
+    // ********  DESTROY SEMS  *******
+    // *******************************	
 	pthread_rwlock_destroy( &camera_rw_lock );
 	pthread_mutex_destroy( &mutex_star_tracker );
 

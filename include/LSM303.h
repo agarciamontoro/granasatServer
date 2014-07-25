@@ -85,16 +85,27 @@
 #define TS 100 	//Sample period. 1000ms
 
 void  readBlock(uint8_t command, uint8_t size, uint8_t *data);
+
 void selectDevice(int file, int addr);
+
 void readACC(int  *a);
+
 void readACC_v2(unsigned char *a, struct timespec* timestamp);
+
 void readMAG(int  *m);
+
 void readMAG_v2(unsigned char *m);
+
 void readMAG_v3(unsigned char *m, struct timespec* timestamp);
+
 void readTEMP(int *t);
+
 void writeAccReg(uint8_t reg, uint8_t value);
+
 void writeMagReg(uint8_t reg, uint8_t value);
+
 void writeTempReg(uint8_t reg, uint8_t value);
+
 void enableLSM303();
 /////////////////////////////////////////////////////////////////////////////////////
 

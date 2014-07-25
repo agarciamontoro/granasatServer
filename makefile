@@ -45,4 +45,8 @@ clean:
 	@rm $(OBJ)/*.o && echo "Borrados ficheros objeto."
 	@rm $(EXECUTABLE) && echo "Borrado ejecutable."
 
+send:
+	scp $(SRC)/*.c pi@192.168.0.200:/home/pi/development/Final_v4/src/
+	scp $(INCLUDE)/*.h pi@192.168.0.200:/home/pi/development/Final_v4/include/
+
 .PHONY: clean documentacion tabla

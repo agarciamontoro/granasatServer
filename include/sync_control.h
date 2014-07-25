@@ -11,7 +11,9 @@ extern int new_frame_proc;
 extern int new_frame_send;
 
 int diff_times(struct timespec* before, struct timespec* after);
+
 struct timespec diff_times_spec(struct timespec* before, struct timespec* after);
+
 struct timespec nsec_to_timespec(long long nsec);
 
 #endif

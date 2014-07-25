@@ -11,7 +11,7 @@
  * see http://linuxtv.org/docs.php for more information
  */
 
- //TODO: Remove uint8_t* image_data from all headers
+ //TODO: ¿? Remove uint8_t* image_data from all headers
 
 #include <stdio.h>
 #include <stdlib.h>
