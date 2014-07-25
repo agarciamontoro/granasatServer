@@ -30,7 +30,7 @@ void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_
 					"\tROI: %d"
 					"\tMin px to final centroid: %d"
 					"\tConsidered centroids: %d"
-					"\tAngle threshold: %4.3f",
+					"\tAngle threshold: %4.3f\n",
 					umbral, umbral2, ROI, umbral3, centroides_considerados, umb);
 }
 
@@ -39,9 +39,9 @@ void changeCatalogs(int magnitude){
 	char k_vector_string[50];
 	char stars_string[50];
 
-	sprintf(catalog_string, "catalogo_mag_%d.txt", magnitude);
-	sprintf(k_vector_string, "k_vector_mag_%d.txt", magnitude);
-	sprintf(stars_string, "stars_mag_%d.txt", magnitude);
+	sprintf(catalog_string, "./catalogs/catalogo_mag_%d.txt", magnitude);
+	sprintf(k_vector_string, "./catalogs/k_vector_mag_%d.txt", magnitude);
+	sprintf(stars_string, "./catalogs/stars_mag_%d.txt", magnitude);
 
 	pthread_mutex_lock ( &mutex_star_tracker );
 

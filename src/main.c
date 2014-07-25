@@ -33,7 +33,7 @@
 //#include "i2c-dev.h"
 #include "sync_control.h"
 #include "attitude_determination.h"
- #include "protocol.h"
+#include "protocol.h"
 
 #include <signal.h>
 #include <stdint.h>
@@ -43,6 +43,8 @@
 const char* acc_file_name = "accelerometer_measurements.data";
 const char* mag_file_name = "magnetometer_measurements.data";
 const int CAPTURE_RATE_NSEC = 2000000000;
+
+static int listen_socket;
 
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, sending_thread, receiving_thread;
 
@@ -56,6 +58,8 @@ void intHandler(int dummy){
         //pthread_cancel(LS303DLHC_thread);
         //pthread_cancel(connection_thread);
         //pthread_cancel(processing_thread);
+        pthread_cancel(sending_thread);
+        pthread_cancel(receiving_thread);
 }
 
 void* capture_images(void* useless){
@@ -117,24 +121,67 @@ void* control_LS303DLHC(void* useless){
 }
 
 void* send_data(void* useless){
-	int newsock_big, newsock_small;
+	int newsock_big, newsock_small, newsock_commands;
+	int command, value;
 
-	newsock_big = socketTest(PORT_BIG_DATA);
+	int cons_cent, magnitude, px_thresh;
+
+	/*newsock_big = openSocket(PORT_COMMANDS);
 	printf("New socket opened: %d\n", newsock_big);
 
-	newsock_small = socketTest(PORT_SMALL_DATA);
+	newsock_small = openSocket(PORT_COMMANDS);
 	printf("New socket opened: %d\n", newsock_small);
+	*/
 
-	char item = 'a';
-	int n;
+	newsock_commands = connectToSocket(listen_socket);
+	printf("New socket opened: %d\n", newsock_commands);
+
+	newsock_big = connectToSocket(listen_socket);
+	printf("New socket opened: %d\n", newsock_big);
+
+	newsock_small = connectToSocket(listen_socket);
+	printf("New socket opened: %d\n", newsock_small);
 
 	while(keep_running){
 		usleep(500000);
 		sendAccAndMag(newsock_small);
+
+		command = getCommand(newsock_commands);
+		
+		switch(command){
+			case MSG_PASS:
+				break;
+
+			case MSG_PING:
+				//sendData(0, newsock_comm);
+				printf("MSG_PING received\n\n");
+				break;
+
+			case MSG_RESTART:
+				//TODO: Handle restart
+				keep_running = 0;
+				break;
+
+			case MSG_SET_STARS:
+				cons_cent = getInt(newsock_commands);
+				changeParameters(umbral, umbral2, ROI, umbral3, cons_cent, umb);
+				break;
+
+			case MSG_SET_CATALOG:
+				magnitude = getInt(newsock_commands);
+				changeCatalogs(magnitude);
+				break;
+
+			case MSG_SET_PX_THRESH:
+				px_thresh = getInt(newsock_commands);
+				changeParameters(px_thresh, umbral2, ROI, umbral3, centroides_considerados, umb);
+				break;
+		}
 	}
 	
 	close(newsock_big);
 	close(newsock_small);
+	close(newsock_commands);
 }
 
 void* receive_commands(void* useless){
@@ -143,7 +190,7 @@ void* receive_commands(void* useless){
 
 	int cons_cent, magnitude, px_thresh;
 
-	newsock_comm = socketTest(PORT_COMMANDS);
+	newsock_comm = openSocket(PORT_COMMANDS);
 	printf("New socket opened: %d\n", newsock_comm);
 
 	while(keep_running){
@@ -353,13 +400,15 @@ int main(int argc, char** argv){
 	//Initilize clock
 	clock_gettime(CLOCK_MONOTONIC, &T_ZERO);
 
+	listen_socket = prepareSocket(PORT_COMMANDS);
+
 	//pthread_create( &capture_thread, NULL, capture_images, NULL );
 	//pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &changeparam_thread, NULL, control_parameters, NULL );
 	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	//pthread_create( &connection_thread, NULL, control_connection, NULL );
 	pthread_create( &sending_thread, NULL, send_data, NULL );
-	pthread_create( &receiving_thread, NULL, receive_commands, NULL );
+	//pthread_create( &receiving_thread, NULL, receive_commands, NULL );
 	//pthread_create( &receiving_thread, NULL, connection_test, NULL );
 
 	// *******************************
@@ -371,29 +420,10 @@ int main(int argc, char** argv){
 	//pthread_join( LS303DLHC_thread, NULL );
 	//pthread_join( connection_thread, NULL );
 	pthread_join( sending_thread, NULL );
-	pthread_join( receiving_thread, NULL );
+	//pthread_join( receiving_thread, NULL );
 
 	pthread_rwlock_destroy( &camera_rw_lock );
 	pthread_mutex_destroy( &mutex_star_tracker );
 
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//19 34 35

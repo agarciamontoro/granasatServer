@@ -25,5 +25,6 @@ void sendAcc(int sockfd);
 void sendMag(int sockfd);
 void sendAccAndMag(int sockfd);
 void createCommChannel(struct communication* comm);
+int openSocket(int portno);
 
 #endif

@@ -11,8 +11,10 @@
 #define PROTOCOL_H
 
 
-#define MSG_PING 0
-#define MSG_RESTART 1
+#define MSG_PASS 	0
+#define MSG_END		1
+#define MSG_RESTART 2
+#define MSG_PING	3
 
 #define MSG_SET_STARS 20 // (+ int)
 #define MSG_SET_CATALOG 21 // (+ int)
