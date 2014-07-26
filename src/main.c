@@ -112,7 +112,6 @@ void* control_LS303DLHC(void* useless){
 	fclose(file_mag);
 
 	return NULL;
-	
 }
 
 void* control_connection(void* useless){

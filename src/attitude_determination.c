@@ -4,7 +4,7 @@
 void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err){
 	pthread_mutex_lock ( &mutex_star_tracker );
 
-		threshold = __thresh_px; //atoi(argv[1]); // threshold para considrar pixel para centroide
+		threshold = __thresh_px; //threshold para considrar pixel para centroide
 		threshold2 = __thresh_ROI;//atoi(argv[2]); // mismo que ROI
 		ROI = __ROI;//atoi(argv[3]); // Region de interes
 		threshold3 = __thresh_minpx;//atoi(argv[4]); // minimo numero de pixeles para considerar el centrodie final
