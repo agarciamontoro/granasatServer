@@ -24,19 +24,22 @@ void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_
 }
 
 void enableStarTracker(int __threshold, int __threshold2,int __ROI, int __threshold3, int __stars_used, float __err, int __mag){
+	
+	catalog = NULL;
+	k_vector = NULL;
+	stars = NULL;
 
 	changeCatalogs(__mag);
 	changeParameters(__threshold, __threshold2, __ROI, __threshold3, __stars_used, __err);
 
-	catalog = NULL;
-	k_vector = NULL;
-	stars = NULL;
 }
 
 void changeCatalogs(int magnitude){
 	char catalog_string[50];
 	char k_vector_string[50];
 	char stars_string[50];
+
+	printf("Magntiude: %d\n", magnitude);
 
 	sprintf(catalog_string, "./catalogs/catalogo_mag_%d.txt", magnitude);
 	sprintf(k_vector_string, "./catalogs/k_vector_mag_%d.txt", magnitude);
@@ -68,15 +71,53 @@ void disableStarTracker(){
 
 void obtainAttitude(uint8_t* image_data){
 	pthread_mutex_lock ( &mutex_star_tracker );
+		int j, k;
 
+		//First step . Find centroids
 
 		centroids = centroiding(threshold,threshold2,threshold3,ROI,image_data);
-		sort_centroids(&centroids);
-		unitaries=ComputeUnitaryVectors(&centroids);
-		vector = find_star_pattern(&unitaries, stars_used, err, catalog, k_vector, stars );
-		free(vector.ptr); //Maybe outside the semaphore??
 
-	
+		//Second step. Sorting centroids according with their brightness
+
+		if(centroids.elem_used != 0){  //If there is at least one centroid...
+
+			sort_centroids(&centroids); // ...we sort them
+					
+			//Third step. Compute unitary vectors
+			unitaries = ComputeUnitaryVectors(&centroids);
+
+			//Four step. Find the star pattern.		
+			vector = find_star_pattern(&unitaries,stars_used,err,catalog,k_vector,stars);
+
+					
+			if(vector.elem_used !=0 ){
+				printf("Solution found : \n");
+
+				for(j=0;j<vector.elem_used;j++){
+					printf("Center %f Pairs\t",vector.ptr[j].center);
+			
+					for(k=0;k<vector.ptr[j].numPairs;k++){
+
+						printf("%f\t",vector.ptr[j].pairs[k]);
+
+					}
+
+					printf("\n");
+				}
+
+			}
+			else{
+				printf("No star patter found\n");
+			}
+		
+			free(vector.ptr); // free memory
+		
+		}
+		else{
+			printf("No detected centroids\n");
+		}
+
+
 	pthread_mutex_unlock ( &mutex_star_tracker );
 
 }
@@ -153,6 +194,7 @@ float* loadCatalog( char* filename,char* opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
+		fprintf(stderr, "%s: ", filename);
 		fputs("File error",stderr);
 		exit(1);
 	}else{

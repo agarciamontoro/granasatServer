@@ -204,21 +204,12 @@ void* process_images(void* useless){
 
 	struct timespec before, after, elapsed;
 
-	FILE* raw_measurements_log = fopen("raw_measurements.log", "w");
-	FILE* mean_measurements_log = fopen("mean_measurements.log", "w");
 
-	enableStarTracker(150, 21, 21, 10, 4, 0.035, 10);
+	enableStarTracker(150, 21, 21, 10, 4, 0.035, 4);
 
 	int first = 1;
 
 	while(keep_running){
-        /*rand_id = rand()%21;
-        sprintf(img_file_name, "IMG_%05d.raw", rand_id);
-
-		FILE* raw_image = fopen(argv[1], "r");
-		fread(image, 1280*960, 1, raw_image);
-		fclose(raw_image);
-		*/
 		pthread_rwlock_rdlock( &camera_rw_lock );
 
 			if(new_frame_proc){
@@ -249,23 +240,13 @@ void* process_images(void* useless){
 				n_nsec_mean += n_nsec;
 
 				fprintf(stderr, "Attitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
-				fprintf(raw_measurements_log, "%lld\n", n_nsec);
 			}
-
-			fprintf(raw_measurements_log, "\n");
-
-
-			fprintf(stderr, "###\n%lld\n###\n\n", n_nsec_mean/ITER);
-			fprintf(mean_measurements_log, "%lld\n", n_nsec_mean/ITER);
 		}
 
 		first = 0;
 	}
 
 	disableStarTracker();
-
-	fclose(raw_measurements_log);
-	fclose(mean_measurements_log);
 
 	free(image);
 
@@ -296,19 +277,19 @@ int main(int argc, char** argv){
     // *******************************
 
 	//pthread_create( &capture_thread, NULL, capture_images, NULL );
-	//pthread_create( &processing_thread, NULL, process_images, NULL );
-	//pthread_create( &changeparam_thread, NULL, control_parameters, NULL );
+	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
-	pthread_create( &connection_thread, NULL, control_connection, NULL );
+	//pthread_create( &connection_thread, NULL, control_connection, NULL );
+
 
 	// *******************************
     // ********  JOIN THREADS  *******
     // *******************************	
 	//pthread_join( capture_thread, NULL );
-	//pthread_join( processing_thread, NULL );
-	//pthread_join( changeparam_thread, NULL );
+	pthread_join( processing_thread, NULL );
 	//pthread_join( LS303DLHC_thread, NULL );
-	pthread_join( connection_thread, NULL );
+	//pthread_join( connection_thread, NULL );
+
 
 	// *******************************
     // ********  DESTROY SEMS  *******

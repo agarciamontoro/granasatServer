@@ -21,8 +21,6 @@ struct CentroidVector centroids; //structure CentroidVector to store the detecte
 struct Vector_UnitaryVector unitaries; //structure Vector_UniratyVector to store the unitary vector of centroids
 struct centerVector vector; // This structure is used to store the posible match
 
-
-
 int threshold; // minimum value to consider a pixel as a possible centroid
 int threshold2; // maximum distance between two centroids to cluster them together. The recommended value is ROI
 int ROI; // Region Of Interest
@@ -115,9 +113,9 @@ float err;
 /////////////////////////// configuration functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err);
 void changeCatalogs(int magnitude);
+void enableStarTracker(int __threshold, int __threshold2,int __ROI, int __threshold3, int __stars_used, float __err, int __mag);
 void disableStarTracker();
 void obtainAttitude(uint8_t* image_data);
-
 
 /////////////////////////// load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
