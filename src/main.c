@@ -1,13 +1,10 @@
-/* A simple server to send images of 1280x960 pixels
+/**
+ * @file main.c
+ * @author Alejandro García Montoro
+ * @date 27 Jul 2014
+ * @brief Server side of GranaSAT experiment, selected for BEXUS 19 campaign.
  *
- * Author: Alejandro García Montoro
- * Adapted from http://cs.smith.edu/dftwiki/index.php/Tutorial:_Client/Server_on_the_Raspberry_Pi
  *
- * The server waits for a connection request from a client.
- * The server assumes the client will send positive integers, which it sends back multiplied by 2.
- * In response, the server sends an image binary file (size = 1280x960)
- * If the server receives -1 it closes the socket with the client.
- * If the server receives -2, it exits.
  */
 
 
