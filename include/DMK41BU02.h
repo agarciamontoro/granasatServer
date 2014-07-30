@@ -13,6 +13,9 @@
 
 //TODO: Remove uint8_t* image_data from all headers
 
+#ifndef DMK41BU02_H__
+#define DMK41BU02_H__
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -95,3 +98,5 @@ void usage(FILE *fp, int argc, char **argv);
 void enable_DMK41BU02(struct v4l2_parameters* params);
 
 void disable_DMK41BU02();
+
+#endif

@@ -7,8 +7,8 @@
  * @details sync_control.h declares global variables and provides the user
  * with some functions to manage the synchronisation in GranaSAT server.
  * It includes semaphores to control the access to the camera buffers and
- * to control image processing paramenters. Furthermore, it provides variables
- * and functions to work with timestamps
+ * to control image processing parameters. Furthermore, it provides variables
+ * and functions to work with timestamps.
  *
  */
 
@@ -81,20 +81,6 @@ extern int new_frame_send;
 /**
  * @brief Returns the number of nanoseconds elapsed from @p before to @p after
  *
- * @details diff_times() returns the number of nanoseconds elapsed from @p before timestamp
- * to @p after timestamp. It does not check if @p before occured actually before
- * than @p after, nor the correct initialisation of the @c timespec used.
- * Example of usage to see the number of nanoseconds a function spends in its processing:
-
- * @code
- * clock_gettime(CLOCK_MONOTONIC, &before);
- * 		foo();
- * clock_gettime(CLOCK_MONOTONIC, &after);
- *
- * int elapsed = diff_times(&before, &after);
- *
- * printf("Function foo() spent %d nanoseconds in its processing.\n", elapsed);
- * @endcode
 
  * @param before Pointer to @c struct @c timespec. It should be lower than @p after.
  * @param after Pointer to @c struct @c timespec.  It should be greater than @p before.
@@ -112,8 +98,35 @@ extern int new_frame_send;
  */
 int diff_times(struct timespec* before, struct timespec* after);
 
+
+/**
+ * @brief Computes the time that differs from @p before to @p after
+
+ * @param before Pointer to @c struct @c timespec. It should be lower than @p after.
+ * @param after Pointer to @c struct @c timespec.  It should be greater than @p before.
+
+ * @return Returns the time elapsed from @p before to @p after in a @c struct @c timespec
+
+ * @see diff_times()
+ * @see nsec_to_timespec()
+
+ * @warning If @p before or @p after are NULL pointers, diff_times_spec() behaviour is undefined.
+ * @warning If @p before is greater than @p after, diff_times_spec() behaviour is undefined.
+ */
 struct timespec diff_times_spec(struct timespec* before, struct timespec* after);
 
+/**
+ * @brief Auxiliar function to convert nanoseconds into @c struct @c timespec
+
+ * @param nsec Time expressed in nanoseconds.
+
+ * @return Returns the s @c struct @c timespec which contains the @p nsec converted into seconds and nanoseconds.
+
+ * @see diff_times()
+ * @see diff_times_spec()
+
+ * @warning If @p nsec is negative, nsec_to_timespec() behaviour is undefined.
+ */
 struct timespec nsec_to_timespec(long long nsec);
 
 #endif

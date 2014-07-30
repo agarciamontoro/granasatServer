@@ -4,6 +4,8 @@
 #include <netinet/in.h>
 #include <errno.h>
 
+static const int CAPTURE_RATE_NSEC = 2000000000;
+
 struct communication{
 	int sockfd;
 	int new_sockfd;

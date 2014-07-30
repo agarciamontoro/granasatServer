@@ -37,11 +37,9 @@ $(EXECUTABLE): $(OBJECTS) | $(BIN)
 
 # Generación de ficheros objeto.
 $(OBJ)/%.o: $(SRC)/%.c $(HEADERS) | $(OBJ)
+		$(CC) -o $@ $(INCLUDES) -c $<
 ifeq ($(SEND),Y)
-	$(CC) -o $@ $(INCLUDES) -c $<
 	scp $< $(RECEIVER)$(GLOBAL_PATH)/$<
-else
-	$(CC) -o $@ $(INCLUDES) -c $<
 endif
 
 $(BIN):

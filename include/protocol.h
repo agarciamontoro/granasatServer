@@ -29,15 +29,3 @@
 #define MSG_SET_ERROR     25   // 25. Sets error                 (+ float)
 
 #endif
-
-#define MSG_PASS          0    // 0. No operation
-#define MSG_END           1    // 1. Ends connection
-#define MSG_RESTART       2    // 2. Restarts connection
-#define MSG_PING          3    // 3. Tests connection
-
-#define MSG_SET_STARS     20   // 20. Sets centroids             (+ int)
-#define MSG_SET_CATALOG   21   // 21. Sets catalog               (+ int)
-#define MSG_SET_PX_THRESH 22   // 22. Sets threshold             (+ int)
-#define MSG_SET_ROI       23   // 23. Sets region of interest    (+ int)
-#define MSG_SET_POINTS    24   // 24. Sets minimum points        (+ int)
-#define MSG_SET_ERROR     25   // 25. Sets error                 (+ float)

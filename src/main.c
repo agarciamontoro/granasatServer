@@ -2,9 +2,26 @@
  * @file main.c
  * @author Alejandro García Montoro
  * @date 27 Jul 2014
- * @brief Server side of GranaSAT experiment, selected for BEXUS 19 campaign.
- *
- *
+ * @brief Attitude determination for a pico satellite based in a star tracker and 
+Earth’s magnetic field measurements
+
+ * @mainpage GranaSAT documentation
+
+ * @section what_sec GranaSAT: what and why?
+ * Pico and nano satellite used for research and study have specific attitude 
+determination methods and associated sensors. Apart from sun sensors and 
+magnetometers, accurate attitude determination sensor systems are not yet available 
+for small satellites. The star sensor is the best option in terms of accuracy and 
+performance. However, the major drawbacks of developing these systems are cost, 
+weight and the effort required in the production process. This is why GranaSAT team 
+is going to design and build a <b> low-cost attitude determination system</b>. The team will 
+test the system, which is going to be based in a star sensor, a horizon sensor and the 
+magnetic field measurements provided by a magnetometer. 
+The same Charge Coupled Device is going to be used for both the star sensor and the 
+horizon sensor to obtain the orientation of the gondola. Furthermore, we will estimate 
+the attitude off-board by using the magnetic field measurements obtained during the 
+flight.
+
  */
 
 
@@ -39,7 +56,6 @@
 
 const char* acc_file_name = "accelerometer_measurements.data";
 const char* mag_file_name = "magnetometer_measurements.data";
-const int CAPTURE_RATE_NSEC = 2000000000;
 
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread;
 
@@ -275,7 +291,7 @@ int main(int argc, char** argv){
 	//pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
-	//pthread_create( &connection_thread, NULL, control_connection, NULL );
+	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 
 	// *******************************
@@ -284,7 +300,7 @@ int main(int argc, char** argv){
 	//pthread_join( capture_thread, NULL );
 	pthread_join( processing_thread, NULL );
 	//pthread_join( LS303DLHC_thread, NULL );
-	//pthread_join( connection_thread, NULL );
+	pthread_join( connection_thread, NULL );
 
 
 	// *******************************

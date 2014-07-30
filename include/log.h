@@ -1,3 +1,6 @@
+#ifndef TIME_H_
+#define TIME_H_
+
 #include <time.h>
 
 static void printtime() {
@@ -11,3 +14,5 @@ static void printtime() {
    strftime(buffer, 25, "[%H:%M:%S]: ", tm_info);
    printf("%s",buffer);
 }
+
+#endif
