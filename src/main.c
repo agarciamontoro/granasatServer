@@ -29,6 +29,7 @@ flight.
 #include <highgui.h>
 
 #include <stdio.h>
+#include <linux/videodev2.h>
 //#include <sys/types.h>
 //#include <sys/socket.h>
 //#include <netinet/in.h>
@@ -132,76 +133,122 @@ void* control_connection(void* useless){
 	int newsock_big, newsock_small, newsock_commands;
 	int command, value;
 
-	int cons_cent, magnitude, px_thresh;
-
-
 	while(keep_running){
 		listen_socket = prepareSocket(PORT_COMMANDS);
+		CONNECTED = 1;
 
-		newsock_commands = connectToSocket(listen_socket);
-		printf("New socket opened: %d\n", newsock_commands);
+		while(CONNECTED){
+			newsock_commands = connectToSocket(listen_socket);
+			printf("New socket opened: %d\n", newsock_commands);
 
-		newsock_big = connectToSocket(listen_socket);
-		printf("New socket opened: %d\n", newsock_big);
+			newsock_big = connectToSocket(listen_socket);
+			printf("New socket opened: %d\n", newsock_big);
 
-		newsock_small = connectToSocket(listen_socket);
-		printf("New socket opened: %d\n", newsock_small);
+			newsock_small = connectToSocket(listen_socket);
+			printf("New socket opened: %d\n", newsock_small);
 
-		
-		usleep(500000);
-		sendAccAndMag(newsock_small);
+			
+			usleep(500000);
+			sendAccAndMag(newsock_small);
 
-		command = getCommand(newsock_commands);
-		
-		switch(command){
-			case MSG_PASS:
-				break;
-				
-			case MSG_END:
-				keep_running = 0;
-				break;
+			command = getCommand(newsock_commands);
+			
+			switch(command){
+				//COMMANDS
+				case MSG_PASS:
+					break;
+					
+				case MSG_END:
+					keep_running = 0;
+					break;
 
-			case MSG_RESTART:
-				keep_running = 0;
-				break;
+				case MSG_RESTART:
+					CONNECTED = 0;
+					break;
 
-			case MSG_PING:
-				sendData(0, newsock_commands);
-				printf("MSG_PING received\n\n");
-				break;
+				case MSG_PING:
+					sendData(0, newsock_commands);
+					printf("MSG_PING received\n\n");
+					break;
 
-			case MSG_SET_STARS:
-				cons_cent = getInt(newsock_commands);
-				changeParameters(threshold, threshold2, ROI, threshold3, cons_cent, err);
-				break;
+				//CAMERA PARAMETERS
+				case MSG_SET_BRIGHTNESS:
+					value = getInt(newsock_commands);
+					change_parameter(V4L2_CID_BRIGHTNESS, value);
+					break;
 
-			case MSG_SET_CATALOG:
-				magnitude = getInt(newsock_commands);
-				changeCatalogs(magnitude);
-				break;
+				case MSG_SET_GAMMA:
+					value = getInt(newsock_commands);
+					change_parameter(V4L2_CID_GAMMA, value);
+					break;
 
-			case MSG_SET_PX_THRESH:
-				px_thresh = getInt(newsock_commands);
-				changeParameters(px_thresh, threshold2, ROI, threshold3, stars_used, err);
-				break;
+				case MSG_SET_GAIN:
+					value = getInt(newsock_commands);
+					change_parameter(V4L2_CID_GAIN, value);
+					break;
 
-			case MSG_SET_ROI:
-				break;
+				case MSG_SET_EXP_MODE:
+					value = getInt(newsock_commands);
+					change_parameter(V4L2_CID_EXPOSURE_AUTO, value);
+					break;
 
-			case MSG_SET_POINTS:
-				break;
+				case MSG_SET_EXP_VAL:
+					value = getInt(newsock_commands);
+					change_parameter(V4L2_CID_EXPOSURE_ABSOLUTE, value);
+					break;
 
-			case MSG_SET_ERROR:
-				break;
+				//STAR TRACKER PARAMETERS
+				case MSG_SET_STARS:
+					value = getInt(newsock_commands);
+					changeParameters(threshold, threshold2, ROI, threshold3, value, err);
+					break;
 
-			default:
-				break;
+				case MSG_SET_CATALOG:
+					value = getInt(newsock_commands);
+					changeCatalogs(value);
+					break;
+
+				case MSG_SET_PX_THRESH:
+					value = getInt(newsock_commands);
+					changeParameters(value, threshold2, ROI, threshold3, stars_used, err);
+					break;
+
+				case MSG_SET_ROI:
+					value = getInt(newsock_commands);
+					changeParameters(threshold, threshold2, value, threshold3, stars_used, err);
+					break;
+
+				case MSG_SET_POINTS:
+					value = getInt(newsock_commands);
+					//TODO: Change points parameter
+					break;
+
+				case MSG_SET_ERROR:
+					value = getInt(newsock_commands);
+					changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
+					break;
+
+
+				//HORIZON SENSOR PARAMETERS
+				case MSG_SET_BIN_TH:
+					value = getInt(newsock_commands);
+					//TODO: Change binary threshold parameter
+					break;
+
+				case MSG_SET_CANNY_TH:
+					value = getInt(newsock_commands);
+					//TODO: Change Canny filter threshold parameter
+					break;
+
+				default:
+					break;
+			}
+
+			close(newsock_big);
+			close(newsock_small);
+			close(newsock_commands);
 		}
 	}
-	
-	close(newsock_big);
-	close(newsock_small);
-	close(newsock_commands);
 }
 
 void* process_images(void* useless){

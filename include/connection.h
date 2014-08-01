@@ -5,6 +5,7 @@
 #include <errno.h>
 
 static const int CAPTURE_RATE_NSEC = 2000000000;
+static int CONNECTED = 0;
 
 struct communication{
 	int sockfd;
