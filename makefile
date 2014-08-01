@@ -59,3 +59,4 @@ sendall:
 clean:
 	@rm $(OBJ)/*.o && echo "Borrados ficheros objeto."
 	@rm $(EXECUTABLE) && echo "Borrado ejecutable."
+
