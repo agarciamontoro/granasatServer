@@ -129,4 +129,15 @@ struct timespec diff_times_spec(struct timespec* before, struct timespec* after)
  */
 struct timespec nsec_to_timespec(long long nsec);
 
+/**
+ * @brief Prints @p msg, preceded by the current local time, into the output pointed by @p stream.
+
+ * @param stream Output stream.
+ * @param msg String to be printed.
+
+ * @return Returns nothing.
+ */
+void print_time(FILE* stream, char* msg);
+
+
 #endif

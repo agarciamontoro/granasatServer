@@ -133,3 +133,35 @@ struct timespec nsec_to_timespec(long long nsec){
 	*/
 	return res;
 }
+
+
+/**
+ * @details
+ * printtime() writes the C string pointed by @p msg to the @p stream
+
+ * The printed message will have the format `[HH:MM:SS]: String_pointed_by_msg`, where HH is the current hour, MM is the current minute and SS is the current second.
+ 
+ * <b> General behaviour </b> @n
+ * The steps performed by print_time() are the following:
+ */
+void print_time(FILE* stream, char* msg){
+	time_t timer;
+	char buffer[25];
+	struct tm* tm_info;
+
+	/**
+	* @details -# Timestamp using `time(time_t *t)` and `localtime(const time_t *timep)` functions.
+	*/
+	time(&timer);
+	tm_info = localtime(&timer);
+
+	/**
+	* @details -# Creation of the timestamp string
+	*/
+	strftime(buffer, 25, "[%H:%M:%S]", tm_info);
+
+	/**
+	* @details -# Printing of the timestamp string, followed by the message pointed by @p msg, into the @p stream
+	*/
+	fprintf(stream, "%s: %s",buffer, msg);
+}
