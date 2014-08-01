@@ -134,18 +134,20 @@ void* control_connection(void* useless){
 
 	int cons_cent, magnitude, px_thresh;
 
-	listen_socket = prepareSocket(PORT_COMMANDS);
-
-	newsock_commands = connectToSocket(listen_socket);
-	printf("New socket opened: %d\n", newsock_commands);
-
-	newsock_big = connectToSocket(listen_socket);
-	printf("New socket opened: %d\n", newsock_big);
-
-	newsock_small = connectToSocket(listen_socket);
-	printf("New socket opened: %d\n", newsock_small);
 
 	while(keep_running){
+		listen_socket = prepareSocket(PORT_COMMANDS);
+
+		newsock_commands = connectToSocket(listen_socket);
+		printf("New socket opened: %d\n", newsock_commands);
+
+		newsock_big = connectToSocket(listen_socket);
+		printf("New socket opened: %d\n", newsock_big);
+
+		newsock_small = connectToSocket(listen_socket);
+		printf("New socket opened: %d\n", newsock_small);
+
+		
 		usleep(500000);
 		sendAccAndMag(newsock_small);
 

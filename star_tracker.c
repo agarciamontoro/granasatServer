@@ -1,128 +1,7 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include "attitude_determination.h"
-
-void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err){
-	pthread_mutex_lock ( &mutex_star_tracker );
-
-		threshold = __thresh_px; //threshold para considrar pixel para centroide
-		threshold2 = __thresh_ROI;//atoi(argv[2]); // mismo que ROI
-		ROI = __ROI;//atoi(argv[3]); // Region de interes
-		threshold3 = __thresh_minpx;//atoi(argv[4]); // minimo numero de pixeles para considerar el centrodie final
-		stars_used = __stars_used;//atoi(argv[5]); // centroides
-		err = __err;//atof(argv[6]); // umbrar de los angulos
-
-	pthread_mutex_unlock ( &mutex_star_tracker );
-
-	printf("New parameters:\n"
-					"\tPixel threshold: %d\n"
-					"\tROI threshold: %d\n"
-					"\tROI: %d\n"
-					"\tMin px to final centroid: %d\n"
-					"\tConsidered centroids: %d\n"
-					"\tAngle threshold: %4.3f\n",
-					threshold, threshold2, ROI, threshold3, stars_used, err);
-}
-
-void enableStarTracker(int __threshold, int __threshold2,int __ROI, int __threshold3, int __stars_used, float __err, int __mag){
-	
-	catalog = NULL;
-	k_vector = NULL;
-	stars = NULL;
-
-	changeCatalogs(__mag);
-	changeParameters(__threshold, __threshold2, __ROI, __threshold3, __stars_used, __err);
-
-}
-
-void changeCatalogs(int magnitude){
-	char catalog_string[50];
-	char k_vector_string[50];
-	char stars_string[50];
-
-	printf("Magntiude: %d\n", magnitude);
-
-	sprintf(catalog_string, "./catalogs/catalogo_mag_%d.txt", magnitude);
-	sprintf(k_vector_string, "./catalogs/k_vector_mag_%d.txt", magnitude);
-	sprintf(stars_string, "./catalogs/stars_mag_%d.txt", magnitude);
-
-	pthread_mutex_lock ( &mutex_star_tracker );
-
-		free(catalog);
-		catalog=loadCatalog(catalog_string, "r");
-
-		free(k_vector);
-		k_vector = loadKVector(k_vector_string,"r");
-
-		free(stars);
-		stars=loadStars(stars_string,"r");
-
-	pthread_mutex_unlock ( &mutex_star_tracker );
-
-	printf("New catalog magnitude: %d\n", magnitude);
-}
-
-void disableStarTracker(){
-	free(catalog);
-	free(k_vector);
-	free(stars);
-	free(centroids.ptr);
-	free(unitaries.ptr);
-}
-
-void obtainAttitude(uint8_t* image_data){
-	pthread_mutex_lock ( &mutex_star_tracker );
-		int j, k;
-
-		//First step . Find centroids
-
-		centroids = centroiding(threshold,threshold2,threshold3,ROI,image_data);
-
-		//Second step. Sorting centroids according with their brightness
-
-		if(centroids.elem_used != 0){  //If there is at least one centroid...
-
-			sort_centroids(&centroids); // ...we sort them
-					
-			//Third step. Compute unitary vectors
-			unitaries = ComputeUnitaryVectors(&centroids);
-
-			//Four step. Find the star pattern.		
-			vector = find_star_pattern(&unitaries,stars_used,err,catalog,k_vector,stars);
-
-					
-			if(vector.elem_used !=0 ){
-				printf("Solution found : \n");
-
-				for(j=0;j<vector.elem_used;j++){
-					printf("Center %f Pairs\t",vector.ptr[j].center);
-			
-					for(k=0;k<vector.ptr[j].numPairs;k++){
-
-						printf("%f\t",vector.ptr[j].pairs[k]);
-
-					}
-
-					printf("\n");
-				}
-
-			}
-			else{
-				printf("No star patter found\n");
-			}
-		
-			free(vector.ptr); // free memory
-		
-		}
-		else{
-			printf("No detected centroids\n");
-		}
-
-
-	pthread_mutex_unlock ( &mutex_star_tracker );
-
-}
+#include "star_tracker.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include "math.h"
 
 /////////////////////////// load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -208,7 +87,7 @@ struct Vector_UnitaryVector loadUnitaries(char * filename,char * opentype){
 		while(fgets(string,100,fp)!=NULL ){
 
 			sscanf(string,"%d\t%f\t%f\t%f\n",&starID,&x,&y,&z); // We obtain the catalog entry
-			printf("%s", string);
+			printf(string);
 			v.x=x;
 			v.y=y;
 			v.z=z;
@@ -1887,3 +1766,18 @@ int compare_centers(struct center *c1,struct center *c2,int minimumHits){
 	return success;
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
