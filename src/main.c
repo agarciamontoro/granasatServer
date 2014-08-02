@@ -24,33 +24,34 @@ flight.
 
  */
 
-#include <stdio.h>				// I/O: printf, fprintf...
-#include <sys/types.h>			// Needed data-types
-#include <string.h>				// String management
-#include <stdlib.h>				// General functions: atoi, rand, malloc, free...
-#include <unistd.h>				// System call functions: read, write, close...
-#include <linux/videodev2.h>	// V4L2 library
-#include <sys/socket.h>			// Socket library
-#include <netinet/in.h>			// Socket constants and data-types
-#include <errno.h>				// Error constants
-#include <signal.h>				// Signal management
-#include <stdint.h>				// Standard int data-types: uint8_t
-#include <pthread.h>			// C-threads management
+// C standard libraries
+#include <stdio.h>					// I/O: printf, fprintf...
+#include <sys/types.h>				// Needed data-types
+#include <string.h>					// String management
+#include <stdlib.h>					// General functions: atoi, rand, malloc, free...
+#include <unistd.h>					// System call functions: read, write, close...
+#include <linux/videodev2.h>		// V4L2 library
+#include <sys/socket.h>				// Socket library
+#include <netinet/in.h>				// Socket constants and data-types
+#include <errno.h>					// Error constants
+#include <signal.h>					// Signal management
+#include <stdint.h>					// Standard int data-types: uint8_t
+#include <pthread.h>				// C-threads management
+#include "i2c-dev.h"				// I2C management
 
-//OpenCV
-#include <cv.h>
-#include <highgui.h>
+// OpenCV
+#include <cv.h>						// Core functions and constants
+#include <highgui.h>				// Graphical User Interface and others
 
-//Program
-#include "attitude_determination.h"
-#include "connection.h"
-#include "DMK41BU02.h"
-#include "DS1621.h"
-#include "i2c-dev.h"
-#include "LSM303.h"
-#include "protocol.h"
-#include "sensors.h"
-#include "sync_control.h"
+// Program libraries
+#include "attitude_determination.h"	// Attitude determination library
+#include "connection.h"				// Connection management library
+#include "DMK41BU02.h"				// Camera management library
+#include "DS1621.h"					// Temperature sensor library
+#include "LSM303.h"					// Magnetomere-accelerometer library
+#include "protocol.h"				// Connection protocol, shared with granasatClient
+#include "sensors.h"				// Sensors management
+#include "sync_control.h"			// Timestamp management and synchronisation control
 
 const char* acc_file_name = "accelerometer_measurements.data";
 const char* mag_file_name = "magnetometer_measurements.data";

@@ -3,10 +3,16 @@
 //// Este programa configurara el sensor DS1621 de forma
 //// que se le lea la temperatura cada segundo.
 ////
-//// Manuel Milla 2014
+//// Manuel Milla 2014s
 
 #ifndef DS_1621_H__
 #define DS_1621_H__
+
+// C standard libraries
+#include <stdio.h>				// I/O: printf, fprintf...
+#include <stdlib.h>				// General functions: exit, atoi, rand, malloc, free...
+#include <fcntl.h>				// File management, constants and declarations
+#include "i2c-dev.h"			// I2C management
 
 int ds1621_setup();
 

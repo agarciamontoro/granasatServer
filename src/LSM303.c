@@ -1,12 +1,4 @@
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include "i2c-dev.h"
 #include "LSM303.h"
-#include "sync_control.h"
 
 int file;
 

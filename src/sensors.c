@@ -4,11 +4,8 @@
  *  Created on: 11/04/2014
  *      Author: alejandro
  */
-#include <stdio.h>
-#include <unistd.h>
-#include <signal.h>
+
 #include "sensors.h"
-#include "DMK41BU02.h"
 
 pid_t LED_PID = -1;
 int keep_running = 1;

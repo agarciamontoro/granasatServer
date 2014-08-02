@@ -1,12 +1,14 @@
 #ifndef ATTITUDE_H_
 #define ATTITUDE_H_
 
+// C standard libraries
 #include <stdint.h>			//Standard int data-types: uint8_t
 #include <stdio.h>			//Input-output. printf, fprintf...
 #include <stdlib.h>			//General functions: atoi, rand, malloc, free...
 #include <math.h>			//Mathematical functions needed
 
-#include "sync_control.h"	//Timestamp management and sync control
+// Program libraries
+#include "sync_control.h"	//Timestamp management and synchronisation control
 
 #define WIDTH 1280
 #define HEIGHT 960

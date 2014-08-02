@@ -1,8 +1,17 @@
 #ifndef LSM303_H__
 #define LSM303_H__
 
-#include <stdint.h>
-#include <time.h>
+// C standard libraries
+#include <stdio.h>				// I/O: printf, fprintf...
+#include <fcntl.h>				// File management, constants and declarations
+#include <errno.h>				// Error constants
+#include <stdlib.h>				// General functions: exit, atoi, rand, malloc, free...
+#include <stdint.h>				// Standard int data-types: uint8_t
+#include "i2c-dev.h"			// I2C management
+
+// Program libraries
+#include "sync_control.h"		// Timestamp management and synchronisation control
+
 
 // register addresses
 #define MAG_ADDRESS            (0x3C >> 1)

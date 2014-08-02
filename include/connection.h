@@ -1,16 +1,16 @@
 #ifndef CONNECTION_H__
 #define CONNECTION_H__
 
+// C standard libraries
 #include <stdio.h>			// Input-output. printf, fprintf...
 #include <string.h>			// String management
 #include <stdlib.h>			// General functions: atoi, rand, malloc, free...
 #include <unistd.h>			// System call functions: read, write, close...
-
 #include <netinet/in.h>		// Socket constants and data-types
 #include <errno.h>			// Error constants
 
-#include "sync_control.h"	// Semaphore definition
-#include "DMK41BU02.h"		// current_frame shared variable
+#include "sync_control.h"	// Timestamp management and synchronisation control
+#include "DMK41BU02.h"		// Camera management library
 
 static const int CAPTURE_RATE_NSEC = 2000000000;
 static int CONNECTED = 0;

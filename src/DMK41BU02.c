@@ -14,7 +14,6 @@
  //TODO: ¿? Remove uint8_t* image_data from all headers
 
 #include "DMK41BU02.h"
-#include "sync_control.h"
 
 static char             *dev_name;
 static enum io_method   io = IO_METHOD_MMAP;

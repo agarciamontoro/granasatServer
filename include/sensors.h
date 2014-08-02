@@ -15,11 +15,17 @@
 #ifndef SENSORS_H_
 #define SENSORS_H_
 
-#include <stdbool.h>
-#include <stdio.h>
-#include "connection.h"
-#include "LSM303.h"
-#include "DS1621.h"
+// C standard libraries
+#include <stdbool.h>				// Needed for bool datatype. TODO: Remove all bool variables and replace them with ints
+#include <stdio.h>					// I/O: printf, fprintf...
+#include <unistd.h>					// System call functions: read, write, close...
+#include <signal.h>					// Signal management
+
+// Program libraries
+#include "connection.h"				// Connection management library
+#include "LSM303.h"					// Magnetomere-accelerometer library
+#include "DS1621.h"					// Temperature sensor library
+#include "DMK41BU02.h"				// Camera management library
 
 extern int keep_running;
 

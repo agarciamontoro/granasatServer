@@ -16,26 +16,25 @@
 #ifndef DMK41BU02_H__
 #define DMK41BU02_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+// C standard libraries
+#include <stdio.h>				// I/O: printf, fprintf...
+#include <stdlib.h>				// General functions: atoi, rand, malloc, free...
+#include <string.h>				// String management
 #include <getopt.h>             // getopt_long() function
 #include <fcntl.h>              // Low-level I/O
-#include <unistd.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
+#include <unistd.h>				// System call functions: read, write, close...
+#include <errno.h>				// Error constants
+#include <sys/stat.h>			// Structure stat and related constants
+#include <sys/mman.h>			// Constants and data types for memory managements
 #include <linux/videodev2.h>	// V4L2 library
 #include <stdint.h>				// Standard int data-types: uint8_t
 
-#include <cv.h>
-#include <highgui.h>
- 
-#include <time.h>
+// OpenCV
+#include <cv.h>					// Core functions and constants
+#include <highgui.h>			// Graphical User Interface and others
+
+// Program libraries
+#include "sync_control.h"		// Timestamp management and synchronisation control
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 

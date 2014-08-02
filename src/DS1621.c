@@ -5,13 +5,7 @@
 ////
 //// Manuel Milla 2014
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <linux/i2c-dev.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
-
+#include "DS1621.h"
 
 int ds1621_setup(){
 
