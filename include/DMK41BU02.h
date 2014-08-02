@@ -20,10 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
-#include <getopt.h>             /* getopt_long() */
-
-#include <fcntl.h>              /* low-level i/o */
+#include <getopt.h>             // getopt_long() function
+#include <fcntl.h>              // Low-level I/O
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
@@ -31,9 +29,13 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <linux/videodev2.h>
+#include <linux/videodev2.h>	// V4L2 library
+#include <stdint.h>				// Standard int data-types: uint8_t
 
-#include <stdint.h>
+#include <cv.h>
+#include <highgui.h>
+ 
+#include <time.h>
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 

@@ -1,14 +1,12 @@
 #ifndef ATTITUDE_H_
 #define ATTITUDE_H_
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <math.h>
-#include <sync_control.h>
+#include <stdint.h>			//Standard int data-types: uint8_t
+#include <stdio.h>			//Input-output. printf, fprintf...
+#include <stdlib.h>			//General functions: atoi, rand, malloc, free...
+#include <math.h>			//Mathematical functions needed
 
-//#include "DMK41BU02.h"
+#include "sync_control.h"	//Timestamp management and sync control
 
 #define WIDTH 1280
 #define HEIGHT 960

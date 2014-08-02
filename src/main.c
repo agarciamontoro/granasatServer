@@ -5,7 +5,7 @@
  * @brief Attitude determination for a pico satellite based in a star tracker and 
 Earth’s magnetic field measurements
 
- * @mainpage GranaSAT documentation
+ * @mainpage .
 
  * @section what_sec GranaSAT: what and why?
  * Pico and nano satellite used for research and study have specific attitude 
@@ -24,36 +24,33 @@ flight.
 
  */
 
+#include <stdio.h>				// I/O: printf, fprintf...
+#include <sys/types.h>			// Needed data-types
+#include <string.h>				// String management
+#include <stdlib.h>				// General functions: atoi, rand, malloc, free...
+#include <unistd.h>				// System call functions: read, write, close...
+#include <linux/videodev2.h>	// V4L2 library
+#include <sys/socket.h>			// Socket library
+#include <netinet/in.h>			// Socket constants and data-types
+#include <errno.h>				// Error constants
+#include <signal.h>				// Signal management
+#include <stdint.h>				// Standard int data-types: uint8_t
+#include <pthread.h>			// C-threads management
 
+//OpenCV
 #include <cv.h>
 #include <highgui.h>
 
-#include <stdio.h>
-#include <linux/videodev2.h>
-//#include <sys/types.h>
-//#include <sys/socket.h>
-//#include <netinet/in.h>
-//#include <netdb.h>
-//#include <string.h>
-//#include <stdlib.h>
-#include <unistd.h>
-//#include <errno.h>
-
-//#include "packet.h"
-#include "sensors.h"
-#include "DMK41BU02.h"
-//#include "DS1621.h"
-//#include "connection.h"
-//#include "LSM303.h"
-//#include "i2c-dev.h"
-#include "sync_control.h"
+//Program
 #include "attitude_determination.h"
+#include "connection.h"
+#include "DMK41BU02.h"
+#include "DS1621.h"
+#include "i2c-dev.h"
+#include "LSM303.h"
 #include "protocol.h"
-
-#include <signal.h>
-#include <stdint.h>
-
-#include <pthread.h>
+#include "sensors.h"
+#include "sync_control.h"
 
 const char* acc_file_name = "accelerometer_measurements.data";
 const char* mag_file_name = "magnetometer_measurements.data";

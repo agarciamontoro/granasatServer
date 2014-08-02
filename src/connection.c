@@ -1,12 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 #include "connection.h"
-#include "sync_control.h"
-#include "DMK41BU02.h"
-#include <semaphore.h>
 
 void error(char *msg) {
 	perror(msg);

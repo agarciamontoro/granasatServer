@@ -1,6 +1,3 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "attitude_determination.h"
 
 void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err){
