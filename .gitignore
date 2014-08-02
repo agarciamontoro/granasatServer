@@ -1,4 +1,9 @@
+#Ignore this:
+
 bin/*
 obj/*
 doc/*
 *.log
+
+#Except these files
+!doc/format
