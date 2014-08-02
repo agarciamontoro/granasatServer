@@ -55,12 +55,6 @@ int				 		  LAST_IMG_SAVED = 0;
 
 uint8_t* current_frame = NULL;
 
-//static int brightness = 25;
-//static int gamma_ = 100;
-//static int gain = 260;
-//static int expmode = 1;
-//static int expvalue = 1000;
-
 void errno_exit(const char *s)
 {
 	fprintf(stderr, "%s error %d, %s\n", s, errno, strerror(errno));
@@ -250,7 +244,7 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 
 	if(get_parameters(&param)){
 		sprintf(base_file_name, "IMG_%05d_B%d-Gm%d-Gn%d-M%d-E%d",
-				LAST_IMG_SAVED%10,
+				LAST_IMG_SAVED,
 				param.brightness_,
 				param.gamma_,
 				param.gain_,

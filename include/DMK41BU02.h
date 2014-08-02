@@ -65,7 +65,7 @@ int xioctl(int fh, int request, void *arg);
 
 int get_parameters(struct v4l2_parameters* get_param_ctrl);
 
-int change_parameters(int param, int value);
+int change_parameter(int param, int value);
 
 int change_all_parameters(struct v4l2_parameters* params);
 
