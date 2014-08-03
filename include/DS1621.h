@@ -14,6 +14,8 @@
 #include <fcntl.h>				// File management, constants and declarations
 #include "i2c-dev.h"			// I2C management
 
+#include "sync_control.h"		// Timestamp management and synchronisation control
+
 int ds1621_setup();
 
 int readTempSensor(int fd, signed char* highByte, unsigned char* lowByte);

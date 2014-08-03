@@ -12,13 +12,7 @@ void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
 
-	printf("New parameters:\n"
-					"\tPixel threshold: %d\n"
-					"\tROI threshold: %d\n"
-					"\tROI: %d\n"
-					"\tMin px to final centroid: %d\n"
-					"\tConsidered centroids: %d\n"
-					"\tAngle threshold: %4.3f\n",
+	printMsg(stderr, "[StarTracker]:\tNew parameters: TH1:%d - TH2:%d - ROI:%d - TH3:%d - STU:%d - ERR:%4.3f\n",
 					threshold, threshold2, ROI, threshold3, stars_used, err);
 }
 
@@ -38,7 +32,7 @@ void changeCatalogs(int magnitude){
 	char k_vector_string[50];
 	char stars_string[50];
 
-	printf("Magntiude: %d\n", magnitude);
+	printMsg(stderr, "[StarTracker]:\tMagntiude: %d\n", magnitude);
 
 	sprintf(catalog_string, "./catalogs/catalogo_mag_%d.txt", magnitude);
 	sprintf(k_vector_string, "./catalogs/k_vector_mag_%d.txt", magnitude);
@@ -57,7 +51,7 @@ void changeCatalogs(int magnitude){
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
 
-	printf("New catalog magnitude: %d\n", magnitude);
+	printMsg(stderr, "[StarTracker]:\tNew catalog magnitude: %d\n", magnitude);
 }
 
 void disableStarTracker(){
@@ -90,14 +84,14 @@ void obtainAttitude(uint8_t* image_data){
 
 					
 			if(vector.elem_used !=0 ){
-				printf("Solution found : \n");
+				printMsg(stderr, "[StarTracker]:\tSolution found : \n");
 
 				for(j=0;j<vector.elem_used;j++){
-					printf("Center %f Pairs\t",vector.ptr[j].center);
+					printMsg(stderr, "[StarTracker]:\t\tCenter %f Pairs\t",vector.ptr[j].center);
 			
 					for(k=0;k<vector.ptr[j].numPairs;k++){
 
-						printf("%f\t",vector.ptr[j].pairs[k]);
+						printMsg(stderr, "[StarTracker]:\t\t%f\t",vector.ptr[j].pairs[k]);
 
 					}
 
@@ -106,14 +100,14 @@ void obtainAttitude(uint8_t* image_data){
 
 			}
 			else{
-				printf("No star patter found\n");
+				printMsg(stderr, "[StarTracker]:\tNo star patter found\n");
 			}
 		
 			free(vector.ptr); // free memory
 		
 		}
 		else{
-			printf("No detected centroids\n");
+			printMsg(stderr, "[StarTracker]:\tNo detected centroids\n");
 		}
 
 
@@ -137,7 +131,7 @@ unsigned char * loadImage(char * filename, char * opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
-		fputs("File error",stderr);
+		printMsg(stderr, "[StarTracker]:\tFile error");
 		exit(1);
 	}else{
 
@@ -197,7 +191,7 @@ struct Vector_UnitaryVector loadUnitaries(char * filename,char * opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
-		fputs("File error",stderr);
+		printMsg(stderr, "[StarTracker]:\tFile error");
 		exit(1);
 	}else{
 
@@ -205,7 +199,7 @@ struct Vector_UnitaryVector loadUnitaries(char * filename,char * opentype){
 		while(fgets(string,100,fp)!=NULL ){
 
 			sscanf(string,"%d\t%f\t%f\t%f\n",&starID,&x,&y,&z); // We obtain the catalog entry
-			printf("%s", string);
+			printMsg(stderr, "[StarTracker]:\t%s", string);
 			v.x=x;
 			v.y=y;
 			v.z=z;
@@ -236,7 +230,7 @@ float* loadCatalog( char* filename,char* opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
-		fputs("File error",stderr);
+		printMsg(stderr, "[StarTracker]:\tFile error",stderr);
 		exit(1);
 	}else{
 
@@ -291,7 +285,7 @@ float* loadKVector(char* filename,char* opentype){
 	fp=fopen(filename,opentype); // Open file
 
 	if(fp==NULL){ // error checking
-		fputs("File error",stderr);
+		printMsg(stderr, "[StarTracker]:\tFile error",stderr);
 		exit(1);
 	}else{
 
@@ -345,7 +339,7 @@ float * loadStars(char *filename,char*opentype){
 	fp=fopen(filename,opentype);
 
 	if(fp==NULL){ // error checking
-		fputs("File error",stderr);
+		printMsg(stderr, "[StarTracker]:\tFile error",stderr);
 		exit(1);
 	}else{
 
@@ -548,7 +542,7 @@ struct CentroidVector SimplifyVectorOfCentroids(struct CentroidVector* vector_of
 	struct Centroid cent;
 	//first of all we intialise the simplified vector of centroids
 	if(!initialiseVector(&symplified_vector_of_centroids, 100)){ //we dont expect to have more than 100 stars or objects in the image taken
-		printf("ERROR allocating symplified vector of centroids.\n");
+		printMsg(stderr, "[StarTracker]:\tERROR allocating symplified vector of centroids.\n");
 	}
 	float new_xcm,new_ycm,new_B;
 	
@@ -600,7 +594,7 @@ struct CentroidVector SimplifyVectorOfCentroids(struct CentroidVector* vector_of
 					
 					cent=createCentroid(suma_x/pixels,suma_y/pixels,suma_B);
 					if(!addElementToVector(&symplified_vector_of_centroids, cent)){
-					printf("ERROR reallocating new_centroid.\n");
+						printMsg(stderr, "[StarTracker]:\tERROR reallocating new_centroid.\n");
 					}
 				//}
 					
@@ -658,7 +652,7 @@ struct CentroidVector centroiding(int thresh,int thresh2,int thresh3,int ROI,uns
 	//First of all, we initialise the vector_of_centroids
 
 	if(!initialiseVector(&vector_of_centroids, 1024)){
-		printf("ERROR allocating the vector of centroids.\n");
+		printMsg(stderr, "[StarTracker]:\tERROR allocating the vector of centroids.\n");
 	}
 	
 
@@ -686,7 +680,7 @@ struct CentroidVector centroiding(int thresh,int thresh2,int thresh3,int ROI,uns
 				free(coordinates); //free coodinates. See compute_xcm_ycm_B function
 			//Adding the centroid to the vector of centroids	
 				if(!addElementToVector(&vector_of_centroids, new_centroid)){
-				printf("ERROR reallocating new_centroid.\n");
+					printMsg(stderr, "[StarTracker]:\tERROR reallocating new_centroid.\n");
 				}		
 			}// end if 
 		}//end j
@@ -1088,7 +1082,7 @@ struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector)
 	struct UnitaryVector unitaryVector;
 
 	if(!initialiseVectorUnitary(&vector_unitary, length)){
-		printf("ERROR allocating the vector of Unitary Vectors.\n");
+		printMsg(stderr, "[StarTracker]:\tERROR allocating the vector of Unitary Vectors.\n");
 		//return 1;
 	}
 
@@ -1097,7 +1091,7 @@ struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector)
 		
 			unitaryVector=createUnitaryVector(vector->ptr[i].x,vector->ptr[i].y);
 			if(!addElementToVectorUnitary(&vector_unitary, unitaryVector)){
-				printf("ERROR reallocating new unitary_vector.\n");
+				printMsg(stderr, "[StarTracker]:\tERROR reallocating new unitary_vector.\n");
 				//return 1;
 			}
 				
@@ -1232,7 +1226,7 @@ float * pairs_in_catalog;
 			min=angle-angle*umb;
 			max=angle+angle*umb;
 			
-			printf("min: %f  angle: %f max: %f\n",min,angle,max);
+			printMsg(stderr, "[StarTracker]:\tmin: %f  angle: %f max: %f\n",min,angle,max);
 			
 			pairs_in_catalog=k_vector_search(min,max,catalog,k_vector,&search_elements);
 			//Adding the pairs to the verification matrix
@@ -1630,8 +1624,8 @@ struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector,int n
 		
 		//argument checking
 
-		if(vector->elem_used<3){printf("Unable to find centers\n");return center_vector;}
-		if(numUnitaries>=3 && vector->elem_used<3){printf("Unable to find centers"); return center_vector;}
+		if(vector->elem_used<3){printMsg(stderr, "[StarTracker]:\tUnable to find centers\n");return center_vector;}
+		if(numUnitaries>=3 && vector->elem_used<3){printMsg(stderr, "[StarTracker]:\tUnable to find centers"); return center_vector;}
 		if(numUnitaries >=3 && vector->elem_used>=numUnitaries){stars_cosider=numUnitaries-1;}
 		if(numUnitaries >=3 && vector->elem_used<=numUnitaries){stars_cosider=vector->elem_used-1;}
 
@@ -1642,7 +1636,7 @@ struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector,int n
 		//finding centers			
 		for(i=0;i<stars_cosider;i++){
 
-		printf("Step: %d\n",i);
+		printMsg(stderr, "[StarTracker]:\tStep: %d\n",i);
 		initialiseCenterVector(&center_vector,1); //initialise center_vector
 	
 		
@@ -1650,7 +1644,7 @@ struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector,int n
 		initialise_verification_matrix(909,100,verification_matrix); //initialise verification matrix
 		fill_verification_matrix(vector,stars_cosider,909,100,verification_matrix,umb,catalog,k_vector,stars); // fill the verification matrix
 		create_centers(&center_vector ,stars_cosider,909,100,verification_matrix,stars);//create the center vector through verification matrix
-		printf("Possible centers: %d\n",center_vector.elem_used);
+		printMsg(stderr, "[StarTracker]:\tPossible centers: %d\n",center_vector.elem_used);
 					/*
 					for(j=0;j<center_vector.elem_used;j++){
 

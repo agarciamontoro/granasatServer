@@ -5,15 +5,14 @@ int file;
 void  readBlock(uint8_t command, uint8_t size, uint8_t *data){
      int result = i2c_smbus_read_i2c_block_data(file, command, size, data);
      if (result != size) {
-          printf("Failed to read block from I2C.");
+          printMsg(stderr, "[LSM303]:\tFailed to read block from I2C.");
           exit(1);
     }
 }
 
 void selectDevice(int file, int addr){
      if (ioctl(file, I2C_SLAVE, addr) < 0) {
-          fprintf(stderr,
-          "Error: Could not select device LSM303: %s\n", strerror(errno));
+          printMsg(stderr, "[LSM303]:\tError: Could not select device LSM303: %s\n", strerror(errno));
      }
 }
 
@@ -98,7 +97,7 @@ void writeAccReg(uint8_t reg, uint8_t value){
      selectDevice(file,ACC_ADDRESS);
      int result = i2c_smbus_write_byte_data(file, reg, value);
      if (result == -1){
-        printf ("Failed to write byte to I2C Acc.");
+        printMsg(stderr, "[LSM303]:\tFailed to write byte to I2C Acc.");
         exit(1);
     }
 }
@@ -107,7 +106,7 @@ void writeMagReg(uint8_t reg, uint8_t value){
      selectDevice(file,MAG_ADDRESS);
      int result = i2c_smbus_write_byte_data(file, reg, value);
      if (result == -1){
-          printf("Failed to write byte to I2C Mag.");
+          printMsg(stderr, "[LSM303]:\tFailed to write byte to I2C Mag.");
           exit(1);
      }
 }
@@ -117,7 +116,7 @@ void writeTempReg(uint8_t reg, uint8_t value){
      selectDevice(file, MAG_ADDRESS);
      int result = i2c_smbus_write_byte_data(file, reg, value);
      if (result == -1){
-          printf("Failed to write byte to I2C Temp.");
+          printMsg(stderr, "[LSM303]:\tFailed to write byte to I2C Temp.");
           exit(1);
      }
 }
@@ -131,7 +130,7 @@ void enableLSM303(){
      sprintf(filename, "/dev/i2c-%d", 1);
      file = open(filename, O_RDWR);
      if (file<0){
-          printf("Unable to open I2C bus!");
+          printMsg(stderr, "[LSM303]:\tUnable to open I2C bus!");
           exit(1);
      }
 

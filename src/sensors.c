@@ -15,7 +15,7 @@ void readAndSendImage(int sock){
 	FILE* raw_image;
 	static int count = -1;
 
-	printf("Processing image\n");
+	printMsg(stderr, "[Sensors]:\tProcessing image\n");
 
 	while(LAST_IMG_SAVED < 1){} //Waits for the image producer to have at least one image written in the SD
 
@@ -31,23 +31,23 @@ void readAndSendImage(int sock){
 	raw_image = fopen(file_to_read, "r");
 
 	if(raw_image == NULL){
-		printf("Error opening file %s: %s.\n", file_to_read, strerror(errno));
+		printMsg(stderr, "[Sensors]:\tError opening file %s: %s.\n", file_to_read, strerror(errno));
 		//TODO: HANDLING ERRORS
 		return;
 	}
 	else{
-		printf("File open: %s.\n", file_to_read);
+		printMsg(stderr, "[Sensors]:\tFile open: %s.\n", file_to_read);
 	}
 
 	unsigned char image_stream[1280*960];
 
 	//---- read the image to be sent ----
 	int bytes_read = fread((unsigned char*) image_stream, 1, 1280*960, raw_image);
-	printf("%d bytes read\n", bytes_read);
+	printMsg(stderr, "[Sensors]:\t%d bytes read\n", bytes_read);
 
 	//---- send the image ----
 	int bytes_sent = sendImage_old(sock, image_stream);
-	printf("%d bytes sent\n\n", bytes_sent);
+	printMsg(stderr, "[Sensors]:\t%d bytes sent\n\n", bytes_sent);
 
 	fclose(raw_image);
 }
@@ -61,7 +61,7 @@ void readAndSendTemperature(int socket, int fd){
 
 	readTempSensor(fd, &highByte, &lowByte);
 
-	printf("Processing temperature\n");
+	printMsg(stderr, "[Sensors]:\tProcessing temperature\n");
 
 	while (bytes_sent < total_bytes) {
 		if ((n = write(socket, &highByte, total_bytes - bytes_sent)) < 0)
@@ -91,7 +91,7 @@ void readAndSendMagnetometer(int socket){
 	readMAG_v2(magnetometer);
 	/////////////////////////////////////////////////////////////////////////////////////
 
-	printf("Processing magnetometer\n");
+	printMsg(stderr, "[Sensors]:\tProcessing magnetometer\n");
 
 	while (bytes_sent < total_bytes) {
 		if ((n = write(socket, magnetometer, total_bytes - bytes_sent)) < 0)
@@ -112,7 +112,7 @@ void readAndSendAccelerometer(int socket){
 	readACC_v2(accelerometer, &timestamp);
 	/////////////////////////////////////////////////////////////////////////////////////
 
-	printf("Processing accelerometer\n");
+	printMsg(stderr, "[Sensors]:\tProcessing accelerometer\n");
 
 	while (bytes_sent < total_bytes) {
 		if ((n = write(socket, accelerometer, total_bytes - bytes_sent)) < 0)
@@ -177,7 +177,7 @@ int sendImage_old(int sockfd, unsigned char* image_data) {
 	bytes_sent = 0;
 	total_bytes = 1280 * 960;
 
-	printf("Sending image\n");
+	printMsg(stderr, "[Sensors]:\tSending image\n");
 
 	while (bytes_sent < total_bytes) {
 		if ((n = write(sockfd, image_data + bytes_sent, total_bytes - bytes_sent)) < 0)
@@ -198,7 +198,7 @@ int setGPIOValue(int GPIO_number, bool on){
 			return 0;
 		}
 		else
-			printf("Fork with PID: %d\n",LED_PID);
+			printMsg(stderr, "[Sensors]:\tFork with PID: %d\n",LED_PID);
 
 	}
 	else

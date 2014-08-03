@@ -13,7 +13,7 @@ int getData(int sockfd) {
 		error("ERROR reading from socket");
 
 	buffer[n] = '\0';
-	printf("Bytes received: %d\n", n);
+	printMsg(stderr, "[Connection]:\tBytes received: %d\n", n);
 	return atoi(buffer);
 }
 
@@ -28,7 +28,7 @@ char getCommand(int sockfd){
 	}
 
 	if(command)
-		printf("Command received: %d\n", command);
+		printMsg(stderr, "[Connection]:\tCommand received: %d\n", command);
 	
 	return command;
 }
@@ -40,7 +40,7 @@ int getInt(int sockfd){
 		perror("ERROR reading from socket");
 
 
-	printf("\tValue received: %d\n", value);
+	printMsg(stderr, "[Connection]:\t\tValue received: %d\n", value);
 	return value;
 }
 
@@ -61,7 +61,7 @@ void sendData(int x, int sockfd) {
 void enableConnection(int* sockfd, int portno, int* clilen, struct sockaddr_in* cli_addr ){
 	struct sockaddr_in serv_addr;
 
-	printf("using port #%d\n", portno);
+	printMsg(stderr, "[Connection]:\tUsing port #%d\n", portno);
 
 	*sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -90,7 +90,7 @@ void sendData_v2(int sockfd, void* ptr, int n_bytes){
 			error("ERROR writing to socket");
 		else{
 			bytes_sent += n;
-			printf("%d bytes sent\n", bytes_sent);
+			printMsg(stderr, "[Connection]:\t%d bytes sent\n", bytes_sent);
 		}
 	}
 }
@@ -133,13 +133,10 @@ void sendAccAndMag(int sockfd){
 	int i;
 	for (i = 0; i < 12; ++i){
 		buffer[i] = count*i;//(uint8_t)rand()%100;
-		printf("%d\t", buffer[i]);
 	}
-	printf("\n");
-
 	sendData_v2(sockfd, buffer, sizeof(*buffer) * 12);
 
-	printf("Sent new buffer.\n");
+	printMsg(stderr, "[Connection]:\tSent new buffer.\n");
 
 }
 
@@ -149,12 +146,12 @@ void createCommChannel(struct communication* comm){
 
 	enableConnection( &(comm->sockfd), comm->portno, &clilen, &cli_addr );
 
-	printf("waiting for client to open communication channel... Socket %d\n", comm->sockfd);
+	printMsg(stderr, "[Connection]:\tWaiting for client to open communication channel. Socket: %d.\n", comm->sockfd);
 
 	if ( (comm->new_sockfd = accept(comm->sockfd, (struct sockaddr *) &cli_addr, (socklen_t*) &clilen)) < 0);
 		error(("ERROR on accept"));
 
-	printf("opened new communication channel with client\n");
+	printMsg(stderr, "[Connection]:\tOpened new communication channel with client.\n");
 }
 
 int openSocket(int portno){
@@ -163,7 +160,7 @@ int openSocket(int portno){
 	int n;
 	int data;
 
-	printf( "using port #%d\n", portno );
+	printMsg(stderr, "[Connection]:\tUsing port #%d\n", portno );
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -196,7 +193,7 @@ int prepareSocket(int portno){
 	int n;
 	int data;
 
-	printf( "using port #%d\n", portno );
+	printMsg(stderr, "[Connection]:\tUsing port #%d\n", portno );
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 

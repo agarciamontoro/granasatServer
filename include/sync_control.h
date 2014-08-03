@@ -17,6 +17,7 @@
 
 #include <pthread.h>			// C-threads management
 #include <stdio.h>				// I/O: printf, fprintf...
+#include <stdarg.h>				// Variable number of arguments
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
@@ -53,6 +54,15 @@ extern pthread_rwlock_t camera_rw_lock;
  * It is initialised in main(), before any thread starts.
  */
 extern pthread_mutex_t mutex_star_tracker;
+
+/**
+ * @brief Lock to control the access to printing stream
+ *
+ * @details This lock let the different threads share the same 
+ * printing stream without interfering between themselves
+ * It is initialised in main(), before any thread starts.
+ */
+extern pthread_mutex_t mutex_print_msg;
 
 /**
  * @brief Variable to control that the processing unit processes only new images
@@ -137,7 +147,7 @@ struct timespec nsec_to_timespec(long long nsec);
 
  * @return Returns nothing.
  */
-void print_time(FILE* stream, char* msg);
+void printMsg( FILE* stream, const char* format, ... );
 
 
 #endif

@@ -26,6 +26,7 @@
 #include "LSM303.h"					// Magnetomere-accelerometer library
 #include "DS1621.h"					// Temperature sensor library
 #include "DMK41BU02.h"				// Camera management library
+#include "sync_control.h"		// Timestamp management and synchronisation control
 
 extern int keep_running;
 

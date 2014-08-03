@@ -31,7 +31,7 @@ uint8_t* current_frame = NULL;
 
 void errno_exit(const char *s)
 {
-	fprintf(stderr, "%s error %d, %s\n", s, errno, strerror(errno));
+	printMsg(stderr, "[DMK41BU02]:\t%s error %d, %s\n", s, errno, strerror(errno));
 	exit(EXIT_FAILURE);
 }
 
@@ -68,24 +68,24 @@ int get_parameters(struct v4l2_parameters* get_param_ctrl){
     		success = 0;
             switch(errno){
                 case EBADF:
-                    printf("ERROR while getting parameter -> EBADF: File descriptor is not valid.\n");
+                    printMsg(stderr, "[DMK41BU02]:\tERROR while getting parameter -> EBADF: File descriptor is not valid.\n");
                     break;
 
                 case EFAULT:
-                    printf("ERROR while getting parameter -> EFAULT: Argument references an inaccessible memory area.\n");
+                   printMsg(stderr, "[DMK41BU02]:\tERROR while getting parameter -> EFAULT: Argument references an inaccessible memory area.\n");
                     break;
 
                 case EINVAL:
-                    printf("ERROR while getting parameter -> EINVAL: Either the request or the argument is not valid.\n");
+                    printMsg(stderr, "[DMK41BU02]:\tERROR while getting parameter -> EINVAL: Either the request or the argument is not valid.\n");
                     break;
 
                 case ENOTTY:
-                    printf("ERROR while getting parameter -> ENOTTY: File descriptor is not valid or the specified request does"
+                    printMsg(stderr, "[DMK41BU02]:\tERROR while getting parameter -> ENOTTY: File descriptor is not valid or the specified request does"
                             "not apply to the kind of objectthat the descriptor references.\n");
                     break;
 
                 default:
-                    printf("ERROR in ioctl.\n");
+                    printMsg(stderr, "[DMK41BU02]:\tERROR in ioctl.\n");
                     break;
             }
         }
@@ -154,30 +154,30 @@ int change_parameter(int param, int value){
         if( xioctl(fd, VIDIOC_S_CTRL, &param_ctrl) == -1 ){
             switch(errno){
                 case EBADF:
-                    printf("ERROR while changing parameter -> EBADF: File descriptor is not valid.\n");
+                    printMsg(stderr, "[DMK41BU02]:\tERROR while changing parameter -> EBADF: File descriptor is not valid.\n");
                     break;
 
                 case EFAULT:
-                    printf("ERROR while changing parameter -> EFAULT: Argument references an inaccessible memory area.\n");
+                    printMsg(stderr, "[DMK41BU02]:\tERROR while changing parameter -> EFAULT: Argument references an inaccessible memory area.\n");
                     break;
 
                 case EINVAL:
-                    printf("ERROR while changing parameter -> EINVAL: Either the request or the argument is not valid.\n");
+                    printMsg(stderr, "[DMK41BU02]:\tERROR while changing parameter -> EINVAL: Either the request or the argument is not valid.\n");
                     break;
 
                 case ENOTTY:
-                    printf("ERROR while changing parameter -> ENOTTY: File descriptor is not valid or the specified request does"
+                    printMsg(stderr, "[DMK41BU02]:\tERROR while changing parameter -> ENOTTY: File descriptor is not valid or the specified request does"
                             "not apply to the kind of objectthat the descriptor references.\n");
                     break;
 
                 default:
-                    printf("ERROR in ioctl.\n");
+                    printMsg(stderr, "[DMK41BU02]:\tERROR in ioctl.\n");
                     break;
             }
         }
     }
     else{
-        printf("ERROR: %s", error_str);
+        printMsg(stderr, "[DMK41BU02]:\tERROR: %s", error_str);
     }
 
     return success;
@@ -235,7 +235,7 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 	FILE * raw_img = fopen(full_file_name, "w");
 
 	if(raw_img == NULL){
-		printf("Error opening file %s for writing: %s.\n", full_file_name, strerror(errno));
+		printMsg(stderr, "[DMK41BU02]:\tError opening file %s for writing: %s.\n", full_file_name, strerror(errno));
 		return;
 	}
 
@@ -249,7 +249,7 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 	//printf("%d bytes written in %s.\n", num_bytes, full_file_name);
 
 	if(ferror(raw_img)){
-		printf("Error writing file %s: %s.\n", full_file_name, strerror(errno));
+		printMsg(stderr, "[DMK41BU02]:\tError writing file %s: %s.\n", full_file_name, strerror(errno));
 		return;
 	}
 
@@ -367,14 +367,14 @@ void capture_frame(uint8_t* image_data)
 		}
 
 		if (0 == r) {
-			fprintf(stderr, "select timeout\n");
+			printMsg(stderr, "[DMK41BU02]:\tSelect timeout\n");
 			exit(EXIT_FAILURE);
 		}
 
 		if ( (read_frame(image_data)))
 			break;
 		else
-			printf("ERROR: Couldn't read frame");
+			printMsg(stderr, "[DMK41BU02]:\tERROR: Couldn't read frame");
 		/* EAGAIN - continue select loop. */
 	}
 
@@ -477,7 +477,7 @@ void init_read(unsigned int buffer_size)
 	buffers = calloc(1, sizeof(*buffers));
 
 	if (!buffers) {
-		fprintf(stderr, "Out of memory\n");
+		printMsg(stderr, "[DMK41BU02]:\tOut of memory\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -485,7 +485,7 @@ void init_read(unsigned int buffer_size)
 	buffers[0].start = malloc(buffer_size);
 
 	if (!buffers[0].start) {
-		fprintf(stderr, "Out of memory\n");
+		printMsg(stderr, "[DMK41BU02]:\tOut of memory\n");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -502,8 +502,7 @@ void init_mmap(void)
 
 	if (-1 == xioctl(fd, VIDIOC_REQBUFS, &req)) {
 		if (EINVAL == errno) {
-			fprintf(stderr, "%s does not support "
-					"memory mapping\n", dev_name);
+			printMsg(stderr, "[DMK41BU02]:\t%s does not support memory mapping\n", dev_name);
 			exit(EXIT_FAILURE);
 		} else {
 			errno_exit("VIDIOC_REQBUFS");
@@ -512,15 +511,14 @@ void init_mmap(void)
 
 	//BEFORE, THIS WERE COMMENTED
 	if (req.count < 2) {
-                fprintf(stderr, "Insufficient buffer memory on %s\n",
-                         dev_name);
+                printMsg(stderr, "[DMK41BU02]:\tInsufficient buffer memory on %s\n", dev_name);
                 exit(EXIT_FAILURE);
         }
 
 	buffers = calloc(req.count, sizeof(*buffers));
 
 	if (!buffers) {
-		fprintf(stderr, "Out of memory\n");
+		printMsg(stderr, "[DMK41BU02]:\tOut of memory\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -561,8 +559,7 @@ void init_userp(unsigned int buffer_size)
 
 	if (-1 == xioctl(fd, VIDIOC_REQBUFS, &req)) {
 		if (EINVAL == errno) {
-			fprintf(stderr, "%s does not support "
-					"user pointer i/o\n", dev_name);
+			printMsg(stderr, "[DMK41BU02]:\t%s does not support user pointer i/o\n", dev_name);
 			exit(EXIT_FAILURE);
 		} else {
 			errno_exit("VIDIOC_REQBUFS");
@@ -572,7 +569,7 @@ void init_userp(unsigned int buffer_size)
 	buffers = calloc(4, sizeof(*buffers));
 
 	if (!buffers) {
-		fprintf(stderr, "Out of memory\n");
+		printMsg(stderr, "[DMK41BU02]:\tOut of memory\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -581,7 +578,7 @@ void init_userp(unsigned int buffer_size)
 		buffers[n_buffers].start = malloc(buffer_size);
 
 		if (!buffers[n_buffers].start) {
-			fprintf(stderr, "Out of memory\n");
+			printMsg(stderr, "[DMK41BU02]:\tOut of memory\n");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -597,8 +594,7 @@ void init_device(struct v4l2_parameters* params)
 
 	if (-1 == xioctl(fd, VIDIOC_QUERYCAP, &cap)) {
 		if (EINVAL == errno) {
-			fprintf(stderr, "%s is no V4L2 device\n",
-					dev_name);
+			printMsg(stderr, "[DMK41BU02]:\t%s is no V4L2 device\n", dev_name);
 			exit(EXIT_FAILURE);
 		} else {
 			errno_exit("VIDIOC_QUERYCAP");
@@ -606,16 +602,14 @@ void init_device(struct v4l2_parameters* params)
 	}
 
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-		fprintf(stderr, "%s is no video capture device\n",
-				dev_name);
+		printMsg(stderr, "[DMK41BU02]:\t%s is no video capture device\n", dev_name);
 		exit(EXIT_FAILURE);
 	}
 
 	switch (io) {
 	case IO_METHOD_READ:
 		if (!(cap.capabilities & V4L2_CAP_READWRITE)) {
-			fprintf(stderr, "%s does not support read i/o\n",
-					dev_name);
+			printMsg(stderr, "[DMK41BU02]:\t%s does not support read I/O\n", dev_name);
 			exit(EXIT_FAILURE);
 		}
 		break;
@@ -623,8 +617,7 @@ void init_device(struct v4l2_parameters* params)
 	case IO_METHOD_MMAP:
 	case IO_METHOD_USERPTR:
 		if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
-			fprintf(stderr, "%s does not support streaming i/o\n",
-					dev_name);
+			printMsg(stderr, "[DMK41BU02]:\t%s does not support streaming I/O\n", dev_name);
 			exit(EXIT_FAILURE);
 		}
 		break;
@@ -729,21 +722,19 @@ void open_device(void)
 	struct stat st;
 
 	if (-1 == stat(dev_name, &st)) {
-		fprintf(stderr, "Cannot identify '%s': %d, %s\n",
-				dev_name, errno, strerror(errno));
+		printMsg(stderr, "[DMK41BU02]:\tCannot identify '%s': %d, %s\n", dev_name, errno, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	if (!S_ISCHR(st.st_mode)) {
-		fprintf(stderr, "%s is no device\n", dev_name);
+		printMsg(stderr, "[DMK41BU02]:\t%s is no device\n", dev_name);
 		exit(EXIT_FAILURE);
 	}
 
 	fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
 
 	if (-1 == fd) {
-		fprintf(stderr, "Cannot open '%s': %d, %s\n",
-				dev_name, errno, strerror(errno));
+		printMsg(stderr, "[DMK41BU02]:\tCannot open '%s': %d, %s\n", dev_name, errno, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 }

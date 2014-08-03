@@ -3,6 +3,7 @@
 struct timespec T_ZERO;
 pthread_rwlock_t camera_rw_lock;
 pthread_mutex_t mutex_star_tracker;
+pthread_mutex_t mutex_print_msg;
 int new_frame_proc = 0;
 int new_frame_send = 0;
 
@@ -137,31 +138,36 @@ struct timespec nsec_to_timespec(long long nsec){
 
 /**
  * @details
- * printtime() writes the C string pointed by @p msg to the @p stream
+ * printMsg() writes the C string pointed by @p msg to the @p stream
 
  * The printed message will have the format `[HH:MM:SS]: String_pointed_by_msg`, where HH is the current hour, MM is the current minute and SS is the current second.
  
  * <b> General behaviour </b> @n
- * The steps performed by print_time() are the following:
+ * The steps performed by printMsg() are the following:
  */
-void print_time(FILE* stream, char* msg){
-	time_t timer;
-	char buffer[25];
-	struct tm* tm_info;
+void printMsg(FILE* stream, const char* format, ... ) {
+	pthread_mutex_lock ( &mutex_print_msg );
+		va_list args;
 
-	/**
-	* @details -# Timestamp using `time(time_t *t)` and `localtime(const time_t *timep)` functions.
-	*/
-	time(&timer);
-	tm_info = localtime(&timer);
+		time_t timer;
+		char buffer[25];
+		struct tm* tm_info;
 
-	/**
-	* @details -# Creation of the timestamp string
-	*/
-	strftime(buffer, 25, "[%H:%M:%S]", tm_info);
+		/**
+		* @details -# Timestamp using `time(time_t *t)` and `localtime(const time_t *timep)` functions.
+		*/
+		time(&timer);
+		tm_info = localtime(&timer);
 
-	/**
-	* @details -# Printing of the timestamp string, followed by the message pointed by @p msg, into the @p stream
-	*/
-	fprintf(stream, "%s: %s",buffer, msg);
+		/**
+		* @details -# Creation of the timestamp string
+		*/
+		strftime(buffer, 25, "[%H:%M:%S]", tm_info);
+
+		fprintf( stream, "%s - ", buffer );
+
+		va_start( args, format );
+		vfprintf( stream, format, args );
+		va_end( args );
+	pthread_mutex_unlock ( &mutex_print_msg );
 }

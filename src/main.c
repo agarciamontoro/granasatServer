@@ -59,14 +59,15 @@ const char* mag_file_name = "magnetometer_measurements.data";
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread;
 
 void intHandler(int dummy){
-		printf("\nFinishing all threads\n");
+		printf("\n");
+		printMsg(stderr, "[Main]:\tFinishing all threads\n");
 		
         keep_running = 0;
 
         //pthread_cancel(capture_thread);
         //pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
-        //pthread_cancel(processing_thread);
+        pthread_cancel(processing_thread);
 }
 
 void* capture_images(void* useless){
@@ -133,19 +134,19 @@ void* control_connection(void* useless){
 
 	while(keep_running){
 		listen_socket = prepareSocket(PORT_COMMANDS);
+
+		newsock_commands = connectToSocket(listen_socket);
+		printMsg(stderr, "[Connection]:\tNew socket opened: %d\n", newsock_commands);
+
+		newsock_big = connectToSocket(listen_socket);
+		printMsg(stderr, "[Connection]:\tNew socket opened: %d\n", newsock_big);
+
+		newsock_small = connectToSocket(listen_socket);
+		printMsg(stderr, "[Connection]:\tNew socket opened: %d\n", newsock_small);
+
 		CONNECTED = 1;
 
 		while(CONNECTED){
-			newsock_commands = connectToSocket(listen_socket);
-			printf("New socket opened: %d\n", newsock_commands);
-
-			newsock_big = connectToSocket(listen_socket);
-			printf("New socket opened: %d\n", newsock_big);
-
-			newsock_small = connectToSocket(listen_socket);
-			printf("New socket opened: %d\n", newsock_small);
-
-			
 			usleep(500000);
 			sendAccAndMag(newsock_small);
 
@@ -157,6 +158,7 @@ void* control_connection(void* useless){
 					break;
 					
 				case MSG_END:
+					CONNECTED = 0;
 					keep_running = 0;
 					break;
 
@@ -166,7 +168,7 @@ void* control_connection(void* useless){
 
 				case MSG_PING:
 					sendData(0, newsock_commands);
-					printf("MSG_PING received\n\n");
+					printMsg(stderr, "[Connection]:\tMSG_PING received\n\n");
 					break;
 
 				//CAMERA PARAMETERS
@@ -240,13 +242,13 @@ void* control_connection(void* useless){
 
 				default:
 					break;
-			}
-		}
+			} //END switch
+		} //END while ( connected )
 
 		close(newsock_big);
 		close(newsock_small);
 		close(newsock_commands);
-	}
+	} //END while ( keep_running )
 }
 
 void* process_images(void* useless){
@@ -298,7 +300,7 @@ void* process_images(void* useless){
 				n_nsec = elapsed.tv_sec * NANO_FACTOR + elapsed.tv_nsec;
 				n_nsec_mean += n_nsec;
 
-				fprintf(stderr, "Attitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
+				printMsg(stderr, "[Connection]:\tAttitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
 			}
 		}
 
@@ -327,6 +329,7 @@ int main(int argc, char** argv){
 	//Semaphores for reading/writing frames and for changing algorithms parameters
 	pthread_rwlock_init( &camera_rw_lock, NULL );
 	pthread_mutex_init( &mutex_star_tracker, NULL );
+	pthread_mutex_init( &mutex_print_msg, NULL );
 
 	//Initilise clock
 	clock_gettime(CLOCK_MONOTONIC, &T_ZERO);
@@ -335,18 +338,18 @@ int main(int argc, char** argv){
     // ******** START  THREADS *******
     // *******************************
 
-	pthread_create( &capture_thread, NULL, capture_images, NULL );
+	//pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
-	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
+	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 
 	// *******************************
     // ********  JOIN THREADS  *******
     // *******************************	
-	pthread_join( capture_thread, NULL );
+	//pthread_join( capture_thread, NULL );
 	pthread_join( processing_thread, NULL );
-	pthread_join( LS303DLHC_thread, NULL );
+	//pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
 
 
@@ -355,6 +358,7 @@ int main(int argc, char** argv){
     // *******************************	
 	pthread_rwlock_destroy( &camera_rw_lock );
 	pthread_mutex_destroy( &mutex_star_tracker );
+	pthread_mutex_destroy( &mutex_print_msg );
 
 	return 0;
 }
