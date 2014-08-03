@@ -249,6 +249,8 @@ void* control_connection(void* useless){
 		close(newsock_small);
 		close(newsock_commands);
 	} //END while ( keep_running )
+
+	printf("hola\n");
 }
 
 void* process_images(void* useless){

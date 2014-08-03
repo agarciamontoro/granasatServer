@@ -19,15 +19,29 @@
 #include <stdio.h>				// I/O: printf, fprintf...
 #include <stdarg.h>				// Variable number of arguments
 
+	/**@brief Red colour string for printing in the terminal*/
+#define KRED	"\033[31m"
 
-#define KRED	"\033[31m"	//RED
-#define KGRN	"\033[32m"	//GREEN
-#define KYEL	"\033[33m"	//YELLOW
-#define KBLU	"\033[34m"	//BLUE
-#define KMAG	"\033[35m"	//MAGENTA
-#define KCYN	"\033[36m"	//CYAN
-#define KWHT	"\033[37m"	//WHITE
-#define KRES	"\033[0m"	//RESET
+	/**@brief Green colour string for printing in the terminal*/
+#define KGRN	"\033[32m"
+
+	/**@brief Yellow colour string for printing in the terminal*/
+#define KYEL	"\033[33m"
+
+	/**@brief Blue colour string for printing in the terminal*/
+#define KBLU	"\033[34m"
+
+	/**@brief Magenta colour string for printing in the terminal*/
+#define KMAG	"\033[35m"
+
+	/**@brief Cyan colour string for printing in the terminal*/
+#define KCYN	"\033[36m"
+
+	/**@brief White colour string for printing in the terminal*/
+#define KWHT	"\033[37m"
+
+	/**@brief Reset colour string for printing in the terminal*/
+#define KRES	"\033[0m"
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
@@ -89,7 +103,15 @@ extern int new_frame_proc;
  * It is changed from DMK41BU02.h process_image() and from connection.h sendImage().
  */
 extern int new_frame_send;
+/**
+ * @brief Datatype to control which thread prints a message in the stream and identify it
 
+ * @see printMsg()
+ *
+ * @details Tahnks to enum msg_type, printMsg() function is able to identify the thread from
+ * wich the function is called and act in consequence, adding an identifier to the timestamped
+ * log and, for example, changing the colour of the printed message for each thread.
+ */
 enum msg_type{
 	MAIN,
 	STARTRACKER,

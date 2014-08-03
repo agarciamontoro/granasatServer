@@ -33,6 +33,8 @@ void sendData(int x, int sockfd);
 
 void enableConnection(int* sockfd, int portno, int* clilen, struct sockaddr_in* cli_addr );
 
+void sendData_v2(int sockfd, void* ptr, int n_bytes);
+
 void sendImage(int sockfd, uint8_t* image_stream);
 
 void sendAcc(int sockfd);

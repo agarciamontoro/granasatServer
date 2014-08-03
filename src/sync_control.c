@@ -216,5 +216,6 @@ void printMsg(FILE* stream, enum msg_type type, const char* format, ... ) {
 		va_end( args );
 
 		fprintf(stream, "%s", KRES);
+		fflush(stream);
 	pthread_mutex_unlock ( &mutex_print_msg );
 }

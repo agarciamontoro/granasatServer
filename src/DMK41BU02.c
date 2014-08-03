@@ -31,7 +31,10 @@ uint8_t* current_frame = NULL;
 
 void errno_exit(const char *s)
 {
-	printMsg(stderr, DMK41BU02, "%s error %d, %s\n", s, errno, strerror(errno));
+	char error_string[75];
+
+	strerror_r(errno, error_string, 75);
+	printMsg(stderr, DMK41BU02, "%s error %d, %s\n", s, errno, error_string);
 	exit(EXIT_FAILURE);
 }
 
@@ -214,6 +217,7 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 	//Save raw image
 	char base_file_name[50];
 	char full_file_name[50];
+	char error_string[75];
 	struct v4l2_parameters param;
 
 	if(get_parameters(&param)){
@@ -235,7 +239,8 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 	FILE * raw_img = fopen(full_file_name, "w");
 
 	if(raw_img == NULL){
-		printMsg(stderr, DMK41BU02, "Error opening file %s for writing: %s.\n", full_file_name, strerror(errno));
+		strerror_r(errno, error_string, 75);
+		printMsg(stderr, DMK41BU02, "Error opening file %s for writing: %s.\n", full_file_name, error_string);
 		return;
 	}
 
@@ -249,7 +254,8 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 	//printf("%d bytes written in %s.\n", num_bytes, full_file_name);
 
 	if(ferror(raw_img)){
-		printMsg(stderr, DMK41BU02, "Error writing file %s: %s.\n", full_file_name, strerror(errno));
+		strerror_r(errno, error_string, 75);
+		printMsg(stderr, DMK41BU02, "Error writing file %s: %s.\n", full_file_name, error_string);
 		return;
 	}
 
@@ -720,9 +726,11 @@ void close_device(void)
 void open_device(void)
 {
 	struct stat st;
+	char error_string[75];
 
 	if (-1 == stat(dev_name, &st)) {
-		printMsg(stderr, DMK41BU02, "Cannot identify '%s': %d, %s\n", dev_name, errno, strerror(errno));
+		strerror_r(errno, error_string, 75);
+		printMsg(stderr, DMK41BU02, "Cannot identify '%s': %d, %s\n", dev_name, errno, error_string);
 		exit(EXIT_FAILURE);
 	}
 
@@ -734,7 +742,8 @@ void open_device(void)
 	fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
 
 	if (-1 == fd) {
-		printMsg(stderr, DMK41BU02, "Cannot open '%s': %d, %s\n", dev_name, errno, strerror(errno));
+		strerror_r(errno, error_string, 75);
+		printMsg(stderr, DMK41BU02, "Cannot open '%s': %d, %s\n", dev_name, errno, error_string);
 		exit(EXIT_FAILURE);
 	}
 }

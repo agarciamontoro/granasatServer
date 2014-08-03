@@ -12,6 +12,7 @@ int keep_running = 1;
 
 void readAndSendImage(int sock){
 	char file_to_read[30];
+	char error_string[75];
 	FILE* raw_image;
 	static int count = -1;
 
@@ -31,7 +32,8 @@ void readAndSendImage(int sock){
 	raw_image = fopen(file_to_read, "r");
 
 	if(raw_image == NULL){
-		printMsg(stderr, SENSORS, "Error opening file %s: %s.\n", file_to_read, strerror(errno));
+		strerror_r(errno, error_string, 75);
+		printMsg(stderr, SENSORS, "Error opening file %s: %s.\n", file_to_read, error_string);
 		//TODO: HANDLING ERRORS
 		return;
 	}

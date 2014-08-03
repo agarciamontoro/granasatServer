@@ -2,7 +2,7 @@
 
 void error(char *msg) {
 	perror(msg);
-	exit(1);
+	//exit(1);
 }
 
 int getData(int sockfd) {
@@ -84,10 +84,13 @@ void enableConnection(int* sockfd, int portno, int* clilen, struct sockaddr_in* 
 void sendData_v2(int sockfd, void* ptr, int n_bytes){
 	int n;
 	int bytes_sent = 0;
+	char* error_string = "HOLIS";
 
 	while (bytes_sent < n_bytes) {
-		if ((n = write(sockfd, ptr + bytes_sent, n_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket");
+		if ( ( n = send(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL) ) < 0 ){
+			printMsg(stderr, CONNECTION, "ERROR writing to socket: %s\n", error_string);
+			break;
+		}
 		else{
 			bytes_sent += n;
 			printMsg(stderr, CONNECTION, "%d bytes sent\n", bytes_sent);
@@ -134,7 +137,7 @@ void sendAccAndMag(int sockfd){
 	for (i = 0; i < 12; ++i){
 		buffer[i] = count*i;//(uint8_t)rand()%100;
 	}
-	sendData_v2(sockfd, buffer, sizeof(*buffer) * 12);
+	sendData_v2(sockfd, buffer, sizeof(uint8_t) * 12);
 
 	printMsg(stderr, CONNECTION, "Sent new buffer.\n");
 
