@@ -16,82 +16,44 @@ void selectDevice(int file, int addr){
      }
 }
 
-void readACC(int  *a){
-     uint8_t block[6];
-     selectDevice(file,ACC_ADDRESS);
-     //Read a 6bit-block. Start at address LSM303_OUT_X_L_A (0x28) and end at address OUT_Z_H_A(0x2D)
-     //Read p28 of datasheet for further information.
-     readBlock(0x80 | LSM303_OUT_X_L_A, sizeof(block), block);
-
-     //Assigns the correct information readed before to each address direction
-     //Register sortered like this: X-Y-Z. Low bytes first
-     *a = (int16_t)(block[0] | block[1] << 8) >> 4;
-     *(a+1) = (int16_t)(block[2] | block[3] << 8) >> 4;
-     *(a+2) = (int16_t)(block[4] | block[5] << 8) >> 4;
-}
-
-void readACC_v2(unsigned char* a, struct timespec* timestamp){
+void readACC(uint8_t* a, struct timespec* timestamp){
     struct timespec init, end;
      selectDevice(file,ACC_ADDRESS);
      //Read a 6bit-block. Start at address LSM303_OUT_X_L_A (0x28) and end at address OUT_Z_H_A(0x2D)
      //Read p28 of datasheet for further information.
      clock_gettime(CLOCK_MONOTONIC, &init);
-     readBlock(0x80 | LSM303_OUT_X_L_A, 6, a);
+        readBlock(0x80 | LSM303_OUT_X_L_A, 6, a);
      clock_gettime(CLOCK_MONOTONIC, &end);
 
      timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
      timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
-
-     /*int16_t acc[3];
-         *acc = (int16_t)(a[0] | a[1] << 8) >> 4;
-         *(acc+1) = (int16_t)(a[2] | a[3] << 8) >> 4;
-         *(acc+2) = (int16_t)(a[4] | a[5] << 8) >> 4;
-
-         float accF[3];
-         *(accF+0) = (float) *(a+0)*A_GAIN;
-         *(accF+1) = (float) *(a+1)*A_GAIN;
-         *(accF+2) = (float) *(a+2)*A_GAIN;
-     */
-         //printf("Accelerometer data (G): X: %4.3f; Y: %4.3f; Z: %4.3f\n", 	accF[0],accF[1],accF[2]);
 }
 
-void readMAG(int  *m){
-     uint8_t block[6];
-     selectDevice(file,MAG_ADDRESS);
-     //Read p28 of datasheet for further information
-     readBlock(0x80 | LSM303_OUT_X_H_M, sizeof(block), block);
-
-     //Register sortered like this: X-Z-Y. High bytes first
-     *m = (int16_t)(block[1] | block[0] << 8);
-     *(m+1) = (int16_t)(block[5] | block[4] << 8) ;
-     *(m+2) = (int16_t)(block[3] | block[2] << 8) ;
-}
-
-void readMAG_v2(unsigned char *m){
-     selectDevice(file,MAG_ADDRESS);
-     //Read p28 of datasheet for further information
-     readBlock(0x80 | LSM303_OUT_X_H_M, 6, m);
-}
-
-void readMAG_v3(unsigned char *m, struct timespec* timestamp){
+void readMAG(uint8_t* m, struct timespec* timestamp){
     struct timespec init, end;
     selectDevice(file,MAG_ADDRESS);
 
     clock_gettime(CLOCK_MONOTONIC, &init);
-    readBlock(0x80 | LSM303_OUT_X_H_M, 6, m);  //Read p28 of datasheet for further information
+        readBlock(0x80 | LSM303_OUT_X_H_M, 6, m);  //Read p28 of datasheet for further information
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
     timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
 }
 
-void readTEMP(int *t){
-     uint8_t block[2];
-     selectDevice(file,MAG_ADDRESS);
-     //Read p39 of datasheet for further information
-     readBlock(0x80 | LSM303_TEMP_OUT_H_M, sizeof(block), block);
-     //High bytes first
-     *t = (int16_t)(block[1] | block[0] << 8) >> 4;
+void readTMP(uint8_t* t, struct timespec* timestamp){
+    struct timespec init, end;
+    //uint8_t block[2];
+    selectDevice(file,MAG_ADDRESS);
+    //Read p39 of datasheet for further information
+    clock_gettime(CLOCK_MONOTONIC, &init);
+        readBlock(0x80 | LSM303_TEMP_OUT_H_M, 2, t);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
+    timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
+    //High bytes first
+    //*t = (int16_t)(block[1] | block[0] << 8) >> 4;
 }
 void writeAccReg(uint8_t reg, uint8_t value){
      selectDevice(file,ACC_ADDRESS);

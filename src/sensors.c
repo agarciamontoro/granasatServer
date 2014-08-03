@@ -84,13 +84,15 @@ void readAndSendTemperature(int socket, int fd){
 }
 
 void readAndSendMagnetometer(int socket){
-	unsigned char magnetometer[6];
+	uint8_t magnetometer[6];
 	int n, bytes_sent, total_bytes;
 	bytes_sent = 0;
 	total_bytes = 6;
 
+	struct timespec timestamp;
+
 	/////////////////////////////////////////////////////////////////////////////////////
-	readMAG_v2(magnetometer);
+	readMAG(magnetometer, &timestamp);
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	printMsg(stderr, SENSORS, "Processing magnetometer\n");
@@ -104,14 +106,14 @@ void readAndSendMagnetometer(int socket){
 }
 
 void readAndSendAccelerometer(int socket){
-	unsigned char accelerometer[6];
+	uint8_t accelerometer[6];
 	int n, bytes_sent, total_bytes;
 	bytes_sent = 0;
 	total_bytes = 6;
 
 	struct timespec timestamp;
 	/////////////////////////////////////////////////////////////////////////////////////
-	readACC_v2(accelerometer, &timestamp);
+	readACC(accelerometer, &timestamp);
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	printMsg(stderr, SENSORS, "Processing accelerometer\n");
@@ -125,11 +127,11 @@ void readAndSendAccelerometer(int socket){
 }
 
 void readAndStoreAccelerometer(FILE* file){
-	unsigned char accelerometer[6];
+	uint8_t accelerometer[6];
 
 	struct timespec timestamp;
 	/////////////////////////////////////////////////////////////////////////////////////
-	readACC_v2(accelerometer, &timestamp);
+	readACC(accelerometer, &timestamp);
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	/*
@@ -153,11 +155,11 @@ void readAndStoreAccelerometer(FILE* file){
 }
 
 void readAndStoreMagnetometer(FILE* file){
-	unsigned char magnetometer[6];
+	uint8_t magnetometer[6];
 
 	struct timespec timestamp;
 	/////////////////////////////////////////////////////////////////////////////////////
-	readMAG_v3(magnetometer, &timestamp);
+	readMAG(magnetometer, &timestamp);
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	int16_t m[3];

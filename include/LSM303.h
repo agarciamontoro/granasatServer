@@ -97,17 +97,11 @@ void  readBlock(uint8_t command, uint8_t size, uint8_t *data);
 
 void selectDevice(int file, int addr);
 
-void readACC(int  *a);
+void readACC(uint8_t *a, struct timespec* timestamp);
 
-void readACC_v2(unsigned char *a, struct timespec* timestamp);
+void readMAG(uint8_t *m, struct timespec* timestamp);
 
-void readMAG(int  *m);
-
-void readMAG_v2(unsigned char *m);
-
-void readMAG_v3(unsigned char *m, struct timespec* timestamp);
-
-void readTEMP(int *t);
+void readTMP(uint8_t *t, struct timespec* timestamp);
 
 void writeAccReg(uint8_t reg, uint8_t value);
 
