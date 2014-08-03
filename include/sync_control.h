@@ -19,6 +19,16 @@
 #include <stdio.h>				// I/O: printf, fprintf...
 #include <stdarg.h>				// Variable number of arguments
 
+
+#define KRED	"\033[31m"	//RED
+#define KGRN	"\033[32m"	//GREEN
+#define KYEL	"\033[33m"	//YELLOW
+#define KBLU	"\033[34m"	//BLUE
+#define KMAG	"\033[35m"	//MAGENTA
+#define KCYN	"\033[36m"	//CYAN
+#define KWHT	"\033[37m"	//WHITE
+#define KRES	"\033[0m"	//RESET
+
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////                    /////////////////////////////////////
@@ -79,6 +89,16 @@ extern int new_frame_proc;
  * It is changed from DMK41BU02.h process_image() and from connection.h sendImage().
  */
 extern int new_frame_send;
+
+enum msg_type{
+	MAIN,
+	STARTRACKER,
+	CONNECTION,
+	DMK41BU02,
+	DS1621,
+	LSM303,
+	SENSORS
+};
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
@@ -147,7 +167,7 @@ struct timespec nsec_to_timespec(long long nsec);
 
  * @return Returns nothing.
  */
-void printMsg( FILE* stream, const char* format, ... );
+void printMsg( FILE* stream, enum msg_type type, const char* format, ... );
 
 
 #endif

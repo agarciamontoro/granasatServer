@@ -60,7 +60,7 @@ pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread
 
 void intHandler(int dummy){
 		printf("\n");
-		printMsg(stderr, "[Main]:\tFinishing all threads\n");
+		printMsg(stderr, MAIN, "Finishing all threads\n");
 		
         keep_running = 0;
 
@@ -136,13 +136,13 @@ void* control_connection(void* useless){
 		listen_socket = prepareSocket(PORT_COMMANDS);
 
 		newsock_commands = connectToSocket(listen_socket);
-		printMsg(stderr, "[Connection]:\tNew socket opened: %d\n", newsock_commands);
+		printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsock_commands);
 
 		newsock_big = connectToSocket(listen_socket);
-		printMsg(stderr, "[Connection]:\tNew socket opened: %d\n", newsock_big);
+		printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsock_big);
 
 		newsock_small = connectToSocket(listen_socket);
-		printMsg(stderr, "[Connection]:\tNew socket opened: %d\n", newsock_small);
+		printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsock_small);
 
 		CONNECTED = 1;
 
@@ -168,7 +168,7 @@ void* control_connection(void* useless){
 
 				case MSG_PING:
 					sendData(0, newsock_commands);
-					printMsg(stderr, "[Connection]:\tMSG_PING received\n\n");
+					printMsg(stderr, CONNECTION, "MSG_PING received\n\n");
 					break;
 
 				//CAMERA PARAMETERS
@@ -300,7 +300,7 @@ void* process_images(void* useless){
 				n_nsec = elapsed.tv_sec * NANO_FACTOR + elapsed.tv_nsec;
 				n_nsec_mean += n_nsec;
 
-				printMsg(stderr, "[Connection]:\tAttitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
+				printMsg(stderr, CONNECTION, "Attitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
 			}
 		}
 

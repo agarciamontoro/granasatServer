@@ -145,13 +145,58 @@ struct timespec nsec_to_timespec(long long nsec){
  * <b> General behaviour </b> @n
  * The steps performed by printMsg() are the following:
  */
-void printMsg(FILE* stream, const char* format, ... ) {
+void printMsg(FILE* stream, enum msg_type type, const char* format, ... ) {
 	pthread_mutex_lock ( &mutex_print_msg );
 		va_list args;
 
 		time_t timer;
+
 		char buffer[25];
+		char id[30];
+		char colour[20];
+
 		struct tm* tm_info;
+
+		switch(type){
+			case MAIN:
+				sprintf(id, "Main program");
+				sprintf(colour, KWHT);
+				break;
+				
+			case STARTRACKER:
+				sprintf(id, "Star tracker");
+				sprintf(colour, KYEL);
+				break;
+				
+			case CONNECTION:
+				sprintf(id, "Connection");
+				sprintf(colour, KBLU);
+				break;
+				
+			case DMK41BU02:
+				sprintf(id, "DMK41BU02");
+				sprintf(colour, KMAG);
+				break;
+				
+			case DS1621:
+				sprintf(id, "DS1621");
+				sprintf(colour, KRED);
+				break;
+				
+			case LSM303:
+				sprintf(id, "LSM303");
+				sprintf(colour, KGRN);
+				break;
+				
+			case SENSORS:
+				sprintf(id, "Sensors");
+				sprintf(colour, KCYN);
+				break;
+				
+			default:
+				break;
+
+		}
 
 		/**
 		* @details -# Timestamp using `time(time_t *t)` and `localtime(const time_t *timep)` functions.
@@ -164,10 +209,12 @@ void printMsg(FILE* stream, const char* format, ... ) {
 		*/
 		strftime(buffer, 25, "[%H:%M:%S]", tm_info);
 
-		fprintf( stream, "%s - ", buffer );
+		fprintf( stream, "%s - %s[%s]:\t", buffer, colour, id );
 
 		va_start( args, format );
 		vfprintf( stream, format, args );
 		va_end( args );
+
+		fprintf(stream, "%s", KRES);
 	pthread_mutex_unlock ( &mutex_print_msg );
 }
