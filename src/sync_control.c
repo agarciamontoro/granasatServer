@@ -46,7 +46,7 @@ int diff_times(struct timespec* before, struct timespec* after){
 	* @details -# Computing of the number of nanoseconds in @p after minus the
 	* number of nanoseconds in @p before.
 	*/
-	return n_nsec_after- n_nsec_before;
+	return n_nsec_after - n_nsec_before;
 }
 
 /**

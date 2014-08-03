@@ -104,12 +104,12 @@ extern int new_frame_proc;
  */
 extern int new_frame_send;
 /**
- * @brief Datatype to control which thread prints a message in the stream and identify it
+ * @brief Datatype to control which thread prints a message in the stream.
 
  * @see printMsg()
  *
  * @details Tahnks to enum msg_type, printMsg() function is able to identify the thread from
- * wich the function is called and act in consequence, adding an identifier to the timestamped
+ * which the function is called and act in consequence, adding an identifier to the timestamped
  * log and, for example, changing the colour of the printed message for each thread.
  */
 enum msg_type{

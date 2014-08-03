@@ -53,9 +53,6 @@ flight.
 #include "sensors.h"				// Sensors management
 #include "sync_control.h"			// Timestamp management and synchronisation control
 
-const char* acc_file_name = "accelerometer_measurements.data";
-const char* mag_file_name = "magnetometer_measurements.data";
-
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread;
 
 void intHandler(int dummy){
@@ -110,6 +107,9 @@ void* capture_images(void* useless){
 }
 
 void* control_LS303DLHC(void* useless){
+	const char* acc_file_name = "accelerometer_measurements.data";
+	const char* mag_file_name = "magnetometer_measurements.data";
+	
 	//Enable LSM303 sensor - Magnetometer/Accelerometer
 	enableLSM303();
 
@@ -130,28 +130,30 @@ void* control_LS303DLHC(void* useless){
 void* control_connection(void* useless){
 	int listen_socket;
 	int newsock_big, newsock_small, newsock_commands;
-	int command, value;
+	int command, value, count;
+
+	listen_socket = prepareSocket(PORT_COMMANDS);
 
 	while(keep_running){
-		listen_socket = prepareSocket(PORT_COMMANDS);
-
 		newsock_commands = connectToSocket(listen_socket);
-		printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsock_commands);
-
 		newsock_big = connectToSocket(listen_socket);
-		printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsock_big);
-
 		newsock_small = connectToSocket(listen_socket);
-		printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsock_small);
 
-		CONNECTED = 1;
+		if(newsock_commands && newsock_big && newsock_small)
+			CONNECTED = 1;
+
+		count = 0;
 
 		while(CONNECTED){
-			usleep(500000);
+
+			if(count == 10000000){
+				count = 0;
+				sendImage(newsock_big);
+			}
+
 			sendAccAndMag(newsock_small);
 
 			command = getCommand(newsock_commands);
-			
 			switch(command){
 				//COMMANDS
 				case MSG_PASS:
@@ -160,97 +162,101 @@ void* control_connection(void* useless){
 				case MSG_END:
 					CONNECTED = 0;
 					keep_running = 0;
+					printMsg(stderr, CONNECTION, "FINISHING PROGRAM.\n");
 					break;
 
 				case MSG_RESTART:
 					CONNECTED = 0;
+					printMsg(stderr, CONNECTION, "RESTARTING PROGRAM.\n\n");
 					break;
 
 				case MSG_PING:
-					sendData(0, newsock_commands);
+					value = 0;
+					sendData(newsock_commands, &value, sizeof(value));
 					printMsg(stderr, CONNECTION, "MSG_PING received\n\n");
 					break;
 
 				//CAMERA PARAMETERS
 				case MSG_SET_BRIGHTNESS:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					change_parameter(V4L2_CID_BRIGHTNESS, value);
 					break;
 
 				case MSG_SET_GAMMA:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					change_parameter(V4L2_CID_GAMMA, value);
 					break;
 
 				case MSG_SET_GAIN:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					change_parameter(V4L2_CID_GAIN, value);
 					break;
 
 				case MSG_SET_EXP_MODE:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					change_parameter(V4L2_CID_EXPOSURE_AUTO, value);
 					break;
 
 				case MSG_SET_EXP_VAL:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					change_parameter(V4L2_CID_EXPOSURE_ABSOLUTE, value);
 					break;
 
 				//STAR TRACKER PARAMETERS
 				case MSG_SET_STARS:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					changeParameters(threshold, threshold2, ROI, threshold3, value, err);
 					break;
 
 				case MSG_SET_CATALOG:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					changeCatalogs(value);
 					break;
 
 				case MSG_SET_PX_THRESH:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					changeParameters(value, threshold2, ROI, threshold3, stars_used, err);
 					break;
 
 				case MSG_SET_ROI:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					changeParameters(threshold, threshold2, value, threshold3, stars_used, err);
 					break;
 
 				case MSG_SET_POINTS:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					changeParameters(threshold, threshold2, ROI, value, stars_used, err);
 					break;
 
 				case MSG_SET_ERROR:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
 					break;
 
 
 				//HORIZON SENSOR PARAMETERS
 				case MSG_SET_BIN_TH:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					//TODO: Change binary threshold parameter
 					break;
 
 				case MSG_SET_CANNY_TH:
-					value = getInt(newsock_commands);
+					getData(newsock_commands, &value, sizeof(value));
 					//TODO: Change Canny filter threshold parameter
 					break;
 
 				default:
 					break;
 			} //END switch
+
+			usleep(500000);
+			count += 500000;
 		} //END while ( connected )
 
 		close(newsock_big);
 		close(newsock_small);
 		close(newsock_commands);
 	} //END while ( keep_running )
-
-	printf("hola\n");
 }
 
 void* process_images(void* useless){

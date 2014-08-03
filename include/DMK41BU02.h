@@ -12,6 +12,7 @@
  */
 
 //TODO: Remove uint8_t* image_data from all headers
+//TODO: Replace 1280 and 960 with WIDTH and HEIGHT constants in ALL the code
 
 #ifndef DMK41BU02_H__
 #define DMK41BU02_H__

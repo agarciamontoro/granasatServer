@@ -1,6 +1,8 @@
 #ifndef CONNECTION_H__
 #define CONNECTION_H__
 
+//TODO: Implement a 'char* cmdToStr(int cmd)' function in order to have a readable log
+
 // C standard libraries
 #include <stdio.h>			// Input-output. printf, fprintf...
 #include <string.h>			// String management
@@ -9,11 +11,12 @@
 #include <netinet/in.h>		// Socket constants and data-types
 #include <errno.h>			// Error constants
 
+#include "protocol.h"		// Connection protocol, shared with granasatClient
 #include "sync_control.h"	// Timestamp management and synchronisation control
 #include "DMK41BU02.h"		// Camera management library
 
 static const int CAPTURE_RATE_NSEC = 2000000000;
-static int CONNECTED = 0;
+extern int CONNECTED;
 
 struct communication{
 	int sockfd;
@@ -21,31 +24,24 @@ struct communication{
 	int portno;
 };
 
-void error(char *msg);
+void error(char *msg, int status);
 
-int getData(int sockfd);
+int prepareSocket(int portno);
+
+int connectToSocket(int sockfd);
 
 char getCommand(int sockfd);
 
-int getInt(int sockfd);
+int getData(int sockfd, void* ptr, int n_bytes);
 
-void sendData(int x, int sockfd);
+int sendData(int sockfd, void* ptr, int n_bytes);
 
-void enableConnection(int* sockfd, int portno, int* clilen, struct sockaddr_in* cli_addr );
-
-void sendData_v2(int sockfd, void* ptr, int n_bytes);
-
-void sendImage(int sockfd, uint8_t* image_stream);
+void sendImage(int sockfd);
 
 void sendAcc(int sockfd);
 
 void sendMag(int sockfd);
 
 void sendAccAndMag(int sockfd);
-
-void createCommChannel(struct communication* comm);
-
-int openSocket(int portno);
-
 
 #endif

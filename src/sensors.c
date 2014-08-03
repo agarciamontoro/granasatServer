@@ -67,7 +67,7 @@ void readAndSendTemperature(int socket, int fd){
 
 	while (bytes_sent < total_bytes) {
 		if ((n = write(socket, &highByte, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket");
+			error("ERROR writing to socket", 0);
 		else
 			bytes_sent += n;
 	}
@@ -77,7 +77,7 @@ void readAndSendTemperature(int socket, int fd){
 
 	while (bytes_sent < total_bytes) {
 		if ((n = write(socket, &lowByte, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket");
+			error("ERROR writing to socket", 0);
 		else
 			bytes_sent += n;
 	}
@@ -97,7 +97,7 @@ void readAndSendMagnetometer(int socket){
 
 	while (bytes_sent < total_bytes) {
 		if ((n = write(socket, magnetometer, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket");
+			error("ERROR writing to socket", 0);
 		else
 			bytes_sent += n;
 	}
@@ -118,7 +118,7 @@ void readAndSendAccelerometer(int socket){
 
 	while (bytes_sent < total_bytes) {
 		if ((n = write(socket, accelerometer, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket");
+			error("ERROR writing to socket", 0);
 		else
 			bytes_sent += n;
 	}
@@ -183,7 +183,7 @@ int sendImage_old(int sockfd, unsigned char* image_data) {
 
 	while (bytes_sent < total_bytes) {
 		if ((n = write(sockfd, image_data + bytes_sent, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket");
+			error("ERROR writing to socket", 0);
 		else
 			bytes_sent += n;
 	}
@@ -227,5 +227,5 @@ int readCPUtemperature(){
 
 void readAndSendCPUTemperature(int newsockfd){
 	int CPU_temp = readCPUtemperature();
-	sendData(CPU_temp, newsockfd);
+	sendData(newsockfd, &CPU_temp, sizeof(CPU_temp));
 }
