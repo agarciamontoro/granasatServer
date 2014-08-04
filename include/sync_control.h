@@ -8,7 +8,9 @@
  * with some functions to manage the synchronisation in GranaSAT server.
  * It includes semaphores to control the access to the camera buffers and
  * to control image processing parameters. Furthermore, it provides variables
- * and functions to work with timestamps.
+ * and functions to work with timestamps. The log is also controlled from this
+ * file, with defines to colour strings and with a function to print log timestamped
+ * messages in a stream.
  *
  */
 
