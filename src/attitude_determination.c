@@ -65,7 +65,20 @@ void disableStarTracker(){
 }
 
 void ADS_obtainAttitude(uint8_t* image_data){
+	uint8_t histogram[256];
 
+	int i,j;
+
+	for (i = 0; i < 960; ++i){
+		for (j = 0; j < 1280; ++j){
+			histogram[ image_data[i*1280 + j] ]++;
+		}
+	}
+
+	if( isHistogramDark(histogram) )
+		ST_obtainAttitude(image_data);
+	else
+		HS_obtainAttitude(image_data);
 }
 
 void ST_obtainAttitude(uint8_t* image_data){
@@ -119,6 +132,24 @@ void ST_obtainAttitude(uint8_t* image_data){
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
 
+}
+
+int isHistogramDark(uint8_t* histogram){
+	int one_third, sum_dark, sum_bright;
+
+	one_third = 85;
+	sum_dark = sum_bright = 0;
+
+	int i;
+	for (i = 0; i < one_third; ++i){
+		sum_dark += histogram[i];
+	}
+
+	for (i = one_third; i < 256; ++i){
+		sum_bright += histogram[i];
+	}
+
+	return sum_dark > sum_bright;
 }
 
 /////////////////////////// load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
