@@ -60,7 +60,9 @@ void intHandler(int dummy){
 		printf("\n");
 		printMsg(stderr, MAIN, "Finishing all threads\n");
 		
-        keep_running = 0;
+        CONNECTED = keep_running = 0;
+
+        sleep(2);
 
         //pthread_cancel(capture_thread);
         //pthread_cancel(LS303DLHC_thread);
@@ -247,6 +249,19 @@ void* control_connection(void* useless){
 					HS_changeParameters(BIN_THRESH, value);
 					break;
 
+				//ATTITUDE SYSTEM PARAMETERS
+				case MSG_SET_MODE_AUTO:
+					ADS_changeMode(MODE_AUTO);
+					break;
+
+				case MSG_SET_MODE_STAR:
+					ADS_changeMode(MODE_ST);
+					break;
+
+				case MSG_SET_MODE_HORI:
+					ADS_changeMode(MODE_HS);
+					break;
+
 				default:
 					break;
 			} //END switch
@@ -258,7 +273,11 @@ void* control_connection(void* useless){
 		close(newsock_big);
 		close(newsock_small);
 		close(newsock_commands);
+		printMsg(stderr, CONNECTION, "All comunication sockets closed.\n");
 	} //END while ( keep_running )
+
+	close(listen_socket);
+	printMsg(stderr, CONNECTION, "Listen socket closed.\n");
 }
 
 void* process_images(void* useless){

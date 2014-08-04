@@ -56,6 +56,12 @@ void changeCatalogs(int magnitude){
 	printMsg(stderr, STARTRACKER, "New catalog magnitude: %d\n", magnitude);
 }
 
+void ADS_changeMode(enum attitudemode mode){
+	//TODO: Add semaphores
+	ATTITUDE_MODE = mode;
+	printMsg(stderr, MAIN, "Changing flight mode to %d\n", mode);
+}
+
 void disableStarTracker(){
 	free(catalog);
 	free(k_vector);

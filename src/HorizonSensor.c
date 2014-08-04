@@ -258,6 +258,9 @@ void HS_changeParameters(int binary_th, int canny_th){
 	pthread_mutex_lock(&mutex_horizon_sensor);
 		BIN_THRESH = binary_th;
 		CAN_THRESH = canny_th;
+		printMsg(stderr, HORIZONSENSOR,
+				 "Parameters changed: Binary threshold - %d | Canny threshold - %d\n",
+				 BIN_THRESH, CAN_THRESH);
 	pthread_mutex_unlock(&mutex_horizon_sensor);
 }
 
@@ -399,7 +402,7 @@ void HS_obtainAttitude(uint8_t* image){
 void* HS_test(void* useless){
 	//Names of windows and trackbars
 	char* display_window = "Original video";
-	char* trackbar_thresh = "Threshold";
+	// char* trackbar_thresh = "Threshold";
 
 	//GUI printings
     CvFont font;
@@ -424,7 +427,7 @@ void* HS_test(void* useless){
     cvStartWindowThread(); //To allow OpenCV updating its windows automatically. If this is not here, the window does not close when 'q' is pressed
     IplImage *DispImage = cvCreateImage( cvSize(700, 320), IPL_DEPTH_8U, 3 );
     cvNamedWindow(display_window, CV_WINDOW_AUTOSIZE);
-    cvCreateTrackbar(trackbar_thresh, display_window, &BIN_THRESH, 255, controlThreshold); //Does it need to be release?
+    // cvCreateTrackbar(trackbar_thresh, display_window, &BIN_THRESH, 255, controlThreshold); //Does it need to be released?
 
     //Loop control
     char key = 0;
@@ -464,7 +467,7 @@ void* HS_test(void* useless){
 		//Obtain binary image and obtain canny edges
 		pthread_mutex_lock(&mutex_horizon_sensor);
 	        cvThreshold(frame_gray, frame_thresh, BIN_THRESH, 255, CV_THRESH_BINARY);
-	        cvCanny( frame_thresh, frame_canny, BIN_THRESH, BIN_THRESH*2, 3 );
+	        cvCanny( frame_thresh, frame_canny, BIN_THRESH, CAN_THRESH, 3 );
 	    pthread_mutex_unlock(&mutex_horizon_sensor);
 
         //·······························
@@ -503,9 +506,9 @@ void* HS_test(void* useless){
 	    }
 
 	    if(!horizons_found){
-			sprintf(string, "NO HORIZON DETECTED");
-			cvPutText(frame, string, cvPoint(70,100), &font, cvScalar(0,0,255,5));
-	    }
+ 			sprintf(string, "NO HORIZON DETECTED");
+ 			cvPutText(frame, string, cvPoint(70,100), &font, cvScalar(0,0,255,5));
+ 	    }
 
 
         //*******************************
