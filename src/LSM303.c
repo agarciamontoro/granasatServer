@@ -18,15 +18,15 @@ void selectDevice(int file, int addr){
 
 void readACC(uint8_t* a, struct timespec* timestamp){
     struct timespec init, end;
-     selectDevice(file,ACC_ADDRESS);
-     //Read a 6bit-block. Start at address LSM303_OUT_X_L_A (0x28) and end at address OUT_Z_H_A(0x2D)
-     //Read p28 of datasheet for further information.
-     clock_gettime(CLOCK_MONOTONIC, &init);
+    selectDevice(file,ACC_ADDRESS);
+    //Read a 6bit-block. Start at address LSM303_OUT_X_L_A (0x28) and end at address OUT_Z_H_A(0x2D)
+    //Read p28 of datasheet for further information.
+    clock_gettime(CLOCK_MONOTONIC, &init);
         readBlock(0x80 | LSM303_OUT_X_L_A, 6, a);
-     clock_gettime(CLOCK_MONOTONIC, &end);
+    clock_gettime(CLOCK_MONOTONIC, &end);
 
-     timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
-     timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
+    timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
+    timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
 }
 
 void readMAG(uint8_t* m, struct timespec* timestamp){
@@ -56,9 +56,9 @@ void readTMP(uint8_t* t, struct timespec* timestamp){
     //*t = (int16_t)(block[1] | block[0] << 8) >> 4;
 }
 void writeAccReg(uint8_t reg, uint8_t value){
-     selectDevice(file,ACC_ADDRESS);
-     int result = i2c_smbus_write_byte_data(file, reg, value);
-     if (result == -1){
+    selectDevice(file,ACC_ADDRESS);
+    int result = i2c_smbus_write_byte_data(file, reg, value);
+    if (result == -1){
         printMsg(stderr, LSM303, "Failed to write byte to I2C Acc.");
         exit(1);
     }
@@ -73,7 +73,7 @@ void writeMagReg(uint8_t reg, uint8_t value){
      }
 }
 
-void writeTempReg(uint8_t reg, uint8_t value){
+void writeTmpReg(uint8_t reg, uint8_t value){
      //Temperature lectures provided by magnetometer
      selectDevice(file, MAG_ADDRESS);
      int result = i2c_smbus_write_byte_data(file, reg, value);
@@ -106,5 +106,5 @@ void enableLSM303(){
 
      // Enable termometer
      //P.36 datasheet Enable termometer, minimun data output rate 15Hz
-     writeTempReg(LSM303_CRA_REG_M, 0b10010000);
+     writeTmpReg(LSM303_CRA_REG_M, 0b10010000);
 }

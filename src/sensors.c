@@ -8,51 +8,6 @@
 #include "sensors.h"
 
 pid_t LED_PID = -1;
-int keep_running = 1;
-
-void readAndSendImage(int sock){
-	char file_to_read[30];
-	char error_string[75];
-	FILE* raw_image;
-	static int count = -1;
-
-	printMsg(stderr, SENSORS, "Processing image\n");
-
-	while(LAST_IMG_SAVED < 1){} //Waits for the image producer to have at least one image written in the SD
-
-	count++;
-
-	if(count > LAST_IMG_SAVED-1){
-		count = LAST_IMG_SAVED - 1;
-	}
-
-	sprintf(file_to_read, "raw_image_%05d.data", count);
-
-	//---- open the image to be sent ----
-	raw_image = fopen(file_to_read, "r");
-
-	if(raw_image == NULL){
-		strerror_r(errno, error_string, 75);
-		printMsg(stderr, SENSORS, "Error opening file %s: %s.\n", file_to_read, error_string);
-		//TODO: HANDLING ERRORS
-		return;
-	}
-	else{
-		printMsg(stderr, SENSORS, "File open: %s.\n", file_to_read);
-	}
-
-	unsigned char image_stream[1280*960];
-
-	//---- read the image to be sent ----
-	int bytes_read = fread((unsigned char*) image_stream, 1, 1280*960, raw_image);
-	printMsg(stderr, SENSORS, "%d bytes read\n", bytes_read);
-
-	//---- send the image ----
-	int bytes_sent = sendImage_old(sock, image_stream);
-	printMsg(stderr, SENSORS, "%d bytes sent\n\n", bytes_sent);
-
-	fclose(raw_image);
-}
 
 void readAndSendTemperature(int socket, int fd){
 	signed char highByte = -10;
@@ -174,23 +129,6 @@ void readAndStoreMagnetometer(FILE* file){
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
 	fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, MAG[0],MAG[1],MAG[2]);	
-}
-
-int sendImage_old(int sockfd, unsigned char* image_data) {
-	int n, bytes_sent, total_bytes;
-	bytes_sent = 0;
-	total_bytes = 1280 * 960;
-
-	printMsg(stderr, SENSORS, "Sending image\n");
-
-	while (bytes_sent < total_bytes) {
-		if ((n = write(sockfd, image_data + bytes_sent, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket", 0);
-		else
-			bytes_sent += n;
-	}
-
-	return bytes_sent;
 }
 
 int setGPIOValue(int GPIO_number, bool on){

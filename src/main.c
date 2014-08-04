@@ -109,7 +109,7 @@ void* capture_images(void* useless){
 void* control_LS303DLHC(void* useless){
 	const char* acc_file_name = "accelerometer_measurements.data";
 	const char* mag_file_name = "magnetometer_measurements.data";
-	
+
 	//Enable LSM303 sensor - Magnetometer/Accelerometer
 	enableLSM303();
 
@@ -294,7 +294,6 @@ void* process_images(void* useless){
 		if(is_processable && !first){
 			int count;
 			long long ITER = 5;
-			int NANO_FACTOR = 1000000000;
 
 			n_nsec = n_nsec_mean = 0;
 

@@ -32,7 +32,7 @@ void changeCatalogs(int magnitude){
 	char k_vector_string[50];
 	char stars_string[50];
 
-	printMsg(stderr, STARTRACKER, "Magntiude: %d\n", magnitude);
+	printMsg(stderr, STARTRACKER, "Magnitude: %d\n", magnitude);
 
 	sprintf(catalog_string, "./catalogs/catalogo_mag_%d.txt", magnitude);
 	sprintf(k_vector_string, "./catalogs/k_vector_mag_%d.txt", magnitude);

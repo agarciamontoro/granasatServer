@@ -6,8 +6,7 @@ pthread_mutex_t mutex_star_tracker;
 pthread_mutex_t mutex_print_msg;
 int new_frame_proc = 0;
 int new_frame_send = 0;
-
-const int NANO_FACTOR = 1000000000;
+int keep_running = 1;
 
 /**
  * @details

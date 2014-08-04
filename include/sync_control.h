@@ -43,6 +43,9 @@
 	/**@brief Reset colour string for printing in the terminal*/
 #define KRES	"\033[0m"
 
+	/**@brief Inverse of nano factor: 1E9*/
+#define NANO_FACTOR 1000000000
+
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////                    /////////////////////////////////////
@@ -103,6 +106,15 @@ extern int new_frame_proc;
  * It is changed from DMK41BU02.h process_image() and from connection.h sendImage().
  */
 extern int new_frame_send;
+
+/**
+ * @brief Variable to keep threads alive
+ *
+ * @details Thanks to keep_running, there is a global mechanism to control when the threads
+ * should finish. All threads are inside an 'infinite' loop only stopped assigning 0 to keep_running.
+ */
+extern int keep_running;
+
 /**
  * @brief Datatype to control which thread prints a message in the stream.
 
@@ -185,7 +197,8 @@ struct timespec nsec_to_timespec(long long nsec);
  * @brief Prints @p msg, preceded by the current local time, into the output pointed by @p stream.
 
  * @param stream Output stream.
- * @param msg String to be printed.
+ * @param type Type of thread. See ::msg_type definition.
+ * @param format printf-style string to be printed.
 
  * @return Returns nothing.
  */

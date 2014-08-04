@@ -107,7 +107,7 @@ void writeAccReg(uint8_t reg, uint8_t value);
 
 void writeMagReg(uint8_t reg, uint8_t value);
 
-void writeTempReg(uint8_t reg, uint8_t value);
+void writeTmpReg(uint8_t reg, uint8_t value);
 
 void enableLSM303();
 /////////////////////////////////////////////////////////////////////////////////////

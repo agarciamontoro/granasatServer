@@ -28,86 +28,86 @@ int threshold3; // Minimum number of pixels to compute a centroid
 int stars_used; // Number of stars that the star tracker algorithm will try to find
 float err;
 
-	//Structure to store the centroid info
-	//Every centroid has a x,y coordinates in the image
-	//and a brightness value.
-	struct Centroid{
+//Structure to store the centroid info
+//Every centroid has a x,y coordinates in the image
+//and a brightness value.
+struct Centroid{
 
-		float x; //x coordinate
-		float y; //y coordinate
-		float brightness; //Value of the brightness
-	};
+	float x; //x coordinate
+	float y; //y coordinate
+	float brightness; //Value of the brightness
+};
 
-	//Structure to store the information of a unitary vector.
-	//Unitary vectors are computed through a centroid and
-	//they represent the x,y,z coordinates of a vector in 
-	//the focal plane.	
-	struct UnitaryVector{
+//Structure to store the information of a unitary vector.
+//Unitary vectors are computed through a centroid and
+//they represent the x,y,z coordinates of a vector in 
+//the focal plane.	
+struct UnitaryVector{
 
-		float x;//x coordinate in the focal plane
-		float y;//y coordinate in the focal plane
-		float z;//z coordinate in the focal plane
+	float x;//x coordinate in the focal plane
+	float y;//y coordinate in the focal plane
+	float z;//z coordinate in the focal plane
 
-	};
+};
 
+
+//Structure to store center information.
+//A center is a possible star an its respective pairs	
+struct center{
+
+	float center; 
+	float pairs[100];
+	int numPairs;	
+};
+
+
+
+/*Structure to store the centroids vector header.
+
+  The main member is ptr, which points to the
+  first position of the centroids vector.
+  The other two members, total_elem and elem_used, are
+  used only for internal stuff, and they store, respectively,
+  the number of positions reserved in the vector and the number
+  of cells actually used.
+*/
+struct CentroidVector{
+
+	struct Centroid * ptr; //Pointer to the first position of the allocated memory
+	int total_elem; //Number of elementes available
+	int elem_used; //Number of elements which contains real data
+};
+
+
+
+/*Structure to store the unitary_vector vector header.
+
+  The main member is ptr, which points to the
+  first position of the unitary vector.
+  The other two members, total_elem and elem_used, are
+  used only for internal stuff, and they store, respectively,
+  the number of positions reserved in the vector and the number
+  of cells actually used.
+*/
+
+struct Vector_UnitaryVector{
 	
-	//Structure to store center information.
-	//A center is a possible star an its respective pairs	
-	struct center{
-
-		float center; 
-		float pairs[100];
-		int numPairs;	
-	};
-
-
+	struct  UnitaryVector * ptr; 
+	int total_elem;
+	int elem_used;
 	
-	/*Structure to store the centroids vector header.
-
-	  The main member is ptr, which points to the
-	  first position of the centroids vector.
-	  The other two members, total_elem and elem_used, are
-	  used only for internal stuff, and they store, respectively,
-	  the number of positions reserved in the vector and the number
-	  of cells actually used.
-	*/
-	struct CentroidVector{
-
-		struct Centroid * ptr; //Pointer to the first position of the allocated memory
-		int total_elem; //Number of elementes available
-		int elem_used; //Number of elements which contains real data
-	};
+};
 
 
+//Structure to store a vector of centers
+struct centerVector{
 
-	/*Structure to store the unitary_vector vector header.
-
-	  The main member is ptr, which points to the
-	  first position of the unitary vector.
-	  The other two members, total_elem and elem_used, are
-	  used only for internal stuff, and they store, respectively,
-	  the number of positions reserved in the vector and the number
-	  of cells actually used.
-	*/
-
-	struct Vector_UnitaryVector{
-		
-		struct  UnitaryVector * ptr; 
-		int total_elem;
-		int elem_used;
-		
-	};
+	struct center * ptr;
+	int elem_used;
+	int total_elem;
 
 
-	//Structure to store a vector of centers
-	struct centerVector{
-
-		struct center * ptr;
-		int elem_used;
-		int total_elem;
-
-
-	};
+};
 
 
 /////////////////////////// configuration functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

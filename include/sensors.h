@@ -28,8 +28,6 @@
 #include "DMK41BU02.h"				// Camera management library
 #include "sync_control.h"		// Timestamp management and synchronisation control
 
-extern int keep_running;
-
 void readAndSendTemperature(int socket, int fd);
 
 void readAndSendMagnetometer(int socket);
@@ -39,10 +37,6 @@ void readAndSendAccelerometer(int socket);
 void readAndStoreAccelerometer(FILE* file);
 
 void readAndStoreMagnetometer(FILE* file);
-
-int sendImage_old(int sockfd, unsigned char* image_data);
-
-void readAndSendImage(int sock);
 
 int setGPIOValue(int GPIO_number, bool on);
 
