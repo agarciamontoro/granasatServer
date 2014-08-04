@@ -31,7 +31,7 @@ int cmpHorizontally( const void* _a, const void* _b, void* userdata );
 int cmpGreatest( const void* _a, const void* _b, void* userdata );
 CvLine cvPerpendicularLine(CvLine line);
 CvPoint2D32f cvLineIntersection(CvLine line_a, CvLine line_b);
-CvPoint2D32f findEarthHS_Centroid(CvSeq* contour, IplImage* img);
+CvPoint2D32f findEarthCentroid(CvSeq* contour, IplImage* img);
 double cvDistance(CvPoint2D32f P1, CvPoint2D32f P2);
 float sum_points(CvSeq* contour, int pow_x, int pow_y, int init, int end);
 HS_Centroid MLS_method(CvSeq* contour);

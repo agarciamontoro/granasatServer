@@ -95,7 +95,7 @@ CvPoint mostRightPoint(CvSeq* contour, int width){
 //4.- For each HS_Centroid, calculates the summation of relative distances between itself and all the other points
 //5.- Sort the HS_Centroids by its summation and discards the HS_Centroids with greater summations
 //6.- Obtain the earth HS_Centroid with an average of all the remaining HS_Centroids
-CvPoint2D32f findEarthHS_Centroid(CvSeq* contour, IplImage* img){
+CvPoint2D32f findEarthCentroid(CvSeq* contour, IplImage* img){
 	const int num_of_points = 5;
 	const int num_of_lines = (num_of_points*(num_of_points-1))/2;
 	const int num_of_intersec = (num_of_lines*(num_of_lines-1))/2;
@@ -281,6 +281,8 @@ void showImages(IplImage* img_left, IplImage* img_right, IplImage* display, char
 
 	//SHOW IMAGE
 	cvShowImage(window_name, display);
+
+	cvReleaseImage(&frame_proc);
 }
 
 //---------------------------------------------------------------------------------
@@ -313,7 +315,7 @@ void* HS_test(void* useless){
     CvCapture *capture = cvCaptureFromAVI("/home/alejandro/Documentos/Old/COMPASSvideos/video camera 2/AVI_0006.AVI");
     if(!capture)
     {
-        printMsg( stderr, HORIZONSENSOR, "!!! cvCaptureFromAVI failed (file not found?)\n");
+        printf("!!! cvCaptureFromAVI failed (file not found?)\n");       
         return NULL;
     }
 
@@ -324,13 +326,17 @@ void* HS_test(void* useless){
     IplImage* frame_thresh = NULL;
 
     //Display image setting
+    cvStartWindowThread(); //To allow OpenCV updating its windows automatically. If this is not here, the window does not close when 'q' is pressed
     IplImage *DispImage = cvCreateImage( cvSize(700, 320), IPL_DEPTH_8U, 3 );
     cvNamedWindow(display_window, CV_WINDOW_AUTOSIZE);
-    cvCreateTrackbar(trackbar_thresh, display_window, &bin_thresh, 255, controlThreshold);
+    cvCreateTrackbar(trackbar_thresh, display_window, &bin_thresh, 255, controlThreshold); //Does it need to be release?
 
     //Loop control
     char key = 0;
     bool is_first_ = true;
+
+    CvMemStorage *storage = cvCreateMemStorage(0);
+    CvSeq *contours = 0;
 
     //MAIN LOOP
     while (key != 'q')
@@ -341,7 +347,7 @@ void* HS_test(void* useless){
         frame = cvQueryFrame(capture);
         if (!frame)
         {
-            printMsg( stderr, HORIZONSENSOR, "!!! cvQueryFrame failed: no frame\n");
+            printf("!!! cvQueryFrame failed: no frame\n");
             break;
         }
 
@@ -359,7 +365,7 @@ void* HS_test(void* useless){
         //*******************************
         //***********PROCESSING**********
         //*******************************
-
+        contours = 0;
 		//Obtain binary image and obtain canny edges
         cvThreshold(frame_gray, frame_thresh, bin_thresh, 255, CV_THRESH_BINARY);
         cvCanny( frame_thresh, frame_canny, bin_thresh, bin_thresh*2, 3 );
@@ -367,8 +373,6 @@ void* HS_test(void* useless){
         //·······························
         //········Find contours··········
         //·······························
-        CvMemStorage *storage = cvCreateMemStorage(0);
-		CvSeq *contours = 0;
 
 		//Start the contour scanning
 		CvContourScanner contour_scanner = cvStartFindContours(frame_canny, storage, sizeof(CvContour), CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0));
@@ -393,10 +397,11 @@ void* HS_test(void* useless){
 	    for( ; contours != 0; contours = contours->h_next ){
 
 	    	//MAIN FUNCTION
-			CvPoint2D32f earth_HS_Centroid = findEarthHS_Centroid(contours, frame);
+			CvPoint2D32f earth_centroid;
+			earth_centroid = findEarthCentroid(contours, frame);
 
 			//DISPLAYING
-			sprintf(string, "Earth HS_Centroid: (%.1f, %.1f)", earth_HS_Centroid.x , earth_HS_Centroid.y);
+			sprintf(string, "Earth centroid: (%.1f, %.1f)", earth_centroid.x , earth_centroid.y);
 			cvPutText(DispImage, string, cvPoint(20,300), &font, cvScalar(0,0,0,0));
 			horizons_found++;
 	    }
@@ -411,9 +416,15 @@ void* HS_test(void* useless){
 
 	    showImages(frame, frame_canny, DispImage, display_window);
 
+        cvClearMemStorage(storage);
         key = cvWaitKey(15);
     }
 
+    cvReleaseMemStorage(&storage);
+    cvReleaseImage(&frame_gray);
+    cvReleaseImage(&frame_canny);
+    cvReleaseImage(&frame_thresh);
+    cvReleaseImage(&DispImage);
     cvReleaseCapture(&capture);
     cvDestroyAllWindows();
 

@@ -358,8 +358,8 @@ int main(int argc, char** argv){
     // ********  JOIN THREADS  *******
     // *******************************	
 	//pthread_join( capture_thread, NULL );
-	pthread_join( processing_thread, NULL );
 	pthread_join( horizon_thread, NULL );
+	pthread_join( processing_thread, NULL );
 	//pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
 
