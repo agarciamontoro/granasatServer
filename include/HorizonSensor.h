@@ -31,7 +31,7 @@ CvPoint2D32f cvLineIntersection(CvLine line_a, CvLine line_b);
 CvPoint2D32f findEarthCentroid(CvSeq* contour, IplImage* img);
 double cvDistance(CvPoint2D32f P1, CvPoint2D32f P2);
 float sum_points(CvSeq* contour, int pow_x, int pow_y, int init, int end);
-CvPoint MLS_method(CvSeq* contour);
+Centroid MLS_method(CvSeq* contour);
 
 //GUI FUNCTIONS
 inline void drawCvLine(CvArr* array, CvLine line, CvScalar color, int thickness, int connectivity, int shift);

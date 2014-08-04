@@ -108,100 +108,25 @@ CvPoint2D32f findEarthCentroid(CvSeq* contour, IplImage* img){
 	//Sort the contour points by its x coordinate
 	cvSeqSort( contour, cmpHorizontally, NULL);
 
-	CvPoint* points[num_of_points];
+	Centroid earth_centroid;
 
-	//Get all the points from the contour
-	for(i=0; i<num_of_points; ++i){
-		points[i] = (CvPoint*)cvGetSeqElem(contour, i*slice);
-	}
+	earth_centroid = MLS_method(contour);
 
-	CvLine perp_bisectors[num_of_lines];
-	CvLine line;
-
-	int line_index = 0;
-
-	//Iterate through all the points and get all the perpendicular bisectors
-	for(i=0; i<num_of_points; ++i){
-		for(j=i+1; j<num_of_points; ++j){
-			line.a = *points[i]; line.b = *points[j];
-			perp_bisectors[line_index] = cvPerpendicularLine(line);
-			//cvLine(img, *points[i], *points[j], cvScalar(0,0,0,0), 1,8,0);
-			//drawCvLine(img, perp_bisectors[line_index], cvScalar(0,0,255,0), 1, 8, 0);
-			line_index++;
-		}
-	}
-
-	CvPoint2D32f intersections[num_of_intersec];
-	int intersec_index = 0;
-
-	//Iterate through the perpendicular bisectors and get all the intersections
-	for(i=0; i<num_of_lines; ++i){
-		for(j=i+1; j<num_of_lines; ++j){
-			intersections[intersec_index] = cvLineIntersection(perp_bisectors[i], perp_bisectors[j]);
-			intersec_index++;
-		}
-	}
-
-	Centroid centroids[num_of_intersec];
-	double sum_of_distances[num_of_intersec];
-
-	//Iterate through the intersections and obtain its distance summations
-	for(i=0; i<num_of_intersec; ++i){
-		sum_of_distances[i] = 0;
-		for(j=0; j<i; ++j){
-			sum_of_distances[i] += cvDistance(intersections[i], intersections[j]);
-		}
-		for(j=i+1; j<num_of_intersec; ++j){
-			sum_of_distances[i] += cvDistance(intersections[i], intersections[j]);
-		}
-
-		centroids[i].point = intersections[i];
-		centroids[i].distance_sum = sum_of_distances[i];
-	}
-
-	//Sort the centroids by its summation and discards those which have the greatest sum of relative distances
-	CvMemStorage *memStorage = cvCreateMemStorage(0);
-	CvSeq* seq_header = cvCreateSeq(0, sizeof(CvSeq), sizeof(Centroid), memStorage);
-	CvSeqBlock* mem_block = (CvSeqBlock*)cvMemStorageAlloc(memStorage, num_of_intersec*sizeof(Centroid));
-
-	//Make a cvSequence out of the centroids array in order to use its cvSeqSort future
-	CvSeq* centroid_seq = cvMakeSeqHeaderForArray(0, sizeof(CvSeq), sizeof(Centroid), centroids, num_of_intersec, seq_header, mem_block);
-
-	//Sort the centroids by its summation (cmpGreatest is the aux function to tell cvSeqSort which is the order)
-	cvSeqSort( centroid_seq, cmpGreatest, NULL);
-
-	//Get the average centroid
-	double x,y;
-	x = y = 0;
-	for(i=0; i<num_of_intersec/2; ++i){
-		Centroid* centroid__ = (Centroid*)cvGetSeqElem(centroid_seq, i);
-		printf("Coordinates: %.1f; %.1f\tDistance: %.1f\n", centroid__->point.x, centroid__->point.y, centroid__->distance_sum);
-		x += centroid__->point.x;
-		y += centroid__->point.y;
-	}
-
-	x /= num_of_intersec/2;
-	y /= num_of_intersec/2;
 	printf("-------  Earth centroid: (%.1f, %.1f)  -------\n"
-			"-------------------------------------------------\n", x, y);
+			"-------------------------------------------------\n", earth_centroid.point.x, earth_centroid.point.y);
 
-	CvPoint2D32f earth_centroid;
-	earth_centroid.x = x;
-	earth_centroid.y = y;
 
 
 	//Prints the circle which has the centroid as its centre and the distance to any point of the contour as its radius in the image
 	CvPoint draw_centroid;
-	draw_centroid.x = (int)x;
-	draw_centroid.y = (int)y;
+	draw_centroid.x = (int)earth_centroid.point.x;
+	draw_centroid.y = (int)earth_centroid.point.y;
 
-	int radius = sqrt( pow((earth_centroid.x - points[0]->x),2) + pow((earth_centroid.y - points[0]->y),2));
-
-	printf("RADIUS: %d\n", radius);
+	printf("RADIUS: %d\n", abs(earth_centroid.distance_sum));
 	fflush(stdout);
-	cvCircle(img, draw_centroid, abs(radius), cvScalar(0,0,255,5), 2,8,0);
+	cvCircle(img, draw_centroid, abs(earth_centroid.distance_sum), cvScalar(0,0,255,5), 2,8,0);
 
-	return earth_centroid;
+	return earth_centroid.point;
 }
 
 //---------------------------------------------------------------------------------
@@ -276,9 +201,9 @@ float sum_points(CvSeq* contour, int pow_x, int pow_y, int init, int end){
 }
 
 //---------------------------------------------------------------------------------
-CvPoint MLS_method(CvSeq* contour){
+Centroid MLS_method(CvSeq* contour){
 	int i;
-	float sum_x, sum_y, sum_xy, sum_x2y, sum_xy2, sum_x2, sum_y2, sum_x3, sum_y3;
+	double sum_x, sum_y, sum_xy, sum_x2y, sum_xy2, sum_x2, sum_y2, sum_x3, sum_y3;
 	int num_points = contour->total;
 
 	CvPoint* points[num_points];
@@ -299,7 +224,7 @@ CvPoint MLS_method(CvSeq* contour){
 		sum_y3  += points[i]->y * points[i]->y * points[i]->y;
 	}
 
-	float A,B,C,D,E;
+	double A,B,C,D,E;
 
 	A = num_points * sum_x2 - (sum_x * sum_x);
 	B = num_points * sum_xy - (sum_x * sum_y);
@@ -307,14 +232,25 @@ CvPoint MLS_method(CvSeq* contour){
 	D = 0.5 * ( num_points * sum_xy2 - (sum_x * sum_y2) + num_points*sum_x3 - sum_x*sum_x2 );
 	E = 0.5 * ( num_points * sum_x2y - (sum_y * sum_x2) + num_points*sum_y3 - sum_y*sum_y2 );
 	
-	CvPoint centre;
+	Centroid earth_centroid;
+	CvPoint2D32f centre;
 
-	float den = A*C - B*B;
+	double den = A*C - B*B;
 
-	centre.x = (D*C - B*E) / den;
-	centre.y = (A*E - B*D) / den;
+	earth_centroid.point.x = (D*C - B*E) / den;
+	earth_centroid.point.y = (A*E - B*D) / den;
 
-	return centre;
+	double radius = 0;
+
+	for (i = 0; i < num_points; ++i){
+		radius += sqrt( pow(points[i]->x - earth_centroid.point.x, 2) + pow(points[i]->y - earth_centroid.point.y, 2) );
+	}
+
+	radius /= num_points;
+
+	earth_centroid.distance_sum = radius;
+
+	return earth_centroid;
 }
 
 //*********************************************************************************
