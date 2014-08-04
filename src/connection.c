@@ -2,8 +2,12 @@
 
 int CONNECTED = 0;
 
-void error(char *msg, int status) {
-	perror(msg);
+void error(const char *msg, int status) {
+	char error_string[75];
+
+	strerror_r(errno, error_string, 75);
+
+	printMsg(stderr, CONNECTION, "%s%s: %s.\n", KLRE, msg, error_string);
 	
 	if(status){
 		printMsg(stderr, CONNECTION, "DISCONNECTING.\n");
@@ -160,7 +164,7 @@ void sendAccAndMag(int sockfd){
 	for (i = 0; i < 12; ++i){
 		buffer[i] = count*i;
 	}
-	
+
 	sendData(sockfd, buffer, sizeof(*buffer) * 12);
 
 	printMsg(stderr, CONNECTION, "Sent new buffer.\n");

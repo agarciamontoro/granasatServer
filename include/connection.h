@@ -15,7 +15,6 @@
 #include "sync_control.h"	// Timestamp management and synchronisation control
 #include "DMK41BU02.h"		// Camera management library
 
-static const int CAPTURE_RATE_NSEC = 2000000000;
 extern int CONNECTED;
 
 struct communication{
@@ -24,7 +23,7 @@ struct communication{
 	int portno;
 };
 
-void error(char *msg, int status);
+void error(const char *msg, int status);
 
 int prepareSocket(int portno);
 

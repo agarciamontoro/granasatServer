@@ -34,7 +34,7 @@ void errno_exit(const char *s)
 	char error_string[75];
 
 	strerror_r(errno, error_string, 75);
-	printMsg(stderr, DMK41BU02, "%s error %d, %s\n", s, errno, error_string);
+	printMsg(stderr, DMK41BU02, "%s%s error %d, %s\n", KLRE, s, errno, error_string);
 	exit(EXIT_FAILURE);
 }
 

@@ -22,6 +22,9 @@
 	/**@brief Red colour string for printing in the terminal*/
 #define KRED	"\033[31m"
 
+	/**@brief Light red colour string for printing in the terminal*/
+#define KLRE	"\033[1;31m"
+
 	/**@brief Green colour string for printing in the terminal*/
 #define KGRN	"\033[32m"
 

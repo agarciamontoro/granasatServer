@@ -38,6 +38,7 @@
 #include "sync_control.h"		// Timestamp management and synchronisation control
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
+#define CAPTURE_RATE_NSEC 2000000000
 
 extern int LAST_IMG_SAVED;
 extern uint8_t* current_frame;

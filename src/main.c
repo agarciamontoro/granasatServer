@@ -249,8 +249,8 @@ void* control_connection(void* useless){
 					break;
 			} //END switch
 
-			usleep(500000);
-			count += 500000;
+			usleep(50000);
+			count += 50000;
 		} //END while ( connected )
 
 		close(newsock_big);
