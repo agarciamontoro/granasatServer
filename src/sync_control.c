@@ -166,6 +166,11 @@ void printMsg(FILE* stream, enum msg_type type, const char* format, ... ) {
 				sprintf(id, "Star tracker");
 				sprintf(colour, KYEL);
 				break;
+
+			case HORIZONSENSOR:
+				sprintf(id, "Horizon sensor");
+				sprintf(colour, KYEL);
+				break;
 				
 			case CONNECTION:
 				sprintf(id, "Connection");
@@ -193,6 +198,8 @@ void printMsg(FILE* stream, enum msg_type type, const char* format, ... ) {
 				break;
 				
 			default:
+				sprintf(id, "Unknown");
+				sprintf(colour, KWHT);
 				break;
 
 		}

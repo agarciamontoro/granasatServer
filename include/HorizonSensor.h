@@ -4,19 +4,22 @@
 #include <highgui.h>
 #include <cv.h>
 #include <stdbool.h>
+#include <stdio.h>
+
+#include "sync_control.h"
 
 struct CvLine{
 	CvPoint a;
 	CvPoint b;
 };
 
-struct Centroid{
+struct HS_Centroid{
 	CvPoint2D32f point;
 	double distance_sum;
 };
 
 typedef struct CvLine	CvLine;
-typedef struct Centroid Centroid;
+typedef struct HS_Centroid HS_Centroid;
 
 
 //PROCESSING FUNCTIONS
@@ -28,14 +31,21 @@ int cmpHorizontally( const void* _a, const void* _b, void* userdata );
 int cmpGreatest( const void* _a, const void* _b, void* userdata );
 CvLine cvPerpendicularLine(CvLine line);
 CvPoint2D32f cvLineIntersection(CvLine line_a, CvLine line_b);
-CvPoint2D32f findEarthCentroid(CvSeq* contour, IplImage* img);
+CvPoint2D32f findEarthHS_Centroid(CvSeq* contour, IplImage* img);
 double cvDistance(CvPoint2D32f P1, CvPoint2D32f P2);
 float sum_points(CvSeq* contour, int pow_x, int pow_y, int init, int end);
-Centroid MLS_method(CvSeq* contour);
+HS_Centroid MLS_method(CvSeq* contour);
 
 //GUI FUNCTIONS
 inline void drawCvLine(CvArr* array, CvLine line, CvScalar color, int thickness, int connectivity, int shift);
 void copy_into_display(IplImage* img, IplImage* display, CvRect rectangle);
 void showImages(IplImage* img_left, IplImage* img_right, IplImage* display, char* window_name);
+
+
+//TEST FUNCIONS
+static int bin_thresh = 100;
+
+void controlThreshold(int pos);
+void* HS_test(void* useless);
 
 #endif

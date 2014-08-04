@@ -1,6 +1,4 @@
 #include "HorizonSensor.h"
-#include <stdbool.h>
-#include <stdio.h> //REMOVE
 
 //*********************************************************************************
 //****************************            *****************************************
@@ -17,10 +15,10 @@ int cmpHorizontally( const void* _a, const void* _b, void* userdata ){
 }
 
 //---------------------------------------------------------------------------------
-//Auxliar function to cvSeqSort. It compares two centroids and returns its distance-order
+//Auxliar function to cvSeqSort. It compares two HS_Centroids and returns its distance-order
 int cmpGreatest( const void* _a, const void* _b, void* userdata ){
-	Centroid* a = (Centroid*)_a;
-	Centroid* b = (Centroid*)_b;
+	HS_Centroid* a = (HS_Centroid*)_a;
+	HS_Centroid* b = (HS_Centroid*)_b;
 	return a->distance_sum < b->distance_sum ? -1 : b->distance_sum < a->distance_sum ? 1 : 0;
 }
 
@@ -93,11 +91,11 @@ CvPoint mostRightPoint(CvSeq* contour, int width){
 //Main function: It receives a contour (and an image for GUI purposes)
 //1.- Retrieves all the specified points (in num_of_points) sorted by its x coordinate
 //2.- Obtains all the perpendicular bisector between all the specified points
-//3.- Obtains all the intersections (possible centroids) between all those perpendicular bisectors
-//4.- For each centroid, calculates the summation of relative distances between itself and all the other points
-//5.- Sort the centroids by its summation and discards the centroids with greater summations
-//6.- Obtain the earth centroid with an average of all the remaining centroids
-CvPoint2D32f findEarthCentroid(CvSeq* contour, IplImage* img){
+//3.- Obtains all the intersections (possible HS_Centroids) between all those perpendicular bisectors
+//4.- For each HS_Centroid, calculates the summation of relative distances between itself and all the other points
+//5.- Sort the HS_Centroids by its summation and discards the HS_Centroids with greater summations
+//6.- Obtain the earth HS_Centroid with an average of all the remaining HS_Centroids
+CvPoint2D32f findEarthHS_Centroid(CvSeq* contour, IplImage* img){
 	const int num_of_points = 5;
 	const int num_of_lines = (num_of_points*(num_of_points-1))/2;
 	const int num_of_intersec = (num_of_lines*(num_of_lines-1))/2;
@@ -108,25 +106,22 @@ CvPoint2D32f findEarthCentroid(CvSeq* contour, IplImage* img){
 	//Sort the contour points by its x coordinate
 	cvSeqSort( contour, cmpHorizontally, NULL);
 
-	Centroid earth_centroid;
+	HS_Centroid earth_HS_Centroid;
 
-	earth_centroid = MLS_method(contour);
+	earth_HS_Centroid = MLS_method(contour);
 
-	printf("-------  Earth centroid: (%.1f, %.1f)  -------\n"
-			"-------------------------------------------------\n", earth_centroid.point.x, earth_centroid.point.y);
-
+	printMsg( stderr, HORIZONSENSOR, "Earth HS_Centroid: (%.1f, %.1f) \t RADIUS: %d\n", earth_HS_Centroid.point.x, earth_HS_Centroid.point.y, abs(earth_HS_Centroid.distance_sum));
 
 
-	//Prints the circle which has the centroid as its centre and the distance to any point of the contour as its radius in the image
-	CvPoint draw_centroid;
-	draw_centroid.x = (int)earth_centroid.point.x;
-	draw_centroid.y = (int)earth_centroid.point.y;
 
-	printf("RADIUS: %d\n", abs(earth_centroid.distance_sum));
-	fflush(stdout);
-	cvCircle(img, draw_centroid, abs(earth_centroid.distance_sum), cvScalar(0,0,255,5), 2,8,0);
+	//Prints the circle which has the HS_Centroid as its centre and the distance to any point of the contour as its radius in the image
+	CvPoint draw_HS_Centroid;
+	draw_HS_Centroid.x = (int)earth_HS_Centroid.point.x;
+	draw_HS_Centroid.y = (int)earth_HS_Centroid.point.y;
 
-	return earth_centroid.point;
+	cvCircle(img, draw_HS_Centroid, abs(earth_HS_Centroid.distance_sum), cvScalar(0,0,255,5), 2,8,0);
+
+	return earth_HS_Centroid.point;
 }
 
 //---------------------------------------------------------------------------------
@@ -201,7 +196,7 @@ float sum_points(CvSeq* contour, int pow_x, int pow_y, int init, int end){
 }
 
 //---------------------------------------------------------------------------------
-Centroid MLS_method(CvSeq* contour){
+HS_Centroid MLS_method(CvSeq* contour){
 	int i;
 	double sum_x, sum_y, sum_xy, sum_x2y, sum_xy2, sum_x2, sum_y2, sum_x3, sum_y3;
 	int num_points = contour->total;
@@ -232,25 +227,25 @@ Centroid MLS_method(CvSeq* contour){
 	D = 0.5 * ( num_points * sum_xy2 - (sum_x * sum_y2) + num_points*sum_x3 - sum_x*sum_x2 );
 	E = 0.5 * ( num_points * sum_x2y - (sum_y * sum_x2) + num_points*sum_y3 - sum_y*sum_y2 );
 	
-	Centroid earth_centroid;
+	HS_Centroid earth_HS_Centroid;
 	CvPoint2D32f centre;
 
 	double den = A*C - B*B;
 
-	earth_centroid.point.x = (D*C - B*E) / den;
-	earth_centroid.point.y = (A*E - B*D) / den;
+	earth_HS_Centroid.point.x = (D*C - B*E) / den;
+	earth_HS_Centroid.point.y = (A*E - B*D) / den;
 
 	double radius = 0;
 
 	for (i = 0; i < num_points; ++i){
-		radius += sqrt( pow(points[i]->x - earth_centroid.point.x, 2) + pow(points[i]->y - earth_centroid.point.y, 2) );
+		radius += sqrt( pow(points[i]->x - earth_HS_Centroid.point.x, 2) + pow(points[i]->y - earth_HS_Centroid.point.y, 2) );
 	}
 
 	radius /= num_points;
 
-	earth_centroid.distance_sum = radius;
+	earth_HS_Centroid.distance_sum = radius;
 
-	return earth_centroid;
+	return earth_HS_Centroid;
 }
 
 //*********************************************************************************
@@ -292,4 +287,139 @@ void showImages(IplImage* img_left, IplImage* img_right, IplImage* display, char
 //Wrapper function to cvLine to draw the custom CvLine type
 inline void drawCvLine(CvArr* array, CvLine line, CvScalar color, int thickness, int connectivity, int shift){
 	cvLine(array, line.a, line.b, color, thickness, connectivity, shift);
+}
+
+
+//*********************************************************************************
+//****************************           ******************************************
+//****************************    GUI    ******************************************
+//****************************           ******************************************
+//*********************************************************************************
+
+//---------------------------------------------------------------------------------
+
+//Variable that controls the threshold setting
+void* HS_test(void* useless){
+	//Names of windows and trackbars
+	char* display_window = "Original video";
+	char* trackbar_thresh = "Threshold";
+
+	//GUI printings
+    CvFont font;
+    cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5, 0, 1.5, 8);
+    char string[100];
+
+    //Video file input
+    CvCapture *capture = cvCaptureFromAVI("/home/alejandro/Documentos/Old/COMPASSvideos/video camera 2/AVI_0006.AVI");
+    if(!capture)
+    {
+        printMsg( stderr, HORIZONSENSOR, "!!! cvCaptureFromAVI failed (file not found?)\n");
+        return NULL;
+    }
+
+    //Image declarations
+    IplImage* frame = NULL;
+    IplImage* frame_gray = NULL;
+    IplImage* frame_canny = NULL;
+    IplImage* frame_thresh = NULL;
+
+    //Display image setting
+    IplImage *DispImage = cvCreateImage( cvSize(700, 320), IPL_DEPTH_8U, 3 );
+    cvNamedWindow(display_window, CV_WINDOW_AUTOSIZE);
+    cvCreateTrackbar(trackbar_thresh, display_window, &bin_thresh, 255, controlThreshold);
+
+    //Loop control
+    char key = 0;
+    bool is_first_ = true;
+
+    //MAIN LOOP
+    while (key != 'q')
+    {
+    	int contours_found, horizons_found;
+    	contours_found = horizons_found = 0;
+
+        frame = cvQueryFrame(capture);
+        if (!frame)
+        {
+            printMsg( stderr, HORIZONSENSOR, "!!! cvQueryFrame failed: no frame\n");
+            break;
+        }
+
+        //Variable definitions in the first iteration
+        if(is_first_){
+            frame_gray = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
+            frame_thresh = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
+            frame_canny = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
+            is_first_ = false;
+        }
+
+        //Pre-processing for testing purposes: GranaSAT works with monochrome images
+        cvCvtColor( frame, frame_gray, CV_RGB2GRAY );
+
+        //*******************************
+        //***********PROCESSING**********
+        //*******************************
+
+		//Obtain binary image and obtain canny edges
+        cvThreshold(frame_gray, frame_thresh, bin_thresh, 255, CV_THRESH_BINARY);
+        cvCanny( frame_thresh, frame_canny, bin_thresh, bin_thresh*2, 3 );
+
+        //·······························
+        //········Find contours··········
+        //·······························
+        CvMemStorage *storage = cvCreateMemStorage(0);
+		CvSeq *contours = 0;
+
+		//Start the contour scanning
+		CvContourScanner contour_scanner = cvStartFindContours(frame_canny, storage, sizeof(CvContour), CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0));
+
+		//Delete all non-possible horizon contours
+		CvSeq* contour = NULL;
+		while( (contour = cvFindNextContour(contour_scanner)) != NULL){
+			if(!possibleHorizon(contour, frame->width, frame->height)){
+				cvSubstituteContour(contour_scanner, NULL);
+			}
+			contours_found++;
+		}
+
+		//Ends the contour scanning and retrieves the first contour in the
+		//sequence without non-possible horizons
+		contours = cvEndFindContours(&contour_scanner);
+
+		//Reset display image
+	    cvSet(DispImage, cvScalar(242,241,240,0), 0);
+
+		//Process contours and print some information in the GUI
+	    for( ; contours != 0; contours = contours->h_next ){
+
+	    	//MAIN FUNCTION
+			CvPoint2D32f earth_HS_Centroid = findEarthHS_Centroid(contours, frame);
+
+			//DISPLAYING
+			sprintf(string, "Earth HS_Centroid: (%.1f, %.1f)", earth_HS_Centroid.x , earth_HS_Centroid.y);
+			cvPutText(DispImage, string, cvPoint(20,300), &font, cvScalar(0,0,0,0));
+			horizons_found++;
+	    }
+
+
+        //*******************************
+        //***********DISPLAYING**********
+        //*******************************
+
+	    sprintf(string, "%d contours found, of which %d are possible horizons", contours_found, horizons_found);
+	    cvPutText(DispImage, string, cvPoint(20,280), &font, cvScalar(0,0,0,0));
+
+	    showImages(frame, frame_canny, DispImage, display_window);
+
+        key = cvWaitKey(15);
+    }
+
+    cvReleaseCapture(&capture);
+    cvDestroyAllWindows();
+
+    return 0;
+}
+
+void controlThreshold(int pos){
+
 }

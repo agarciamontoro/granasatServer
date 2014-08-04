@@ -132,6 +132,7 @@ extern int keep_running;
 enum msg_type{
 	MAIN,
 	STARTRACKER,
+	HORIZONSENSOR,
 	CONNECTION,
 	DMK41BU02,
 	DS1621,
