@@ -99,32 +99,34 @@ CvPoint mostRightPoint(CvSeq* contour, int width){
 //5.- Sort the HS_Centroids by its summation and discards the HS_Centroids with greater summations
 //6.- Obtain the earth HS_Centroid with an average of all the remaining HS_Centroids
 CvPoint2D32f findEarthCentroid(CvSeq* contour, IplImage* img){
-	const int num_of_points = 5;
-	const int num_of_lines = (num_of_points*(num_of_points-1))/2;
-	const int num_of_intersec = (num_of_lines*(num_of_lines-1))/2;
+	//const int num_of_points = 5;
+	//const int num_of_lines = (num_of_points*(num_of_points-1))/2;
+	//const int num_of_intersec = (num_of_lines*(num_of_lines-1))/2;
 
-	int slice = (int)( (contour->total)/num_of_points );
-	int i, j;
+	//int slice = (int)( (contour->total)/num_of_points );
+	//int i, j;
 
 	//Sort the contour points by its x coordinate
-	cvSeqSort( contour, cmpHorizontally, NULL);
+	//cvSeqSort( contour, cmpHorizontally, NULL);
 
-	HS_Centroid earth_HS_Centroid;
+	HS_Centroid earth_centroid;
 
-	earth_HS_Centroid = MLS_method(contour);
+	earth_centroid = MLS_method(contour);
 
-	printMsg( stderr, HORIZONSENSOR, "Earth centroid: (%.1f, %.1f) \t RADIUS: %d\n", earth_HS_Centroid.point.x, earth_HS_Centroid.point.y, abs(earth_HS_Centroid.distance_sum));
-
-
+	//printMsg( stderr, HORIZONSENSOR, "Earth centroid: (%.1f, %.1f) \t RADIUS: %d\n", earth_centroid.point.x, earth_centroid.point.y, abs(earth_centroid.distance_sum));
 
 	//Prints the circle which has the HS_Centroid as its centre and the distance to any point of the contour as its radius in the image
-	CvPoint draw_HS_Centroid;
-	draw_HS_Centroid.x = (int)earth_HS_Centroid.point.x;
-	draw_HS_Centroid.y = (int)earth_HS_Centroid.point.y;
+	if(img != NULL){
+		CvPoint draw_centroid;
+		draw_centroid.x = (int)earth_centroid.point.x;
+		draw_centroid.y = (int)earth_centroid.point.y;
 
-	cvCircle(img, draw_HS_Centroid, abs(earth_HS_Centroid.distance_sum), cvScalar(0,0,255,5), 2,8,0);
+		if( !(draw_centroid.x > 0 && draw_centroid.x < 1280   &&   draw_centroid.y > 0 && draw_centroid.y < 960) ){
+			cvCircle(img, draw_centroid, abs(earth_centroid.distance_sum), cvScalar(0,0,255,5), 2,8,0);
+		}
+	}
 
-	return earth_HS_Centroid.point;
+	return earth_centroid.point;
 }
 
 //---------------------------------------------------------------------------------
@@ -490,7 +492,6 @@ void* HS_test(void* useless){
 
 		//Process contours and print some information in the GUI
 	    for( ; contours != 0; contours = contours->h_next ){
-
 	    	//MAIN FUNCTION
 			CvPoint2D32f earth_centroid;
 			earth_centroid = findEarthCentroid(contours, frame);
@@ -499,6 +500,11 @@ void* HS_test(void* useless){
 			sprintf(string, "Earth centroid: (%.1f, %.1f)", earth_centroid.x , earth_centroid.y);
 			cvPutText(DispImage, string, cvPoint(20,300), &font, cvScalar(0,0,0,0));
 			horizons_found++;
+	    }
+
+	    if(!horizons_found){
+			sprintf(string, "NO HORIZON DETECTED");
+			cvPutText(frame, string, cvPoint(70,100), &font, cvScalar(0,0,255,5));
 	    }
 
 
