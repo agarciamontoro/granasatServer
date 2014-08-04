@@ -88,6 +88,15 @@ extern pthread_rwlock_t camera_rw_lock;
 extern pthread_mutex_t mutex_star_tracker;
 
 /**
+ * @brief Lock to control the access to processing parameters
+ *
+ * @details This lock let the Ground Station change the horizon sensor
+ * parameters without interfering with its current processing.
+ * It is initialised in main(), before any thread starts.
+ */
+extern pthread_mutex_t mutex_horizon_sensor;
+
+/**
  * @brief Lock to control the access to printing stream
  *
  * @details This lock let the different threads share the same 

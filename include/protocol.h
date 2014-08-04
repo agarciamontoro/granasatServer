@@ -20,6 +20,9 @@
 #define MSG_END           	1	//	1.	Ends connection
 #define MSG_RESTART       	2	//	2.	Restarts connection
 #define MSG_PING          	3	//	3.	Tests connection
+#define MSG_SET_MODE_AUTO	4	//	4.	Set mode to AUTO
+#define MSG_SET_MODE_STAR	5	//	5.	Set mode to STAR TRACKER
+#define MSG_SET_MODE_HORI	6	//	6.	Set mode to HORIZON SENSOR
 
 	//Camera
 #define MSG_SET_BRIGHTNESS	10	//	10.	Sets brightness				(+ int)

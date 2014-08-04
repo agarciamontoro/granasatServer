@@ -1,5 +1,8 @@
 #include "HorizonSensor.h"
 
+int BIN_THRESH = 240;
+int CAN_THRESH = 480;
+
 //*********************************************************************************
 //****************************            *****************************************
 //**************************** PROCESSING *****************************************
@@ -110,7 +113,7 @@ CvPoint2D32f findEarthCentroid(CvSeq* contour, IplImage* img){
 
 	earth_HS_Centroid = MLS_method(contour);
 
-	printMsg( stderr, HORIZONSENSOR, "Earth HS_Centroid: (%.1f, %.1f) \t RADIUS: %d\n", earth_HS_Centroid.point.x, earth_HS_Centroid.point.y, abs(earth_HS_Centroid.distance_sum));
+	printMsg( stderr, HORIZONSENSOR, "Earth centroid: (%.1f, %.1f) \t RADIUS: %d\n", earth_HS_Centroid.point.x, earth_HS_Centroid.point.y, abs(earth_HS_Centroid.distance_sum));
 
 
 
@@ -248,6 +251,14 @@ HS_Centroid MLS_method(CvSeq* contour){
 	return earth_HS_Centroid;
 }
 
+//---------------------------------------------------------------------------------
+void HS_changeParameters(int binary_th, int canny_th){
+	pthread_mutex_lock(&mutex_horizon_sensor);
+		BIN_THRESH = binary_th;
+		CAN_THRESH = canny_th;
+	pthread_mutex_unlock(&mutex_horizon_sensor);
+}
+
 //*********************************************************************************
 //****************************           ******************************************
 //****************************    GUI    ******************************************
@@ -300,6 +311,88 @@ inline void drawCvLine(CvArr* array, CvLine line, CvScalar color, int thickness,
 
 //---------------------------------------------------------------------------------
 
+void HS_obtainAttitude(uint8_t* image){
+	int x,y;
+
+    //Image declarations
+    IplImage* frame_canny = NULL;
+    IplImage* frame_thresh = NULL;
+	IplImage* cv_image = cvCreateImage(cvSize(1280,960),8,1);
+
+	for(y=0 ; y < cv_image->height ; y++){
+		for(x=0; x < cv_image->width ; x++){
+			(cv_image->imageData+cv_image->widthStep*y)[x] = ( (unsigned char*) image)[y*cv_image->width +x]; // put data to a new image file
+		}
+	}
+
+	int contours_found, horizons_found;
+	contours_found = horizons_found = 0;
+
+    //Variable definitions
+    frame_thresh = cvCreateImage(cvGetSize(cv_image),IPL_DEPTH_8U,1);
+    frame_canny = cvCreateImage(cvGetSize(cv_image),IPL_DEPTH_8U,1);
+
+    //*******************************
+    //***********PROCESSING**********
+    //*******************************
+    CvMemStorage *storage = cvCreateMemStorage(0);
+	CvSeq *contours = 0;
+
+	//Obtain binary image and obtain canny edges
+	pthread_mutex_lock(&mutex_horizon_sensor);
+        cvThreshold(cv_image, frame_thresh, BIN_THRESH, 255, CV_THRESH_BINARY);
+        cvCanny( frame_thresh, frame_canny, BIN_THRESH, BIN_THRESH*2, 3 );
+    pthread_mutex_unlock(&mutex_horizon_sensor);
+
+    //·······························
+    //········Find contours··········
+    //·······························
+
+	//Start the contour scanning
+	CvContourScanner contour_scanner = cvStartFindContours(frame_canny, storage, sizeof(CvContour), CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0));
+
+	//Delete all non-possible horizon contours
+	CvSeq* contour = NULL;
+	while( (contour = cvFindNextContour(contour_scanner)) != NULL){
+
+		if(!possibleHorizon(contour, cv_image->width, cv_image->height)){
+			cvSubstituteContour(contour_scanner, NULL);
+		}
+
+		contours_found++;
+	}
+
+	//Ends the contour scanning and retrieves the first contour in the
+	//sequence without non-possible horizons
+	contours = cvEndFindContours(&contour_scanner);
+
+	//Process contours and print some information in the GUI
+    for( ; contours != 0; contours = contours->h_next ){
+
+    	//MAIN FUNCTION
+		CvPoint2D32f earth_centroid;
+		earth_centroid = findEarthCentroid(contours, NULL);
+
+		//DISPLAYING
+		printMsg(stderr, HORIZONSENSOR, "Earth centroid: (%.1f, %.1f)", earth_centroid.x , earth_centroid.y);
+
+		horizons_found++;
+    }
+
+
+    //*******************************
+    //***********DISPLAYING**********
+    //*******************************
+
+    printMsg(stderr, HORIZONSENSOR, "%d contours found, of which %d are possible horizons", contours_found, horizons_found);
+
+    cvClearMemStorage(storage);
+    cvReleaseMemStorage(&storage);
+    cvReleaseImage(&frame_canny);
+    cvReleaseImage(&frame_thresh);
+	cvReleaseImage(&cv_image);
+}
+
 //Variable that controls the threshold setting
 void* HS_test(void* useless){
 	//Names of windows and trackbars
@@ -312,7 +405,7 @@ void* HS_test(void* useless){
     char string[100];
 
     //Video file input
-    CvCapture *capture = cvCaptureFromAVI("/home/alejandro/Documentos/Old/COMPASSvideos/video camera 2/AVI_0006.AVI");
+    CvCapture *capture = cvCaptureFromAVI("/home/alejandro/Videos/COMPASS/AVI_0006.AVI");
     if(!capture)
     {
         printf("!!! cvCaptureFromAVI failed (file not found?)\n");       
@@ -329,7 +422,7 @@ void* HS_test(void* useless){
     cvStartWindowThread(); //To allow OpenCV updating its windows automatically. If this is not here, the window does not close when 'q' is pressed
     IplImage *DispImage = cvCreateImage( cvSize(700, 320), IPL_DEPTH_8U, 3 );
     cvNamedWindow(display_window, CV_WINDOW_AUTOSIZE);
-    cvCreateTrackbar(trackbar_thresh, display_window, &bin_thresh, 255, controlThreshold); //Does it need to be release?
+    cvCreateTrackbar(trackbar_thresh, display_window, &BIN_THRESH, 255, controlThreshold); //Does it need to be release?
 
     //Loop control
     char key = 0;
@@ -339,7 +432,7 @@ void* HS_test(void* useless){
     CvSeq *contours = 0;
 
     //MAIN LOOP
-    while (key != 'q')
+    while (key != 'q' && keep_running)
     {
     	int contours_found, horizons_found;
     	contours_found = horizons_found = 0;
@@ -367,8 +460,10 @@ void* HS_test(void* useless){
         //*******************************
         contours = 0;
 		//Obtain binary image and obtain canny edges
-        cvThreshold(frame_gray, frame_thresh, bin_thresh, 255, CV_THRESH_BINARY);
-        cvCanny( frame_thresh, frame_canny, bin_thresh, bin_thresh*2, 3 );
+		pthread_mutex_lock(&mutex_horizon_sensor);
+	        cvThreshold(frame_gray, frame_thresh, BIN_THRESH, 255, CV_THRESH_BINARY);
+	        cvCanny( frame_thresh, frame_canny, BIN_THRESH, BIN_THRESH*2, 3 );
+	    pthread_mutex_unlock(&mutex_horizon_sensor);
 
         //·······························
         //········Find contours··········

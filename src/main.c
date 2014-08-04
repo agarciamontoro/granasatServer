@@ -239,12 +239,12 @@ void* control_connection(void* useless){
 				//HORIZON SENSOR PARAMETERS
 				case MSG_SET_BIN_TH:
 					getData(newsock_commands, &value, sizeof(value));
-					//TODO: Change binary threshold parameter
+					HS_changeParameters(value, CAN_THRESH);
 					break;
 
 				case MSG_SET_CANNY_TH:
 					getData(newsock_commands, &value, sizeof(value));
-					//TODO: Change Canny filter threshold parameter
+					HS_changeParameters(BIN_THRESH, value);
 					break;
 
 				default:
@@ -294,23 +294,32 @@ void* process_images(void* useless){
 		pthread_rwlock_unlock( &camera_rw_lock );
 
 		if(is_processable && !first){
-			int count;
-			long long ITER = 5;
 
-			n_nsec = n_nsec_mean = 0;
+			switch(ATTITUDE_MODE){
+				case MODE_AUTO:
+					clock_gettime(CLOCK_MONOTONIC, &before);
+						ADS_obtainAttitude(image);
+					clock_gettime(CLOCK_MONOTONIC, &after);
+					break;
 
-			for (count = 0; count < ITER; ++count){
-				clock_gettime(CLOCK_MONOTONIC, &before);
-					obtainAttitude(image);
-				clock_gettime(CLOCK_MONOTONIC, &after);
+				case MODE_ST:
+					clock_gettime(CLOCK_MONOTONIC, &before);
+						ST_obtainAttitude(image);
+					clock_gettime(CLOCK_MONOTONIC, &after);
+					break;
 
-				elapsed = diff_times_spec(&before, &after);
-
-				n_nsec = elapsed.tv_sec * NANO_FACTOR + elapsed.tv_nsec;
-				n_nsec_mean += n_nsec;
-
-				printMsg(stderr, CONNECTION, "Attitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
+				case MODE_HS:
+					clock_gettime(CLOCK_MONOTONIC, &before);
+						HS_obtainAttitude(image);
+					clock_gettime(CLOCK_MONOTONIC, &after);
+					break;
 			}
+
+			elapsed = diff_times_spec(&before, &after);
+
+			n_nsec = elapsed.tv_sec * NANO_FACTOR + elapsed.tv_nsec;
+
+			printMsg(stderr, CONNECTION, "Attitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
 		}
 
 		first = 0;
@@ -338,6 +347,7 @@ int main(int argc, char** argv){
 	//Semaphores for reading/writing frames and for changing algorithms parameters
 	pthread_rwlock_init( &camera_rw_lock, NULL );
 	pthread_mutex_init( &mutex_star_tracker, NULL );
+	pthread_mutex_init( &mutex_horizon_sensor, NULL );
 	pthread_mutex_init( &mutex_print_msg, NULL );
 
 	//Initilise clock
@@ -369,6 +379,7 @@ int main(int argc, char** argv){
     // *******************************	
 	pthread_rwlock_destroy( &camera_rw_lock );
 	pthread_mutex_destroy( &mutex_star_tracker );
+	pthread_mutex_destroy( &mutex_horizon_sensor );
 	pthread_mutex_destroy( &mutex_print_msg );
 
 	return 0;

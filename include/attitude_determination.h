@@ -13,6 +13,14 @@
 #define WIDTH 1280
 #define HEIGHT 960
 
+enum attitudemode{
+	MODE_AUTO,
+	MODE_ST,
+	MODE_HS
+};
+
+extern enum attitudemode ATTITUDE_MODE;
+
 float* catalog;
 float* k_vector;
 float* stars;
@@ -115,7 +123,8 @@ void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_
 void changeCatalogs(int magnitude);
 void enableStarTracker(int __threshold, int __threshold2,int __ROI, int __threshold3, int __stars_used, float __err, int __mag);
 void disableStarTracker();
-void obtainAttitude(uint8_t* image_data);
+void ADS_obtainAttitude(uint8_t* image_data);
+void ST_obtainAttitude(uint8_t* image_data);
 
 /////////////////////////// load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 

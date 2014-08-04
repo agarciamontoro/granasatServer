@@ -1,5 +1,7 @@
 #include "attitude_determination.h"
 
+enum attitudemode ATTITUDE_MODE = MODE_AUTO;
+
 void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err){
 	pthread_mutex_lock ( &mutex_star_tracker );
 
@@ -62,7 +64,11 @@ void disableStarTracker(){
 	free(unitaries.ptr);
 }
 
-void obtainAttitude(uint8_t* image_data){
+void ADS_obtainAttitude(uint8_t* image_data){
+
+}
+
+void ST_obtainAttitude(uint8_t* image_data){
 	pthread_mutex_lock ( &mutex_star_tracker );
 		int j, k;
 
