@@ -64,6 +64,11 @@ void intHandler(int dummy){
 
         sleep(2);
 
+        close(SOCKET_BIG);
+		close(SOCKET_SMALL);
+		close(SOCKET_COMMANDS);
+		close(LISTEN_SOCKET);
+
         //pthread_cancel(capture_thread);
         //pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
@@ -132,18 +137,17 @@ void* control_LS303DLHC(void* useless){
 }
 
 void* control_connection(void* useless){
-	int listen_socket;
-	int newsock_big, newsock_small, newsock_commands;
+	int SOCKET_BIG, SOCKET_SMALL, SOCKET_COMMANDS;
 	int command, value, count;
 
-	listen_socket = prepareSocket(PORT_COMMANDS);
+	LISTEN_SOCKET = prepareSocket(PORT_COMMANDS);
 
 	while(keep_running){
-		newsock_commands = connectToSocket(listen_socket);
-		newsock_big = connectToSocket(listen_socket);
-		newsock_small = connectToSocket(listen_socket);
+		SOCKET_COMMANDS = connectToSocket(LISTEN_SOCKET);
+		SOCKET_BIG = connectToSocket(LISTEN_SOCKET);
+		SOCKET_SMALL = connectToSocket(LISTEN_SOCKET);
 
-		if(newsock_commands && newsock_big && newsock_small)
+		if(SOCKET_COMMANDS && SOCKET_BIG && SOCKET_SMALL)
 			CONNECTED = 1;
 
 		count = 0;
@@ -152,12 +156,12 @@ void* control_connection(void* useless){
 
 			if(count == 10000000){
 				count = 0;
-				sendImage(newsock_big);
+				sendImage(SOCKET_BIG);
 			}
 
-			sendAccAndMag(newsock_small);
+			sendAccAndMag(SOCKET_SMALL);
 
-			command = getCommand(newsock_commands);
+			command = getCommand(SOCKET_COMMANDS);
 			switch(command){
 				//COMMANDS
 				case MSG_PASS:
@@ -176,76 +180,76 @@ void* control_connection(void* useless){
 
 				case MSG_PING:
 					value = 0;
-					sendData(newsock_commands, &value, sizeof(value));
+					sendData(SOCKET_COMMANDS, &value, sizeof(value));
 					printMsg(stderr, CONNECTION, "MSG_PING received\n\n");
 					break;
 
 				//CAMERA PARAMETERS
 				case MSG_SET_BRIGHTNESS:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					change_parameter(V4L2_CID_BRIGHTNESS, value);
 					break;
 
 				case MSG_SET_GAMMA:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					change_parameter(V4L2_CID_GAMMA, value);
 					break;
 
 				case MSG_SET_GAIN:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					change_parameter(V4L2_CID_GAIN, value);
 					break;
 
 				case MSG_SET_EXP_MODE:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					change_parameter(V4L2_CID_EXPOSURE_AUTO, value);
 					break;
 
 				case MSG_SET_EXP_VAL:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					change_parameter(V4L2_CID_EXPOSURE_ABSOLUTE, value);
 					break;
 
 				//STAR TRACKER PARAMETERS
 				case MSG_SET_STARS:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					changeParameters(threshold, threshold2, ROI, threshold3, value, err);
 					break;
 
 				case MSG_SET_CATALOG:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					changeCatalogs(value);
 					break;
 
 				case MSG_SET_PX_THRESH:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					changeParameters(value, threshold2, ROI, threshold3, stars_used, err);
 					break;
 
 				case MSG_SET_ROI:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					changeParameters(threshold, threshold2, value, threshold3, stars_used, err);
 					break;
 
 				case MSG_SET_POINTS:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					changeParameters(threshold, threshold2, ROI, value, stars_used, err);
 					break;
 
 				case MSG_SET_ERROR:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
 					break;
 
 
 				//HORIZON SENSOR PARAMETERS
 				case MSG_SET_BIN_TH:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					HS_changeParameters(value, CAN_THRESH);
 					break;
 
 				case MSG_SET_CANNY_TH:
-					getData(newsock_commands, &value, sizeof(value));
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
 					HS_changeParameters(BIN_THRESH, value);
 					break;
 
@@ -270,13 +274,13 @@ void* control_connection(void* useless){
 			count += 50000;
 		} //END while ( connected )
 
-		close(newsock_big);
-		close(newsock_small);
-		close(newsock_commands);
+		close(SOCKET_BIG);
+		close(SOCKET_SMALL);
+		close(SOCKET_COMMANDS);
 		printMsg(stderr, CONNECTION, "All comunication sockets closed.\n");
 	} //END while ( keep_running )
 
-	close(listen_socket);
+	close(LISTEN_SOCKET);
 	printMsg(stderr, CONNECTION, "Listen socket closed.\n");
 }
 

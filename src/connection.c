@@ -2,6 +2,12 @@
 
 int CONNECTED = 0;
 
+int SOCKET_COMMANDS = 0;
+int SOCKET_BIG = 0;
+int SOCKET_SMALL = 0;
+
+int LISTEN_SOCKET = 0;
+
 void error(const char *msg, int status) {
 	char error_string[75];
 
@@ -114,9 +120,6 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 			bytes_sent += n;
 		}
 	}
-	
-	if(success)
-		printMsg(stderr, CONNECTION, "%d bytes sent\n", bytes_sent);
 
 	return success;
 }
@@ -165,8 +168,7 @@ void sendAccAndMag(int sockfd){
 		buffer[i] = count*i;
 	}
 
-	sendData(sockfd, buffer, sizeof(*buffer) * 12);
-
-	printMsg(stderr, CONNECTION, "Sent new buffer.\n");
+	if(sendData(sockfd, buffer, sizeof(*buffer) * 12))
+		printMsg(stderr, CONNECTION, "Sent new buffer.\n");
 
 }

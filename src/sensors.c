@@ -52,12 +52,7 @@ void readAndSendMagnetometer(int socket){
 
 	printMsg(stderr, SENSORS, "Processing magnetometer\n");
 
-	while (bytes_sent < total_bytes) {
-		if ((n = write(socket, magnetometer, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket", 0);
-		else
-			bytes_sent += n;
-	}
+	sendData(socket, magnetometer, total_bytes);
 }
 
 void readAndSendAccelerometer(int socket){
@@ -73,12 +68,7 @@ void readAndSendAccelerometer(int socket){
 
 	printMsg(stderr, SENSORS, "Processing accelerometer\n");
 
-	while (bytes_sent < total_bytes) {
-		if ((n = write(socket, accelerometer, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket", 0);
-		else
-			bytes_sent += n;
-	}
+	sendData(socket, accelerometer, total_bytes);
 }
 
 void readAndStoreAccelerometer(FILE* file){
