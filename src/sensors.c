@@ -51,7 +51,18 @@ void readAndSendMagnetometer(int socket){
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	printMsg(stderr, SENSORS, "Processing magnetometer\n");
+	int16_t m[3];
+	float MAG[3];
 
+	*m = (int16_t)(magnetometer[1] | magnetometer[0] << 8);
+	*(m+1) = (int16_t)(magnetometer[5] | magnetometer[4] << 8);
+	*(m+2) = (int16_t)(magnetometer[3] | magnetometer[2] << 8);
+
+	*(MAG+0) = (float) *(m+0)/M_XY_GAIN;
+	*(MAG+1) = (float) *(m+1)/M_XY_GAIN;
+	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
+
+	printMsg(stderr, LSM303, "%4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
 	sendData(socket, magnetometer, total_bytes);
 }
 
@@ -67,7 +78,11 @@ void readAndSendAccelerometer(int socket){
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	printMsg(stderr, SENSORS, "Processing accelerometer\n");
-
+	float accF[3];
+	*(accF+0) = (float) *(accelerometer+0)*A_GAIN;
+	*(accF+1) = (float) *(accelerometer+1)*A_GAIN;
+	*(accF+2) = (float) *(accelerometer+2)*A_GAIN;
+	printMsg(stderr, LSM303, "%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
 	sendData(socket, accelerometer, total_bytes);
 }
 
@@ -95,6 +110,7 @@ void readAndStoreAccelerometer(FILE* file){
 	*(accF+0) = (float) *(accelerometer+0)*A_GAIN;
 	*(accF+1) = (float) *(accelerometer+1)*A_GAIN;
 	*(accF+2) = (float) *(accelerometer+2)*A_GAIN;
+	printMsg(stderr, LSM303, "%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
     fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, accF[0],accF[1],accF[2]);
 	
 }
@@ -118,6 +134,7 @@ void readAndStoreMagnetometer(FILE* file){
 	*(MAG+1) = (float) *(m+1)/M_XY_GAIN;
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
+	printMsg(stderr, LSM303, "%4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
 	fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, MAG[0],MAG[1],MAG[2]);	
 }
 

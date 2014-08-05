@@ -126,8 +126,13 @@ void* control_LS303DLHC(void* useless){
 	FILE* file_mag = fopen(mag_file_name, "w");
 
 	while(keep_running){
-		readAndStoreAccelerometer(file_acc);
-		readAndStoreMagnetometer(file_mag);
+		usleep(10000);
+
+		//readAndStoreAccelerometer(file_acc);
+		//readAndStoreMagnetometer(file_mag);
+
+		readAndSendAccelerometer(SOCKET_COMMANDS);
+		readAndSendMagnetometer(SOCKET_COMMANDS);
 	}
 
 	fclose(file_acc);
