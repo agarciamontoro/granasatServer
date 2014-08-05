@@ -57,7 +57,6 @@ void changeCatalogs(int magnitude){
 }
 
 void ADS_changeMode(enum attitudemode mode){
-	//TODO: Add semaphores
 	ATTITUDE_MODE = mode;
 	printMsg(stderr, MAIN, "Changing flight mode to %d\n", mode);
 }

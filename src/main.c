@@ -159,7 +159,7 @@ void* control_connection(void* useless){
 
 		while(CONNECTED){
 
-			if(count == 10000000){
+			if(count >= 10000000){
 				count = 0;
 				sendImage(SOCKET_BIG);
 			}
