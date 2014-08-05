@@ -445,7 +445,7 @@ void* HS_test(void* useless){
         frame = cvQueryFrame(capture);
         if (!frame)
         {
-            printf("!!! cvQueryFrame failed: no frame\n");
+            printMsg(stderr, HORIZONSENSOR, "%s!!! cvQueryFrame failed: no frame%s\n", KRED, KRES);
             break;
         }
 
@@ -502,6 +502,9 @@ void* HS_test(void* useless){
 			//DISPLAYING
 			sprintf(string, "Earth centroid: (%.1f, %.1f)", earth_centroid.x , earth_centroid.y);
 			cvPutText(DispImage, string, cvPoint(20,300), &font, cvScalar(0,0,0,0));
+
+            printMsg(stderr, HORIZONSENSOR, "Earth centroid: (%.1f, %.1f)\n", earth_centroid.x , earth_centroid.y);
+
 			horizons_found++;
 	    }
 
