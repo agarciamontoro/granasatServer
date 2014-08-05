@@ -511,6 +511,8 @@ void* HS_test(void* useless){
 	    if(!horizons_found){
  			sprintf(string, "NO HORIZON DETECTED");
  			cvPutText(frame, string, cvPoint(70,100), &font, cvScalar(0,0,255,5));
+
+			printMsg(stderr, HORIZONSENSOR, "%sNO HORIZON DETECTED%s\n", KRED, KRES);
  	    }
 
 
