@@ -20,6 +20,7 @@ extern int CONNECTED;
 extern int SOCKET_COMMANDS;
 extern int SOCKET_BIG;
 extern int SOCKET_SMALL;
+
 extern int LISTEN_SOCKET;
 
 struct communication{
