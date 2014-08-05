@@ -222,7 +222,7 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 
 	if(get_parameters(&param)){
 		sprintf(base_file_name, "IMG_%05d_B%d-Gm%d-Gn%d-M%d-E%d",
-				LAST_IMG_SAVED,
+				LAST_IMG_SAVED%10,
 				param.brightness_,
 				param.gamma_,
 				param.gain_,

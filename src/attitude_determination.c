@@ -1,6 +1,6 @@
 #include "attitude_determination.h"
 
-enum attitudemode ATTITUDE_MODE = MODE_AUTO;
+enum attitudemode ATTITUDE_MODE = MODE_ST;
 
 void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err){
 	pthread_mutex_lock ( &mutex_star_tracker );
@@ -111,11 +111,11 @@ void ST_obtainAttitude(uint8_t* image_data){
 				printMsg(stderr, STARTRACKER, "Solution found : \n");
 
 				for(j=0;j<vector.elem_used;j++){
-					printMsg(stderr, STARTRACKER, "\tCenter %f Pairs\t",vector.ptr[j].center);
+					printMsg(stderr, STARTRACKER, "\tCenter %f Pairs\t\n",vector.ptr[j].center);
 			
 					for(k=0;k<vector.ptr[j].numPairs;k++){
 
-						printMsg(stderr, STARTRACKER, "\t%f\t",vector.ptr[j].pairs[k]);
+						printMsg(stderr, STARTRACKER, "\t%f\t\n",vector.ptr[j].pairs[k]);
 
 					}
 
@@ -173,7 +173,7 @@ unsigned char * loadImage(char * filename, char * opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
-		printMsg(stderr, STARTRACKER, "File error");
+		printMsg(stderr, STARTRACKER, "File error\n");
 		exit(1);
 	}else{
 
@@ -233,7 +233,7 @@ struct Vector_UnitaryVector loadUnitaries(char * filename,char * opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
-		printMsg(stderr, STARTRACKER, "File error");
+		printMsg(stderr, STARTRACKER, "File error\n");
 		exit(1);
 	}else{
 
@@ -272,7 +272,7 @@ float* loadCatalog( char* filename,char* opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
-		printMsg(stderr, STARTRACKER, "File error",stderr);
+		printMsg(stderr, STARTRACKER, "File error\n",stderr);
 		exit(1);
 	}else{
 
@@ -327,7 +327,7 @@ float* loadKVector(char* filename,char* opentype){
 	fp=fopen(filename,opentype); // Open file
 
 	if(fp==NULL){ // error checking
-		printMsg(stderr, STARTRACKER, "File error",stderr);
+		printMsg(stderr, STARTRACKER, "File error\n",stderr);
 		exit(1);
 	}else{
 
@@ -381,7 +381,7 @@ float * loadStars(char *filename,char*opentype){
 	fp=fopen(filename,opentype);
 
 	if(fp==NULL){ // error checking
-		printMsg(stderr, STARTRACKER, "File error",stderr);
+		printMsg(stderr, STARTRACKER, "File error\n",stderr);
 		exit(1);
 	}else{
 
@@ -814,7 +814,7 @@ struct Centroid createCentroid(float my_x, float my_y, float my_brightness){
 struct UnitaryVector createUnitaryVector(float my_x,float my_y){
 
 	struct UnitaryVector unitaryVector;
-	float x,y,f=0.00925; // this is the focal length of the camera used
+	float x,y,f=0.011; // this is the focal length of the camera used
 
 	x=(my_x-640)*0.00000465; // 0.00000465 is the length in m of a pixel in the image plane
 	y=(my_y-480)*0.00000465;
@@ -1667,7 +1667,7 @@ struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector,int n
 		//argument checking
 
 		if(vector->elem_used<3){printMsg(stderr, STARTRACKER, "Unable to find centers\n");return center_vector;}
-		if(numUnitaries>=3 && vector->elem_used<3){printMsg(stderr, STARTRACKER, "Unable to find centers"); return center_vector;}
+		if(numUnitaries>=3 && vector->elem_used<3){printMsg(stderr, STARTRACKER, "Unable to find centers\n"); return center_vector;}
 		if(numUnitaries >=3 && vector->elem_used>=numUnitaries){stars_cosider=numUnitaries-1;}
 		if(numUnitaries >=3 && vector->elem_used<=numUnitaries){stars_cosider=vector->elem_used-1;}
 

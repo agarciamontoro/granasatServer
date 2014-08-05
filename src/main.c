@@ -69,8 +69,8 @@ void intHandler(int dummy){
 		close(SOCKET_COMMANDS);
 		close(LISTEN_SOCKET);
 
-        //pthread_cancel(capture_thread);
-        //pthread_cancel(LS303DLHC_thread);
+        pthread_cancel(capture_thread);
+        pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
         pthread_cancel(processing_thread);
         pthread_cancel(horizon_thread);
@@ -126,13 +126,13 @@ void* control_LS303DLHC(void* useless){
 	FILE* file_mag = fopen(mag_file_name, "w");
 
 	while(keep_running){
-		usleep(10000);
+		usleep(100000);
 
 		//readAndStoreAccelerometer(file_acc);
 		//readAndStoreMagnetometer(file_mag);
 
-		readAndSendAccelerometer(SOCKET_COMMANDS);
-		readAndSendMagnetometer(SOCKET_COMMANDS);
+		readAndSendAccelerometer(SOCKET_SMALL);
+		readAndSendMagnetometer(SOCKET_SMALL);
 	}
 
 	fclose(file_acc);
@@ -163,8 +163,6 @@ void* control_connection(void* useless){
 				count = 0;
 				sendImage(SOCKET_BIG);
 			}
-
-			sendAccAndMag(SOCKET_SMALL);
 
 			command = getCommand(SOCKET_COMMANDS);
 			switch(command){
@@ -243,7 +241,7 @@ void* control_connection(void* useless){
 
 				case MSG_SET_ERROR:
 					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
+					//changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
 					break;
 
 
@@ -304,7 +302,7 @@ void* process_images(void* useless){
 	struct timespec before, after, elapsed;
 
 
-	enableStarTracker(150, 21, 21, 10, 4, 0.035, 4);
+	enableStarTracker(150, 21, 21, 10, 6, 0.02, 4);
 
 	int first = 1;
 
@@ -347,7 +345,7 @@ void* process_images(void* useless){
 
 			n_nsec = elapsed.tv_sec * NANO_FACTOR + elapsed.tv_nsec;
 
-			printMsg(stderr, CONNECTION, "Attitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
+			printMsg(stderr, MAIN, "Attitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
 		}
 
 		first = 0;
@@ -385,20 +383,20 @@ int main(int argc, char** argv){
     // ******** START  THREADS *******
     // *******************************
 
-	//pthread_create( &capture_thread, NULL, capture_images, NULL );
+	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
 	pthread_create( &horizon_thread, NULL, HS_test, NULL );
-	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
+	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 
 	// *******************************
     // ********  JOIN THREADS  *******
     // *******************************	
-	//pthread_join( capture_thread, NULL );
+	pthread_join( capture_thread, NULL );
 	pthread_join( horizon_thread, NULL );
 	pthread_join( processing_thread, NULL );
-	//pthread_join( LS303DLHC_thread, NULL );
+	pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
 
 

@@ -379,7 +379,7 @@ void HS_obtainAttitude(uint8_t* image){
 		earth_centroid = findEarthCentroid(contours, NULL);
 
 		//DISPLAYING
-		printMsg(stderr, HORIZONSENSOR, "Earth centroid: (%.1f, %.1f)", earth_centroid.x , earth_centroid.y);
+		printMsg(stderr, HORIZONSENSOR, "Earth centroid: (%.1f, %.1f)\n", earth_centroid.x , earth_centroid.y);
 
 		horizons_found++;
     }
@@ -389,7 +389,7 @@ void HS_obtainAttitude(uint8_t* image){
     //***********DISPLAYING**********
     //*******************************
 
-    printMsg(stderr, HORIZONSENSOR, "%d contours found, of which %d are possible horizons", contours_found, horizons_found);
+    printMsg(stderr, HORIZONSENSOR, "%d contours found, of which %d are possible horizons\n", contours_found, horizons_found);
 
     cvClearMemStorage(storage);
     cvReleaseMemStorage(&storage);
@@ -411,7 +411,8 @@ void* HS_test(void* useless){
 
     //Video file input
     //CvCapture *capture = cvCaptureFromAVI("/home/alejandro/Videos/COMPASS/AVI_0006.AVI");
-    CvCapture *capture = cvCaptureFromAVI("/home/alejandro/Documentos/Old/COMPASSvideos/video camera 2/AVI_0006.AVI");
+    //CvCapture *capture = cvCaptureFromAVI("/home/alejandro/Documentos/Old/COMPASSvideos/video camera 2/AVI_0006.AVI");
+    CvCapture *capture = cvCaptureFromAVI("/home/pi/development/Final_v5/videos/AVI_0006.AVI");
     if(!capture)
     {
         printf("!!! cvCaptureFromAVI failed (file not found?)\n");       
@@ -440,8 +441,9 @@ void* HS_test(void* useless){
     //MAIN LOOP
     while (key != 'q' && keep_running)
     {
+    	usleep(1000000);
     	int contours_found, horizons_found;
-    	contours_found = horizons_found = 0;
+    	contours_found = 0;
 
         frame = cvQueryFrame(capture);
         if (!frame)
@@ -495,6 +497,7 @@ void* HS_test(void* useless){
 	    cvSet(DispImage, cvScalar(242,241,240,0), 0);
 
 		//Process contours and print some information in the GUI
+		horizons_found = 0;
 	    for( ; contours != 0; contours = contours->h_next ){
 	    	//MAIN FUNCTION
 			CvPoint2D32f earth_centroid;

@@ -59,7 +59,7 @@ void writeAccReg(uint8_t reg, uint8_t value){
     selectDevice(file,ACC_ADDRESS);
     int result = i2c_smbus_write_byte_data(file, reg, value);
     if (result == -1){
-        printMsg(stderr, LSM303, "Failed to write byte to I2C Acc.");
+        printMsg(stderr, LSM303, "Failed to write byte to I2C Acc.\n");
         exit(1);
     }
 }
@@ -68,7 +68,7 @@ void writeMagReg(uint8_t reg, uint8_t value){
      selectDevice(file,MAG_ADDRESS);
      int result = i2c_smbus_write_byte_data(file, reg, value);
      if (result == -1){
-          printMsg(stderr, LSM303, "Failed to write byte to I2C Mag.");
+          printMsg(stderr, LSM303, "Failed to write byte to I2C Mag.\n");
           exit(1);
      }
 }
@@ -78,7 +78,7 @@ void writeTmpReg(uint8_t reg, uint8_t value){
      selectDevice(file, MAG_ADDRESS);
      int result = i2c_smbus_write_byte_data(file, reg, value);
      if (result == -1){
-          printMsg(stderr, LSM303, "Failed to write byte to I2C Temp.");
+          printMsg(stderr, LSM303, "Failed to write byte to I2C Temp.\n");
           exit(1);
      }
 }
@@ -92,8 +92,8 @@ void enableLSM303(){
      sprintf(filename, "/dev/i2c-%d", 1);
      file = open(filename, O_RDWR);
      if (file<0){
-          printMsg(stderr, LSM303, "Unable to open I2C bus!");
-          exit(1);
+          printMsg(stderr, LSM303, "Unable to open I2C bus!\n");
+          //exit(1);
      }
 
      // Enable accelerometer.

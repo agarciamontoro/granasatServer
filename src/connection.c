@@ -17,7 +17,7 @@ void error(const char *msg, int status) {
 	
 	if(status){
 		printMsg(stderr, CONNECTION, "DISCONNECTING.\n");
-		CONNECTED = 0;
+		//CONNECTED = 0;
 	}
 }
 
@@ -88,7 +88,8 @@ int getData(int sockfd, void* ptr, int n_bytes){
 		if ( ( n = recv(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL) ) < 0 ){
 			strerror_r(errno, error_string, 75);
 			printMsg(stderr, CONNECTION, "ERROR reading socket: %s. DISCONNECTING.\n", error_string);
-			CONNECTED = success = 0;
+			//CONNECTED = success = 0;
+			success = 0;
 			break;
 		}
 		else{
@@ -109,22 +110,28 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 	success = 1;
 	bytes_sent = 0;
 
-	while (bytes_sent < n_bytes) {
-		if ( ( n = send(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL) ) < 0 ){
-			strerror_r(errno, error_string, 75);
-			printMsg(stderr, CONNECTION, "ERROR writing to socket: %s. DISCONNECTING.\n", error_string);
-			CONNECTED = success = 0;
-			break;
-		}
-		else{
-			bytes_sent += n;
+	if(CONNECTED){
+		while (bytes_sent < n_bytes) {
+			if ( ( n = send(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL) ) < 0 ){
+				strerror_r(errno, error_string, 75);
+				printMsg(stderr, CONNECTION, "ERROR writing to socket: %s. DISCONNECTING.\n", error_string);
+				//CONNECTED = success = 0;
+				success = 0;
+				break;
+			}
+			else{
+				bytes_sent += n;
+			}
 		}
 	}
+	else
+		success = 0;
 
 	return success;
 }
 
 void sendImage(int sockfd){
+	static int COUNT = 0;
 	int send_new_image = 0;
 	uint8_t* image_stream = NULL;
 
@@ -143,8 +150,31 @@ void sendImage(int sockfd){
 
 	pthread_rwlock_unlock( &camera_rw_lock );
 
-	if(send_new_image)
-		sendData(sockfd, image_stream, 1280*960);
+	if(send_new_image){
+		IplImage* cv_image = cvCreateImage(cvSize(1280,960),8,1);
+		cvSetZero(cv_image);
+
+		int x,y;
+		for(y=0 ; y < cv_image->height ; y++){
+			for(x=0; x < cv_image->width ; x++){
+				(cv_image->imageData+cv_image->widthStep*y)[x] = ( (uint8_t*) image_stream)[y*cv_image->width +x];
+			}
+		}
+
+		char string[50];
+
+		sprintf(string, "image%05d.bmp", COUNT);
+		COUNT++;
+		
+		cvSaveImage(string, cv_image, NULL);
+
+		uint8_t bmp_stream[1229878];
+
+		FILE * bmp_img = fopen(string, "w");
+		fread(bmp_stream, 1, 1229878, bmp_img);
+
+		//sendData(sockfd, bmp_stream, 1229878);
+	}
 
 	free(image_stream);
 }
