@@ -412,7 +412,7 @@ void* HS_test(void* useless){
     //Video file input
     //CvCapture *capture = cvCaptureFromAVI("/home/alejandro/Videos/COMPASS/AVI_0006.AVI");
     //CvCapture *capture = cvCaptureFromAVI("/home/alejandro/Documentos/Old/COMPASSvideos/video camera 2/AVI_0006.AVI");
-    CvCapture *capture = cvCaptureFromAVI("/home/pi/development/Final_v5/videos/AVI_0006.AVI");
+    CvCapture *capture = cvCaptureFromAVI("/home/pi/development/Final_v6/videos/AVI_0006.AVI");
     if(!capture)
     {
         printf("!!! cvCaptureFromAVI failed (file not found?)\n");       
