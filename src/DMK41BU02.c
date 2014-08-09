@@ -154,6 +154,8 @@ int change_parameter(int param, int value){
         param_ctrl.id = param;
         param_ctrl.value = value;
 
+	printMsg(stderr, DMK41BU02, "Parameters changed.\n");
+
         if( xioctl(fd, VIDIOC_S_CTRL, &param_ctrl) == -1 ){
             switch(errno){
                 case EBADF:

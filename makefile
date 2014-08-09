@@ -20,7 +20,7 @@ OBJECTS= $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SOURCES))
 
 # Macros for sending new files to remote system with scp
 RECEIVER= pi@192.168.0.200:
-GLOBAL_PATH= /home/pi/development/Final_v5
+GLOBAL_PATH= /home/pi/development/Final_v6
 SEND=N
 
 # Compilation and linking flags
