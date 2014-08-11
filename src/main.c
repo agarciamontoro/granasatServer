@@ -74,11 +74,11 @@ void intHandler(int dummy){
 		close(LISTEN_BIG);
 		close(LISTEN_SMALL);
 
-        pthread_cancel(capture_thread);
-        pthread_cancel(LS303DLHC_thread);
+        //pthread_cancel(capture_thread);
+        //pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
-        pthread_cancel(processing_thread);
-        pthread_cancel(horizon_thread);
+        //pthread_cancel(processing_thread);
+        //pthread_cancel(horizon_thread);
 }
 
 void* capture_images(void* useless){
@@ -151,9 +151,12 @@ void* control_connection(void* useless){
 	timeout.tv_usec = 500000;
 	//END OF SELECT SETUP
 
+
+
 	//MAG AND ACC FILE OPENING
-	FILE* read_acc = fopen(acc_file_name, "w");
-	FILE* read_mag = fopen(mag_file_name, "w");
+	FILE* read_acc = fopen(acc_file_name, "r");
+	FILE* read_mag = fopen(mag_file_name, "r");
+
 
 	//START LISTENING FOR INCOMING CONNECTIONS
 	LISTEN_COMMANDS = prepareSocket(PORT_COMMANDS);
@@ -161,7 +164,6 @@ void* control_connection(void* useless){
 	LISTEN_SMALL = prepareSocket(PORT_SMALL_DATA);
 
 	while(keep_running){
-		FD_ZERO(&desc_set); //SELECT SETUP
 		SOCKET_COMMANDS = SOCKET_BIG = SOCKET_SMALL = 0;
 
 		//ACCEPT CONNECTIONS
@@ -171,7 +173,6 @@ void* control_connection(void* useless){
 
 		if(SOCKET_COMMANDS && SOCKET_BIG && SOCKET_SMALL){
 			CONNECTED = 1;
-			FD_SET(SOCKET_COMMANDS, &desc_set); //SELECT SETUP
 
 			printMsg(stderr, CONNECTION, "Connected to client\n");
 		}
@@ -182,8 +183,10 @@ void* control_connection(void* useless){
 		count = 0;
 
 		while(CONNECTED){
+			FD_ZERO(&desc_set); //SELECT SETUP
+			FD_SET(SOCKET_COMMANDS, &desc_set); //SELECT SETUP
 
-			if( select(FD_SETSIZE, &desc_set, NULL, NULL, &timeout) ){
+			if( select(SOCKET_COMMANDS + 1, &desc_set, NULL, NULL, &timeout) != 0 ){
 				command = getCommand(SOCKET_COMMANDS);
 
 				switch(command){
@@ -296,13 +299,12 @@ void* control_connection(void* useless){
 
 			} //END OF SELECT IF
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
-				
 				//Send magnetometer and accelerometer packet
 				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
 				
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
-				timeout.tv_usec = 500000;
+				timeout.tv_usec = 1000000;
 				
 				//For images sending
 				count++;
@@ -403,6 +405,8 @@ int main(int argc, char** argv){
     // ***** SYNC  INITIALISATION ****
     // *******************************
 
+
+
 	//Initialise signal
 	signal(SIGINT, intHandler);
 	signal(SIGTERM, intHandler);
@@ -423,20 +427,23 @@ int main(int argc, char** argv){
     // ******** START  THREADS *******
     // *******************************
 
-	pthread_create( &capture_thread, NULL, capture_images, NULL );
-	pthread_create( &processing_thread, NULL, process_images, NULL );
-	pthread_create( &horizon_thread, NULL, HS_test, NULL );
-	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
+	//pthread_create( &capture_thread, NULL, capture_images, NULL );
+	//pthread_create( &processing_thread, NULL, process_images, NULL );
+	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
+	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
+
+		        		printf("Hola\n");
+
 
 
 	// *******************************
     // ********  JOIN THREADS  *******
     // *******************************	
-	pthread_join( capture_thread, NULL );
-	pthread_join( horizon_thread, NULL );
-	pthread_join( processing_thread, NULL );
-	pthread_join( LS303DLHC_thread, NULL );
+	//pthread_join( capture_thread, NULL );
+	//pthread_join( horizon_thread, NULL );
+	//pthread_join( processing_thread, NULL );
+	//pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
 
 
