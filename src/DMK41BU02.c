@@ -754,55 +754,6 @@ void open_device(void)
 	}
 }
 
-void usage(FILE *fp, int argc, char **argv)
-{
-        fprintf(fp,
-                 "Usage: %s [options]\n\n"
-                 "Version 1.3\n"
-                 "Options:\n"
-                 "-d | --device name   Video device name [%s]\n"
-                 "-h | --help          Print this message\n"
-                 "-m | --mmap          Use memory mapped buffers [default]\n"
-                 "-r | --read          Use read() calls\n"
-                 "-u | --userp         Use application allocated buffers\n"
-                 "-o | --output        Outputs stream to stdout\n"
-                 "-f | --format        Force format to 640x480 YUYV\n"
-		         "-F | --formatH264    Force format to 1920x1080 H264\n"
-                 "-c | --count         Number of frames to grab [%i] - use 0 for infinite\n"
-                 "-b | --bright   val  Brightness value [0-63] \n"
-                 "-g | --gamma    val  Gamma value [1-500]\n"
-                 "-G | --gain     val  Gain value [260-1023]\n"
-                 "-e | --expmode  mod  Exposition mode\n"
-                 "                          1 - Manual mode\n"
-                 "                          3 - Aperture priority mode\n"
-                 "-E | --expvalue val  Exposition value [1 - 300000]\n"
-                 "\n"
-		         "Example usage: capture -F -o -c 300 > output.raw\n"
-		         "Captures 300 frames of H264 at 1920x1080 - use raw2mpg4 script to convert to mpg4\n",
-                 argv[0], dev_name, frame_count);
-}
-
-const char short_options[] = "d:hmruofFc:b:g:G:e:E:";
-
-const struct option
-long_options[] = {
-        { "device", required_argument, NULL, 'd' },
-        { "help",   no_argument,       NULL, 'h' },
-        { "mmap",   no_argument,       NULL, 'm' },
-        { "read",   no_argument,       NULL, 'r' },
-        { "userp",  no_argument,       NULL, 'u' },
-        { "output", no_argument,       NULL, 'o' },
-        { "format", no_argument,       NULL, 'f' },
-	    { "formatH264", no_argument,   NULL, 'F' },
-        { "count",  required_argument, NULL, 'c' },
-        { "bright",  required_argument,NULL, 'b' },
-        { "gamma",  required_argument, NULL, 'g' },
-        { "gain",  required_argument,  NULL, 'G' },
-        { "expmode", required_argument,NULL, 'e' },
-        { "expvalue",required_argument,NULL, 'E' },
-        { 0, 0, 0, 0 }
-};
-
 //TODO: Error handling
 void enable_DMK41BU02(struct v4l2_parameters* params)
 {

@@ -25,12 +25,6 @@ extern int LISTEN_COMMANDS;
 extern int LISTEN_BIG;
 extern int LISTEN_SMALL;
 
-struct communication{
-	int sockfd;
-	int new_sockfd;
-	int portno;
-};
-
 void error(const char *msg, int status);
 
 int prepareSocket(int portno);

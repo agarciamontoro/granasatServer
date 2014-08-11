@@ -96,8 +96,6 @@ void close_device(void);
 
 void open_device(void);
 
-void usage(FILE *fp, int argc, char **argv);
-
 void enable_DMK41BU02(struct v4l2_parameters* params);
 
 void disable_DMK41BU02();
