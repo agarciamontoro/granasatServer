@@ -43,12 +43,8 @@ int getData(int sockfd, void* ptr, int n_bytes);
 
 int sendData(int sockfd, void* ptr, int n_bytes);
 
-void sendImage(int sockfd);
+int sendImage(int sockfd);
 
-void sendAcc(int sockfd);
-
-void sendMag(int sockfd);
-
-void sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd);
+int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd);
 
 #endif

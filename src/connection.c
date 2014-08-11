@@ -98,7 +98,7 @@ int getData(int sockfd, void* ptr, int n_bytes){
 		if ( ( n = recv(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL) ) < 0 ){
 			strerror_r(errno, error_string, 75);
 			printMsg(stderr, CONNECTION, "ERROR reading socket: %s. DISCONNECTING.\n", error_string);
-			//CONNECTED = success = 0;
+			CONNECTED = success = 0;
 			success = 0;
 			break;
 		}
@@ -140,10 +140,12 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 	return success;
 }
 
-void sendImage(int sockfd){
+int sendImage(int sockfd){
 	static int COUNT = 0;
 	int send_new_image = 0;
 	uint8_t* image_stream = NULL;
+
+	int success = 0;
 
 	pthread_rwlock_rdlock( &camera_rw_lock );
 
@@ -161,27 +163,27 @@ void sendImage(int sockfd){
 	pthread_rwlock_unlock( &camera_rw_lock );
 
 	if(send_new_image){
-		sendData(sockfd, image_stream, 1228800);
+		success = sendData(sockfd, image_stream, 1228800);
 	}
 
 	free(image_stream);
+
+	return success;
 }
 
-void sendAcc(int sockfd){
-
-}
-
-void sendMag(int sockfd){
-
-}
-
-void sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
+int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	uint8_t buffer[12];
+	int success = 0;
 
 	fread(buffer, sizeof(uint8_t), 6, mag_file);
 	fread(buffer+6, sizeof(uint8_t), 6, acc_file);
 
-	if(sendData(sockfd, buffer, sizeof(*buffer) * 12))
+	success = sendData(sockfd, buffer, sizeof(*buffer) * 12);
+	
+	if(success)
 		printMsg(stderr, CONNECTION, "Sent new buffer.\n");
+	else
+		printMsg(stderr, CONNECTION, "Buffer not sent.\n");
 
+	return success;
 }
