@@ -55,6 +55,8 @@ flight.
 #include "HorizonSensor.h"
 
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, horizon_thread;
+const char* acc_file_name = "accelerometer_measurements.data";
+const char* mag_file_name = "magnetometer_measurements.data";
 
 void intHandler(int dummy){
 		printf("\n");
@@ -67,7 +69,10 @@ void intHandler(int dummy){
         close(SOCKET_BIG);
 		close(SOCKET_SMALL);
 		close(SOCKET_COMMANDS);
-		close(LISTEN_SOCKET);
+
+		close(LISTEN_COMMANDS);
+		close(LISTEN_BIG);
+		close(LISTEN_SMALL);
 
         pthread_cancel(capture_thread);
         pthread_cancel(LS303DLHC_thread);
@@ -116,9 +121,6 @@ void* capture_images(void* useless){
 }
 
 void* control_LS303DLHC(void* useless){
-	const char* acc_file_name = "accelerometer_measurements.data";
-	const char* mag_file_name = "magnetometer_measurements.data";
-
 	//Enable LSM303 sensor - Magnetometer/Accelerometer
 	enableLSM303();
 
@@ -126,13 +128,10 @@ void* control_LS303DLHC(void* useless){
 	FILE* file_mag = fopen(mag_file_name, "w");
 
 	while(keep_running){
-		usleep(100000);
+		usleep(500000);
 
-		//readAndStoreAccelerometer(file_acc);
-		//readAndStoreMagnetometer(file_mag);
-
-		readAndSendAccelerometer(SOCKET_SMALL);
-		readAndSendMagnetometer(SOCKET_SMALL);
+		readAndStoreAccelerometer(file_acc);
+		readAndStoreMagnetometer(file_mag);
 	}
 
 	fclose(file_acc);
@@ -142,148 +141,189 @@ void* control_LS303DLHC(void* useless){
 }
 
 void* control_connection(void* useless){
-	int SOCKET_BIG, SOCKET_SMALL, SOCKET_COMMANDS;
 	int command, value, count;
 
-	LISTEN_SOCKET = prepareSocket(PORT_COMMANDS);
+	//SELECT SETUP
+	fd_set desc_set;
+	struct timeval timeout;
+
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 500000;
+	//END OF SELECT SETUP
+
+	//MAG AND ACC FILE OPENING
+	FILE* read_acc = fopen(acc_file_name, "w");
+	FILE* read_mag = fopen(mag_file_name, "w");
+
+	//START LISTENING FOR INCOMING CONNECTIONS
+	LISTEN_COMMANDS = prepareSocket(PORT_COMMANDS);
+	LISTEN_BIG = prepareSocket(PORT_BIG_DATA);
+	LISTEN_SMALL = prepareSocket(PORT_SMALL_DATA);
 
 	while(keep_running){
-		SOCKET_COMMANDS = connectToSocket(LISTEN_SOCKET);
-		SOCKET_BIG = connectToSocket(LISTEN_SOCKET);
-		SOCKET_SMALL = connectToSocket(LISTEN_SOCKET);
+		FD_ZERO(&desc_set); //SELECT SETUP
+		SOCKET_COMMANDS = SOCKET_BIG = SOCKET_SMALL = 0;
 
-		if(SOCKET_COMMANDS && SOCKET_BIG && SOCKET_SMALL)
+		//ACCEPT CONNECTIONS
+		SOCKET_COMMANDS = connectToSocket(LISTEN_COMMANDS);
+		SOCKET_BIG = connectToSocket(LISTEN_BIG);
+		SOCKET_SMALL = connectToSocket(LISTEN_SMALL);
+
+		if(SOCKET_COMMANDS && SOCKET_BIG && SOCKET_SMALL){
 			CONNECTED = 1;
+			FD_SET(SOCKET_COMMANDS, &desc_set); //SELECT SETUP
 
+			printMsg(stderr, CONNECTION, "Connected to client\n");
+		}
+		else
+			printMsg(stderr, CONNECTION, "%sClient connection refused%s\n", KRED, KRES);
+
+		//TIMES SETUP
 		count = 0;
 
 		while(CONNECTED){
 
-			if(count >= 10000000){
+			if( select(FD_SETSIZE, &desc_set, NULL, NULL, &timeout) ){
+				command = getCommand(SOCKET_COMMANDS);
+
+				switch(command){
+					//COMMANDS
+					case MSG_PASS:
+						break;
+						
+					case MSG_END:
+						CONNECTED = 0;
+						keep_running = 0;
+						printMsg(stderr, CONNECTION, "FINISHING PROGRAM.\n");
+						break;
+
+					case MSG_RESTART:
+						CONNECTED = 0;
+						printMsg(stderr, CONNECTION, "RESTARTING PROGRAM.\n\n");
+						break;
+
+					case MSG_PING:
+						value = 0;
+						sendData(SOCKET_COMMANDS, &value, sizeof(value));
+						printMsg(stderr, CONNECTION, "MSG_PING received\n\n");
+						break;
+
+					//CAMERA PARAMETERS
+					case MSG_SET_BRIGHTNESS:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						change_parameter(V4L2_CID_BRIGHTNESS, value);
+						break;
+
+					case MSG_SET_GAMMA:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						change_parameter(V4L2_CID_GAMMA, value);
+						break;
+
+					case MSG_SET_GAIN:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						change_parameter(V4L2_CID_GAIN, value);
+						break;
+
+					case MSG_SET_EXP_MODE:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						change_parameter(V4L2_CID_EXPOSURE_AUTO, value);
+						break;
+
+					case MSG_SET_EXP_VAL:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						change_parameter(V4L2_CID_EXPOSURE_ABSOLUTE, value);
+						break;
+
+					//STAR TRACKER PARAMETERS
+					case MSG_SET_STARS:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						changeParameters(threshold, threshold2, ROI, threshold3, value, err);
+						break;
+
+					case MSG_SET_CATALOG:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						changeCatalogs(value);
+						break;
+
+					case MSG_SET_PX_THRESH:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						changeParameters(value, threshold2, ROI, threshold3, stars_used, err);
+						break;
+
+					case MSG_SET_ROI:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						changeParameters(threshold, threshold2, value, threshold3, stars_used, err);
+						break;
+
+					case MSG_SET_POINTS:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						changeParameters(threshold, threshold2, ROI, value, stars_used, err);
+						break;
+
+					case MSG_SET_ERROR:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						//changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
+						break;
+
+
+					//HORIZON SENSOR PARAMETERS
+					case MSG_SET_BIN_TH:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						HS_changeParameters(value, CAN_THRESH);
+						break;
+
+					case MSG_SET_CANNY_TH:
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						HS_changeParameters(BIN_THRESH, value);
+						break;
+
+					//ATTITUDE SYSTEM PARAMETERS
+					case MSG_SET_MODE_AUTO:
+						ADS_changeMode(MODE_AUTO);
+						break;
+
+					case MSG_SET_MODE_STAR:
+						ADS_changeMode(MODE_ST);
+						break;
+
+					case MSG_SET_MODE_HORI:
+						ADS_changeMode(MODE_HS);
+						break;
+
+					default:
+						break;
+				} //END switch
+
+			} //END OF SELECT IF
+			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
+				
+				//Send magnetometer and accelerometer packet
+				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
+				
+				//Restart timeout because its content is undefined after select return.
+				timeout.tv_sec = 0;
+				timeout.tv_usec = 500000;
+				
+				//For images sending
+				count++;
+			}
+
+			if(count >= 3){
 				count = 0;
 				sendImage(SOCKET_BIG);
 			}
-
-			command = getCommand(SOCKET_COMMANDS);
-			switch(command){
-				//COMMANDS
-				case MSG_PASS:
-					break;
-					
-				case MSG_END:
-					CONNECTED = 0;
-					keep_running = 0;
-					printMsg(stderr, CONNECTION, "FINISHING PROGRAM.\n");
-					break;
-
-				case MSG_RESTART:
-					CONNECTED = 0;
-					printMsg(stderr, CONNECTION, "RESTARTING PROGRAM.\n\n");
-					break;
-
-				case MSG_PING:
-					value = 0;
-					sendData(SOCKET_COMMANDS, &value, sizeof(value));
-					printMsg(stderr, CONNECTION, "MSG_PING received\n\n");
-					break;
-
-				//CAMERA PARAMETERS
-				case MSG_SET_BRIGHTNESS:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					change_parameter(V4L2_CID_BRIGHTNESS, value);
-					break;
-
-				case MSG_SET_GAMMA:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					change_parameter(V4L2_CID_GAMMA, value);
-					break;
-
-				case MSG_SET_GAIN:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					change_parameter(V4L2_CID_GAIN, value);
-					break;
-
-				case MSG_SET_EXP_MODE:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					change_parameter(V4L2_CID_EXPOSURE_AUTO, value);
-					break;
-
-				case MSG_SET_EXP_VAL:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					change_parameter(V4L2_CID_EXPOSURE_ABSOLUTE, value);
-					break;
-
-				//STAR TRACKER PARAMETERS
-				case MSG_SET_STARS:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					changeParameters(threshold, threshold2, ROI, threshold3, value, err);
-					break;
-
-				case MSG_SET_CATALOG:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					changeCatalogs(value);
-					break;
-
-				case MSG_SET_PX_THRESH:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					changeParameters(value, threshold2, ROI, threshold3, stars_used, err);
-					break;
-
-				case MSG_SET_ROI:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					changeParameters(threshold, threshold2, value, threshold3, stars_used, err);
-					break;
-
-				case MSG_SET_POINTS:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					changeParameters(threshold, threshold2, ROI, value, stars_used, err);
-					break;
-
-				case MSG_SET_ERROR:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					//changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
-					break;
-
-
-				//HORIZON SENSOR PARAMETERS
-				case MSG_SET_BIN_TH:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					HS_changeParameters(value, CAN_THRESH);
-					break;
-
-				case MSG_SET_CANNY_TH:
-					getData(SOCKET_COMMANDS, &value, sizeof(value));
-					HS_changeParameters(BIN_THRESH, value);
-					break;
-
-				//ATTITUDE SYSTEM PARAMETERS
-				case MSG_SET_MODE_AUTO:
-					ADS_changeMode(MODE_AUTO);
-					break;
-
-				case MSG_SET_MODE_STAR:
-					ADS_changeMode(MODE_ST);
-					break;
-
-				case MSG_SET_MODE_HORI:
-					ADS_changeMode(MODE_HS);
-					break;
-
-				default:
-					break;
-			} //END switch
-
-			usleep(50000);
-			count += 50000;
 		} //END while ( connected )
 
 		close(SOCKET_BIG);
 		close(SOCKET_SMALL);
 		close(SOCKET_COMMANDS);
+
 		printMsg(stderr, CONNECTION, "All comunication sockets closed.\n");
 	} //END while ( keep_running )
 
-	close(LISTEN_SOCKET);
+	close(LISTEN_BIG);
+	close(LISTEN_SMALL);
+	close(LISTEN_COMMANDS);
 	printMsg(stderr, CONNECTION, "Listen socket closed.\n");
 }
 

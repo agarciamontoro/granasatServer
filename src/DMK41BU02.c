@@ -154,31 +154,35 @@ int change_parameter(int param, int value){
         param_ctrl.id = param;
         param_ctrl.value = value;
 
-	printMsg(stderr, DMK41BU02, "Parameters changed.\n");
-
         if( xioctl(fd, VIDIOC_S_CTRL, &param_ctrl) == -1 ){
+        	success = 0;
+
             switch(errno){
                 case EBADF:
-                    printMsg(stderr, DMK41BU02, "ERROR while changing parameter -> EBADF: File descriptor is not valid.\n");
+                    printMsg(stderr, DMK41BU02, "%sERROR while changing parameter -> EBADF: File descriptor is not valid.%s\n", KRED, KRES);
                     break;
 
                 case EFAULT:
-                    printMsg(stderr, DMK41BU02, "ERROR while changing parameter -> EFAULT: Argument references an inaccessible memory area.\n");
+                    printMsg(stderr, DMK41BU02, "%sERROR while changing parameter -> EFAULT: Argument references an inaccessible memory area.%s\n", KRED, KRES);
                     break;
 
                 case EINVAL:
-                    printMsg(stderr, DMK41BU02, "ERROR while changing parameter -> EINVAL: Either the request or the argument is not valid.\n");
+                    printMsg(stderr, DMK41BU02, "%sERROR while changing parameter -> EINVAL: Either the request or the argument is not valid.%s\n", KRED, KRES);
                     break;
 
                 case ENOTTY:
-                    printMsg(stderr, DMK41BU02, "ERROR while changing parameter -> ENOTTY: File descriptor is not valid or the specified request does"
-                            "not apply to the kind of objectthat the descriptor references.\n");
+                    printMsg(stderr, DMK41BU02, "%sERROR while changing parameter -> ENOTTY: File descriptor is not valid or the specified request does"
+                            "not apply to the kind of objectthat the descriptor references.%s\n", KRED, KRES);
                     break;
 
                 default:
-                    printMsg(stderr, DMK41BU02, "ERROR in ioctl.\n");
+                    printMsg(stderr, DMK41BU02, "%sERROR in ioctl.%s\n", KRED, KRES);
                     break;
             }
+        }
+        else{
+        	success = 1;
+        	printMsg(stderr, DMK41BU02, "Parameters changed.\n");
         }
     }
     else{

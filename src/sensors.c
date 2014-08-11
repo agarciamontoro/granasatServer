@@ -62,7 +62,7 @@ void readAndSendMagnetometer(int socket){
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
 	printMsg(stderr, LSM303, "Processing magnetometer: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
-	//sendData(socket, magnetometer, sizeof(*magnetometer)*6);
+	sendData(socket, magnetometer, sizeof(*magnetometer)*6);
 }
 
 void readAndSendAccelerometer(int socket){
@@ -82,7 +82,7 @@ void readAndSendAccelerometer(int socket){
 	*(accF+2) = (float) *(accelerometer+2)*A_GAIN;
 
 	printMsg(stderr, LSM303, "Processing accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
-	//sendData(socket, accelerometer, sizeof(*accelerometer)*6);
+	sendData(socket, accelerometer, sizeof(*accelerometer)*6);
 }
 
 void readAndStoreAccelerometer(FILE* file){
@@ -105,12 +105,14 @@ void readAndStoreAccelerometer(FILE* file){
 	*(acc+2) = (int16_t)(accelerometer[4] | accelerometer[5] << 8) >> 4;
 	*/
 
+	fwrite(accelerometer, sizeof(*accelerometer), 6, file);
+
 	float accF[3];
 	*(accF+0) = (float) *(accelerometer+0)*A_GAIN;
 	*(accF+1) = (float) *(accelerometer+1)*A_GAIN;
 	*(accF+2) = (float) *(accelerometer+2)*A_GAIN;
 	printMsg(stderr, LSM303, "%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
-    fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, accF[0],accF[1],accF[2]);
+    /*fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, accF[0],accF[1],accF[2]);*/
 	
 }
 
@@ -121,6 +123,8 @@ void readAndStoreMagnetometer(FILE* file){
 	/////////////////////////////////////////////////////////////////////////////////////
 	readMAG(magnetometer, &timestamp);
 	/////////////////////////////////////////////////////////////////////////////////////
+
+	fwrite(magnetometer, sizeof(*magnetometer), 6, file);
 
 	int16_t m[3];
 	float MAG[3];
@@ -134,7 +138,7 @@ void readAndStoreMagnetometer(FILE* file){
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
 	printMsg(stderr, LSM303, "%4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
-	fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, MAG[0],MAG[1],MAG[2]);	
+	/*fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, MAG[0],MAG[1],MAG[2]);	*/
 }
 
 int setGPIOValue(int GPIO_number, bool on){

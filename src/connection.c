@@ -6,7 +6,9 @@ int SOCKET_COMMANDS = 0;
 int SOCKET_BIG = 0;
 int SOCKET_SMALL = 0;
 
-int LISTEN_SOCKET = 0;
+int LISTEN_COMMANDS = 0;
+int LISTEN_BIG = 0;
+int LISTEN_SMALL = 0;
 
 void error(const char *msg, int status) {
 	char error_string[75];
@@ -17,7 +19,7 @@ void error(const char *msg, int status) {
 	
 	if(status){
 		printMsg(stderr, CONNECTION, "DISCONNECTING.\n");
-		//CONNECTED = 0;
+		CONNECTED = 0;
 	}
 }
 
@@ -43,7 +45,12 @@ int prepareSocket(int portno){
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
 		error( "ERROR on binding", 0 );
 
-	listen(sockfd,5);
+	if(	listen(sockfd,5) == 0 ){
+		printMsg(stderr, CONNECTION, "Listening on socket %d\n", sockfd);
+	}
+	else{
+		printMsg(stderr, CONNECTION, "Error while listening on socket %d: %s\n", sockfd, strerror(errno));
+	}
 
 	return sockfd;
 }
@@ -56,7 +63,10 @@ int connectToSocket(int sockfd){
 
 	newsockfd = accept( sockfd, (struct sockaddr *) &cli_addr, (socklen_t*) &clilen);
 
-	printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsockfd);
+	if(newsockfd > 0)
+		printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsockfd);
+	else
+		printMsg(stderr, CONNECTION, "%sERROR accepting socket: %s%s\n", KRED, strerror(errno), KRES);
 
 	return newsockfd;
 }
@@ -115,7 +125,7 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 			if ( ( n = send(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL) ) < 0 ){
 				strerror_r(errno, error_string, 75);
 				printMsg(stderr, CONNECTION, "ERROR writing to socket: %s. DISCONNECTING.\n", error_string);
-				//CONNECTED = success = 0;
+				CONNECTED = success = 0;
 				success = 0;
 				break;
 			}
@@ -187,16 +197,11 @@ void sendMag(int sockfd){
 
 }
 
-void sendAccAndMag(int sockfd){
+void sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	uint8_t buffer[12];
-	static int count = 0;
 
-	count++;
-
-	int i;
-	for (i = 0; i < 12; ++i){
-		buffer[i] = count*i;
-	}
+	fread(buffer, sizeof(uint8_t), 6, mag_file);
+	fread(buffer+6, sizeof(uint8_t), 6, acc_file);
 
 	if(sendData(sockfd, buffer, sizeof(*buffer) * 12))
 		printMsg(stderr, CONNECTION, "Sent new buffer.\n");

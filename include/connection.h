@@ -21,7 +21,9 @@ extern int SOCKET_COMMANDS;
 extern int SOCKET_BIG;
 extern int SOCKET_SMALL;
 
-extern int LISTEN_SOCKET;
+extern int LISTEN_COMMANDS;
+extern int LISTEN_BIG;
+extern int LISTEN_SMALL;
 
 struct communication{
 	int sockfd;
@@ -47,6 +49,6 @@ void sendAcc(int sockfd);
 
 void sendMag(int sockfd);
 
-void sendAccAndMag(int sockfd);
+void sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd);
 
 #endif

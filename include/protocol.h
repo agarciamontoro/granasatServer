@@ -12,8 +12,8 @@
 
 // PORT NUMBERS
 #define PORT_COMMANDS     	51717
-#define PORT_BIG_DATA     	51717
-#define PORT_SMALL_DATA   	51717
+#define PORT_BIG_DATA     	51718
+#define PORT_SMALL_DATA   	51719
 
 // COMMANDS
 #define MSG_PASS          	0	//	0.	No operation
