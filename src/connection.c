@@ -163,21 +163,6 @@ void sendImage(int sockfd){
 	if(send_new_image){
 		sendData(sockfd, image_stream, 1228800);
 	}
-	else{
-		//REMOVE ALL THIS ELSE, IT IS A TEST:
-		image_stream = malloc(sizeof(*image_stream) * 1280*960);
-
-		FILE* img = fopen("IMG_00005_B25-Gm100-Gn1023-M1-E10000.raw", "r");
-		if(!img){
-			printMsg(stderr, CONNECTION, "%sERROR opening the file%s\n", KRED, KRES);
-		}
-		else{
-			fread(image_stream, sizeof(*image_stream), 1280*960, img);
-			printMsg(stderr, CONNECTION, "Image read. Sending in 3,2,1...\n");
-			sendData(sockfd, image_stream, 1280*960);
-			fclose(img);
-		}
-	}
 
 	free(image_stream);
 }
