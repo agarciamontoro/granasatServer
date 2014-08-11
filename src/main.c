@@ -304,7 +304,7 @@ void* control_connection(void* useless){
 				
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
-				timeout.tv_usec = 1000000;
+				timeout.tv_usec = 500000;
 				
 				//For images sending
 				count++;
@@ -312,6 +312,7 @@ void* control_connection(void* useless){
 
 			if(count >= 3){
 				count = 0;
+				printMsg(stderr, CONNECTION, "Sending image\n");
 				sendImage(SOCKET_BIG);
 			}
 		} //END while ( connected )

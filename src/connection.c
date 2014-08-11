@@ -161,29 +161,22 @@ void sendImage(int sockfd){
 	pthread_rwlock_unlock( &camera_rw_lock );
 
 	if(send_new_image){
-		IplImage* cv_image = cvCreateImage(cvSize(1280,960),8,1);
-		cvSetZero(cv_image);
+		sendData(sockfd, image_stream, 1228800);
+	}
+	else{
+		//REMOVE ALL THIS ELSE, IT IS A TEST:
+		image_stream = malloc(sizeof(*image_stream) * 1280*960);
 
-		int x,y;
-		for(y=0 ; y < cv_image->height ; y++){
-			for(x=0; x < cv_image->width ; x++){
-				(cv_image->imageData+cv_image->widthStep*y)[x] = ( (uint8_t*) image_stream)[y*cv_image->width +x];
-			}
+		FILE* img = fopen("IMG_00005_B25-Gm100-Gn1023-M1-E10000.raw", "r");
+		if(!img){
+			printMsg(stderr, CONNECTION, "%sERROR opening the file%s\n", KRED, KRES);
 		}
-
-		char string[50];
-
-		sprintf(string, "image%05d.bmp", COUNT);
-		COUNT++;
-		
-		cvSaveImage(string, cv_image, NULL);
-
-		uint8_t bmp_stream[1229878];
-
-		FILE * bmp_img = fopen(string, "w");
-		fread(bmp_stream, 1, 1229878, bmp_img);
-
-		//sendData(sockfd, bmp_stream, 1229878);
+		else{
+			fread(image_stream, sizeof(*image_stream), 1280*960, img);
+			printMsg(stderr, CONNECTION, "Image read. Sending in 3,2,1...\n");
+			sendData(sockfd, image_stream, 1280*960);
+			fclose(img);
+		}
 	}
 
 	free(image_stream);
