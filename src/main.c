@@ -173,7 +173,6 @@ void* control_connection(void* useless){
 
 		if(SOCKET_COMMANDS && SOCKET_BIG && SOCKET_SMALL){
 			CONNECTED = 1;
-
 			printMsg(stderr, CONNECTION, "Connected to client\n");
 		}
 		else

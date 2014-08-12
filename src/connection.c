@@ -132,13 +132,25 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 
 				strerror_r(err_num, error_string, 75);
 				printMsg(stderr, CONNECTION, "%sERROR writing to socket: %s.%s\n", KRED, error_string, KRES);
-				success = 0;
 
+				//ERROR HANDLING: Socket not connected.
+				//SOLUTION: Disconnect, return failure and try to reconnect.
 				if(err_num != EAGAIN){
 					printMsg(stderr, CONNECTION, "%sDISCONNECTING%s\n", KRED, KRES);
 					CONNECTED = 0;
+					success = 0;
 					break;
 				}
+
+				//ERROR HANDLING: Socket temporary not available (out of space) and no bytes sent.
+				//SOLUTION: Return failure.
+				if(bytes_sent == 0){
+					success = 0;
+					break;
+				}
+
+				//ERROR HANDLING: Socket temporary not available (out of space) and some bytes sent.
+				//SOLUTION: Continue the loop until all bytes have been sent <==> Do nothing.
 			}
 			else{
 				bytes_sent += n;
@@ -149,7 +161,7 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 	else
 		success = 0;
 
-	printMsg(stderr, CONNECTION, "Finish sending: %d bytes sent.\n", bytes_sent);
+	printMsg(stderr, CONNECTION, "Finish sending: %d of %d bytes sent.\n", bytes_sent, n_bytes);
 
 	return success;
 }
