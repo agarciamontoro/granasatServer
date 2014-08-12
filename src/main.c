@@ -74,7 +74,7 @@ void intHandler(int dummy){
 		close(LISTEN_BIG);
 		close(LISTEN_SMALL);
 
-        //pthread_cancel(capture_thread);
+        pthread_cancel(capture_thread);
         //pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
         //pthread_cancel(processing_thread);
@@ -154,8 +154,8 @@ void* control_connection(void* useless){
 
 
 	//MAG AND ACC FILE OPENING
-	FILE* read_acc = fopen(acc_file_name, "r");
-	FILE* read_mag = fopen(mag_file_name, "r");
+	//FILE* read_acc = fopen(acc_file_name, "r");
+	//FILE* read_mag = fopen(mag_file_name, "r");
 
 
 	//START LISTENING FOR INCOMING CONNECTIONS
@@ -300,7 +300,7 @@ void* control_connection(void* useless){
 			} //END OF SELECT IF
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
 				//Send magnetometer and accelerometer packet
-				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
+				//sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
 				
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
@@ -428,7 +428,7 @@ int main(int argc, char** argv){
     // ******** START  THREADS *******
     // *******************************
 
-	//pthread_create( &capture_thread, NULL, capture_images, NULL );
+	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	//pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
 	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
@@ -441,7 +441,7 @@ int main(int argc, char** argv){
 	// *******************************
     // ********  JOIN THREADS  *******
     // *******************************	
-	//pthread_join( capture_thread, NULL );
+	pthread_join( capture_thread, NULL );
 	//pthread_join( horizon_thread, NULL );
 	//pthread_join( processing_thread, NULL );
 	//pthread_join( LS303DLHC_thread, NULL );

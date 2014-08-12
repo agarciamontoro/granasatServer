@@ -74,12 +74,8 @@ int connectToSocket(int sockfd){
 char getCommand(int sockfd){
 	char command;
 
-	if (recv(sockfd, &command, 1, MSG_DONTWAIT | MSG_NOSIGNAL) < 0){
-		if(errno != EAGAIN)
-			error("ERROR reading from socket", 1);
-		else
-			command = 0;
-	}
+	if(!getData(sockfd, &command, 1))
+		command = 0;
 
 	if(command)
 		printMsg(stderr, CONNECTION, "Command received: %d\n", command);
@@ -95,11 +91,18 @@ int getData(int sockfd, void* ptr, int n_bytes){
 	bytes_sent = 0;
 
 	while (bytes_sent < n_bytes) {
-		if ( ( n = recv(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL) ) < 0 ){
-			strerror_r(errno, error_string, 75);
-			printMsg(stderr, CONNECTION, "ERROR reading socket: %s. DISCONNECTING.\n", error_string);
-			CONNECTED = success = 0;
+		if ( ( n = recv(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL | MSG_DONTWAIT) ) < 0 ){
+			int err_num = errno;
+			strerror_r(err_num, error_string, 75);
+
+			printMsg(stderr, CONNECTION, "ERROR reading socket: %s.\n", error_string);
 			success = 0;
+
+			if(err_num != EAGAIN){
+				CONNECTED = 0;
+				printMsg(stderr, CONNECTION, "%sDISCONNECTING.%s\n", KRED, KRES);
+			}
+
 			break;
 		}
 		else{
@@ -122,11 +125,18 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 
 	if(CONNECTED){
 		while (bytes_sent < n_bytes) {
-			if ( ( n = send(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL) ) < 0 ){
-				strerror_r(errno, error_string, 75);
-				printMsg(stderr, CONNECTION, "ERROR writing to socket: %s. DISCONNECTING.\n", error_string);
-				CONNECTED = success = 0;
+			if ( ( n = send(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL | MSG_DONTWAIT) ) < 0 ){
+				int err_num = errno;
+
+				strerror_r(err_num, error_string, 75);
+				printMsg(stderr, CONNECTION, "ERROR writing to socket: %s.\n", error_string);
 				success = 0;
+
+				if(err_num != EAGAIN){
+					CONNECTED = 0;
+					printMsg(stderr, CONNECTION, "%sDISCONNECTING%s\n", KRED, KRES);
+				}
+
 				break;
 			}
 			else{
