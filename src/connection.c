@@ -123,29 +123,33 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 	success = 1;
 	bytes_sent = 0;
 
+	printMsg(stderr, CONNECTION, "Start sending: %d bytes to be sent.\n", n_bytes);
+
 	if(CONNECTED){
 		while (bytes_sent < n_bytes) {
 			if ( ( n = send(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL | MSG_DONTWAIT) ) < 0 ){
 				int err_num = errno;
 
 				strerror_r(err_num, error_string, 75);
-				printMsg(stderr, CONNECTION, "ERROR writing to socket: %s.\n", error_string);
+				printMsg(stderr, CONNECTION, "%sERROR writing to socket: %s.%s\n", KRED, error_string, KRES);
 				success = 0;
 
 				if(err_num != EAGAIN){
-					CONNECTED = 0;
 					printMsg(stderr, CONNECTION, "%sDISCONNECTING%s\n", KRED, KRES);
+					CONNECTED = 0;
+					break;
 				}
-
-				break;
 			}
 			else{
 				bytes_sent += n;
+				printMsg(stderr, CONNECTION, "%d of %d bytes sent.\n", bytes_sent, n_bytes);
 			}
 		}
 	}
 	else
 		success = 0;
+
+	printMsg(stderr, CONNECTION, "Finish sending: %d bytes sent.\n", bytes_sent);
 
 	return success;
 }
