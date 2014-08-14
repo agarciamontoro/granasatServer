@@ -198,11 +198,43 @@ int sendImage(int sockfd){
 }
 
 int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
+	#define X   0
+	#define Y   1
+	#define Z   2
+	#define A_GAIN 0.004    	//[G/LSB] FS=10
+	#define M_XY_GAIN 1100   	//[LSB/Gauss] GN=001
+	#define M_Z_GAIN 980	//[LSB/Gauss] GN=001
+	#define T_GAIN 8	//[LSB/ºC]
+
 	uint8_t buffer[12];
 	int success = 0;
 
-	fread(buffer, sizeof(uint8_t), 6, mag_file);
-	fread(buffer+6, sizeof(uint8_t), 6, acc_file);
+	pthread_rwlock_rdlock( &magnetometer_rw_lock );
+		fread(buffer, sizeof(uint8_t), 6, mag_file);
+	pthread_rwlock_unlock( &magnetometer_rw_lock );
+
+	pthread_rwlock_rdlock( &accelerometer_rw_lock );
+		fread(buffer+6, sizeof(uint8_t), 6, acc_file);
+	pthread_rwlock_unlock( &accelerometer_rw_lock );
+
+	int16_t m[3];
+	float MAG[3];
+
+	*m = (int16_t)(buffer[1] | buffer[0] << 8);
+	*(m+1) = (int16_t)(buffer[5] | buffer[4] << 8);
+	*(m+2) = (int16_t)(buffer[3] | buffer[2] << 8);
+
+	*(MAG+0) = (float) *(m+0)/M_XY_GAIN;
+	*(MAG+1) = (float) *(m+1)/M_XY_GAIN;
+	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
+
+	float accF[3];
+	*(accF+0) = (float) *(buffer+6+0)*A_GAIN;
+	*(accF+1) = (float) *(buffer+6+1)*A_GAIN;
+	*(accF+2) = (float) *(buffer+6+2)*A_GAIN;
+
+	printMsg(stderr, LSM303, "Sending magnetometer: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
+	printMsg(stderr, LSM303, "Sending accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
 
 	success = sendData(sockfd, buffer, sizeof(*buffer) * 12);
 	

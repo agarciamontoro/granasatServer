@@ -2,6 +2,8 @@
 
 struct timespec T_ZERO;
 pthread_rwlock_t camera_rw_lock;
+pthread_rwlock_t magnetometer_rw_lock;
+pthread_rwlock_t accelerometer_rw_lock;
 pthread_mutex_t mutex_star_tracker;
 pthread_mutex_t mutex_horizon_sensor;
 pthread_mutex_t mutex_print_msg;

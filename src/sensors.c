@@ -90,7 +90,9 @@ void readAndStoreAccelerometer(FILE* file){
 
 	struct timespec timestamp;
 	/////////////////////////////////////////////////////////////////////////////////////
-	readACC(accelerometer, &timestamp);
+	pthread_rwlock_wrlock( &accelerometer_rw_lock );
+		readACC(accelerometer, &timestamp);
+	pthread_rwlock_unlock( &accelerometer_rw_lock );
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	/*
@@ -121,7 +123,9 @@ void readAndStoreMagnetometer(FILE* file){
 
 	struct timespec timestamp;
 	/////////////////////////////////////////////////////////////////////////////////////
-	readMAG(magnetometer, &timestamp);
+	pthread_rwlock_wrlock( &magnetometer_rw_lock );
+		readMAG(magnetometer, &timestamp);
+	pthread_rwlock_unlock( &magnetometer_rw_lock );
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	fwrite(magnetometer, sizeof(*magnetometer), 6, file);

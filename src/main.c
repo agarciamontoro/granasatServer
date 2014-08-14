@@ -154,8 +154,8 @@ void* control_connection(void* useless){
 
 
 	//MAG AND ACC FILE OPENING
-	//FILE* read_acc = fopen(acc_file_name, "r");
-	//FILE* read_mag = fopen(mag_file_name, "r");
+	FILE* read_acc = fopen(acc_file_name, "r");
+	FILE* read_mag = fopen(mag_file_name, "r");
 
 
 	//START LISTENING FOR INCOMING CONNECTIONS
@@ -299,7 +299,7 @@ void* control_connection(void* useless){
 			} //END OF SELECT IF
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
 				//Send magnetometer and accelerometer packet
-				//sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
+				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
 				
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
@@ -312,7 +312,7 @@ void* control_connection(void* useless){
 			if(count >= 3){
 				count = 0;
 				printMsg(stderr, CONNECTION, "Sending image\n");
-				sendImage(SOCKET_BIG);
+				//sendImage(SOCKET_BIG);
 			}
 		} //END while ( connected )
 
@@ -416,6 +416,8 @@ int main(int argc, char** argv){
 
 	//Semaphores for reading/writing frames and for changing algorithms parameters
 	pthread_rwlock_init( &camera_rw_lock, NULL );
+	pthread_rwlock_init( &magnetometer_rw_lock, NULL );
+	pthread_rwlock_init( &accelerometer_rw_lock, NULL );
 	pthread_mutex_init( &mutex_star_tracker, NULL );
 	pthread_mutex_init( &mutex_horizon_sensor, NULL );
 	pthread_mutex_init( &mutex_print_msg, NULL );
@@ -428,9 +430,9 @@ int main(int argc, char** argv){
     // *******************************
 
 	pthread_create( &capture_thread, NULL, capture_images, NULL );
-	//pthread_create( &processing_thread, NULL, process_images, NULL );
-	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
-	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
+	pthread_create( &processing_thread, NULL, process_images, NULL );
+	pthread_create( &horizon_thread, NULL, HS_test, NULL );
+	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 		        		printf("Hola\n");
@@ -441,9 +443,9 @@ int main(int argc, char** argv){
     // ********  JOIN THREADS  *******
     // *******************************	
 	pthread_join( capture_thread, NULL );
-	//pthread_join( horizon_thread, NULL );
-	//pthread_join( processing_thread, NULL );
-	//pthread_join( LS303DLHC_thread, NULL );
+	pthread_join( horizon_thread, NULL );
+	pthread_join( processing_thread, NULL );
+	pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
 
 
@@ -451,6 +453,8 @@ int main(int argc, char** argv){
     // ********  DESTROY SEMS  *******
     // *******************************	
 	pthread_rwlock_destroy( &camera_rw_lock );
+	pthread_rwlock_destroy( &magnetometer_rw_lock );
+	pthread_rwlock_destroy( &accelerometer_rw_lock );
 	pthread_mutex_destroy( &mutex_star_tracker );
 	pthread_mutex_destroy( &mutex_horizon_sensor );
 	pthread_mutex_destroy( &mutex_print_msg );

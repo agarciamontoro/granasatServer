@@ -87,6 +87,26 @@ extern struct timespec T_ZERO;
 extern pthread_rwlock_t camera_rw_lock;
 
 /**
+ * @brief Lock to control magnetomer file
+ *
+ * @details This reader/writer lock let the magnetometer and the connection
+ * unit share a same file in which all the measurements are stored and from 
+ * all the measurements are read and sent.
+ * It is initialised in main(), before any thread starts.
+ */
+extern pthread_rwlock_t magnetometer_rw_lock;
+
+/**
+ * @brief Lock to control accelerometer file
+ *
+ * @details This reader/writer lock let the accelerometer and the connection
+ * unit share a same file in which all the measurements are stored and from 
+ * all the measurements are read and sent.
+ * It is initialised in main(), before any thread starts.
+ */
+extern pthread_rwlock_t accelerometer_rw_lock;
+
+/**
  * @brief Lock to control the access to processing parameters
  *
  * @details This lock let the Ground Station change the star tracker
