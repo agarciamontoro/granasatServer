@@ -2,7 +2,7 @@
  * @file connection.h
  * @author Alejandro García Montoro
  * @date 27 Jul 2014
- * @brief Connection management.
+ * @brief Connection management. Declarations.
  *
  * @details connection.h declares global variables and provides the user
  * with some functions to manage the connection between GranaSAT server and GranaSAT client.

@@ -2,7 +2,7 @@
  * @file sync_control.h
  * @author Alejandro García Montoro
  * @date 27 Jul 2014
- * @brief Synchronisation management and log control.
+ * @brief Synchronisation management and log control. Declarations.
  *
  * @details sync_control.h declares global variables and provides the user
  * with some functions to manage the synchronisation and log control in GranaSAT server.

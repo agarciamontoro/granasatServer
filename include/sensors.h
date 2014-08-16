@@ -2,7 +2,7 @@
  * @file sensors.h
  * @author Alejandro García Montoro
  * @date 11 Apr 2014
- * @brief Sensor communication for GranaSAT server.
+ * @brief Sensor communication management. Declarations.
  *
  * @details sensors.h declares global variables and provides the user
  * with the needed functions to communicate with the sensors, , manage the synchronisation in GranaSAT server.

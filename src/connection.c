@@ -1,4 +1,11 @@
-#include "connection.h"
+/**
+ * @file connection.c
+ * @author Alejandro García Montoro
+ * @date 27 Jul 2014
+ * @brief Connection management. Definitions.
+ */
+
+ #include "connection.h"
 
 int CONNECTED = 0;
 

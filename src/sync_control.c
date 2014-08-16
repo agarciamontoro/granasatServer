@@ -1,3 +1,11 @@
+
+/**
+ * @file sync_control.c
+ * @author Alejandro García Montoro
+ * @date 27 Jul 2014
+ * @brief Synchronisation management and log control. Definitions.
+*/
+
 #include "sync_control.h"
 
 struct timespec T_ZERO;
