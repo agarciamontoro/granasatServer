@@ -4,7 +4,7 @@
  * @date 27 Jul 2014
  * @brief Connection management.
  *
- * @details connection.h declares declares global variables and provides the user
+ * @details connection.h declares global variables and provides the user
  * with some functions to manage the connection between GranaSAT server and GranaSAT client.
  * It includes variables to store the different socket file descriptors, as well as a variable
  * to control the connection losses and ensure that both the server and the client are connected.
@@ -57,6 +57,8 @@
  * is set and ready and zero when this connection is lost. It is changed from getData() and sendData()
  * functions, as well as from the main.c control_connection() code, where it can be set to zero if the
  * server receives a ::MSG_END or a ::MSG_RESTART command from the client.
+ * The error handling is basically based in this variable.
+ *
  * It is initialised to zero.
  */
 extern int CONNECTED;
@@ -121,21 +123,164 @@ extern int LISTEN_SMALL;
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief Print an error message to stderr and disconnect the server (if req.)
+ *
 
+ * @param msg Pointer to a string, whose content will be printed as the error message.
+ * @param status Boolean variable: if 1, the variable ::CONNECTED is set to 0.
+
+ * @return -
+
+ * @note Set status to 1 can cause other functions to stop. It is a way to disconnect
+ * the communication between the server and the client.
+ * @note Set status to 1 if, and only if, you are really sure the connection does not work,
+ * or you want to manually disconnect the communication.
+
+ * @warning This function can change CONNECTED variable.
+ */
 void error(const char *msg, int status);
 
+
+/**
+ * @brief Set a socket to accept connections.
+ *
+
+ * @param portno Port number where the socket will be listening
+
+ * @return Returns the file descriptor of a socket listening in port number @p portno.
+ * If an error is encountered, a negative value is returned and an error message is
+ * printed in stderr.
+
+ * @see connectToSocket()
+
+ * @note The errors encountered can be caused by the following issues:
+ * -# An error opening the socket.
+ * -# An error binding the socket to the port @p portno
+ * -# An error setting the socket to listen in the port @p portno.
+ * @note This function is usually called before an infinite loop where
+ * new connections are accepted with connectToSocket()
+ */
 int prepareSocket(int portno);
 
+/**
+ * @brief Accepts a new connection in the listening socket @p sockfd.
+ *
+
+ * @param sockfd Listening socket file descriptor.
+
+ * @return Returns the file descriptor of the new accepted socket.
+ * If an error is encountered, a negative value is returned and an error message is
+ * printed in stderr.
+
+ * @see prepareSocket()
+
+ * @note This function is actually a wrapper of <sys/socket.h> accept() function.
+ */
 int connectToSocket(int sockfd);
 
+/**
+ * @brief Reads a command from @p sockfd and returns it.
+
+ * @param sockfd Socket file descriptor, enabled to read from it.
+
+ * @return Returns the command received. If an error is encountered, ::MSG_PASS command
+ * is returned.
+
+ * @see protocol.h
+
+ * @note Note that the return value can be ::MSG_PASS either if an error is encountered
+ * or if ::MSG_PASS command is received.
+ *
+ * @warning This function can change CONNECTED variable since it calls getData().
+ */
 char getCommand(int sockfd);
 
+/**
+ * @brief Reads data from a socket.
+
+ * @param sockfd Socket file descriptor, enabled to read from it.
+ * @param ptr Pointer to a buffer in which the data will be returned.
+ * @param n_bytes Size of data to be received.
+
+ * @return Returns the success of the function:
+ * -# Returns 1 if the funtion succeded.
+ * -# Returns 0 in any other case.
+
+ * @see sendData()
+
+ * @note This function is actually a wrapper of <sys/socket.h> recv() function, with
+ * flags MSG_NOSIGNAL and MSG_DONTWAIT set.
+
+ * @warning This function can change CONNECTED variable.	 This can happen if the following
+ * conditions occured:
+ * -# recv() returns a negative a number.
+ * -# recv() set errno to an error differente to EAGAIN.
+ */
 int getData(int sockfd, void* ptr, int n_bytes);
 
+/**
+ * @brief Sends data to a socket.
+
+ * @param sockfd Socket file descriptor, enabled to write in it.
+ * @param ptr Pointer to a buffer from which the data will be read.
+ * @param n_bytes Size of data to be sent.
+
+ * @return Returns the success of the function:
+ * -# Returns 1 if the funtion succeded.
+ * -# Returns 0 in any other case.
+
+ * @see getData()
+
+ * @note This function is actually a wrapper of <sys/socket.h> send() function, with
+ * flags MSG_NOSIGNAL and MSG_DONTWAIT set.
+
+ * @warning This function can change CONNECTED variable. This can happen if the following
+ * conditions occured:
+ * -# send() returns a negative a number.
+ * -# send() set errno to an error differente to EAGAIN.
+ */
 int sendData(int sockfd, void* ptr, int n_bytes);
 
+/**
+ * @brief Sends the buffered image to a socket.
+
+ * @param sockfd Socket file descriptor, enabled to write in it.
+
+ * @return Returns the success of the function:
+ * -# Returns 1 if the funtion succeded.
+ * -# Returns 0 in any other case.
+
+ * @see sendData()
+
+ * @note 
+ * @note This function is actually a wrapper of sendData() function.
+
+ * @warning This function can change CONNECTED variable, since it calls sendData().
+ */
 int sendImage(int sockfd);
 
+/**
+ * @brief Sends accelerometer and magnetometer measurements to a socket.
+
+ * @param mag_file FILE* variable, which points to a file of magnetometer measurements.
+ * @param mag_file FILE* variable, which points to a file of accelerometer measurements.
+ * @param sockfd Socket file descriptor, enabled to write in it.
+
+ * @return Returns the success of the function:
+ * -# Returns 1 if the funtion succeded.
+ * -# Returns 0 in any other case.
+
+ * @see sendData()
+
+ * @note This function is actually a wrapper of sendData() function.
+
+ * @warning This function can change CONNECTED variable, since it calls sendData().
+ * @warning @p mag_file and @p acc_file should be ready file descriptors, since no file
+ * error handling is done inside the function. The reading pointer of both files
+ * should allow the fread() function to read at least a measurement (6 bytes).
+ *
+ */
 int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd);
 
 #endif

@@ -33,23 +33,32 @@ int prepareSocket(int portno){
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (sockfd < 0) 
+	if (sockfd < 0){
 	 error( "ERROR opening socket", 0 );
-
-	bzero((char *) &serv_addr, sizeof(serv_addr));
-
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	serv_addr.sin_port = htons( portno );
-
-	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
-		error( "ERROR on binding", 0 );
-
-	if(	listen(sockfd,5) == 0 ){
-		printMsg(stderr, CONNECTION, "Listening on socket %d\n", sockfd);
 	}
 	else{
-		printMsg(stderr, CONNECTION, "Error while listening on socket %d: %s\n", sockfd, strerror(errno));
+		bzero((char *) &serv_addr, sizeof(serv_addr));
+
+		serv_addr.sin_family = AF_INET;
+		serv_addr.sin_addr.s_addr = INADDR_ANY;
+		serv_addr.sin_port = htons( portno );
+
+		if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0){
+			error( "ERROR on binding", 0 );
+			close(sockfd);
+			sockfd = -1;
+		}
+		else{
+
+			if(	listen(sockfd,5) == 0 ){
+				printMsg(stderr, CONNECTION, "Listening on socket %d\n", sockfd);
+			}
+			else{
+				printMsg(stderr, CONNECTION, "Error while listening on socket %d: %s\n", sockfd, strerror(errno));
+				close(sockfd);
+				sockfd = -1;
+			}
+		}
 	}
 
 	return sockfd;
@@ -63,10 +72,12 @@ int connectToSocket(int sockfd){
 
 	newsockfd = accept( sockfd, (struct sockaddr *) &cli_addr, (socklen_t*) &clilen);
 
-	if(newsockfd > 0)
+	if(newsockfd > 0){
 		printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsockfd);
-	else
+	}
+	else{
 		printMsg(stderr, CONNECTION, "%sERROR accepting socket: %s%s\n", KRED, strerror(errno), KRES);
+	}
 
 	return newsockfd;
 }
@@ -75,7 +86,7 @@ char getCommand(int sockfd){
 	char command;
 
 	if(!getData(sockfd, &command, 1))
-		command = 0;
+		command = MSG_PASS;
 
 	if(command)
 		printMsg(stderr, CONNECTION, "Command received: %d\n", command);
