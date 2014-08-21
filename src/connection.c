@@ -17,19 +17,95 @@ int LISTEN_COMMANDS = 0;
 int LISTEN_BIG = 0;
 int LISTEN_SMALL = 0;
 
+/**
+ * @details
+ * error() prints an error message to stderr, labeled as CONNECTION, using printMsg() function.
+ * Depending on @p status, error() forces the disconnection of all communication channels
+ * by setting ::CONNECTED globar variable to 0. If this occurs, in addition to the error message
+ * pointed by @p msg, another message is output to stderr, also labeled as CONNECTION, noticing
+ * the disconnection.
+ * 
+ * This function is usually called after an error is detected from send() or recv() functions, as
+ * well as from bind() or socket(). This function has to be called with @p status set to zero if,
+ * and only if, the connection is intended to be finished, because an error is encountered or because
+ * the user wants the connection to be manually finished.
+ *
+ * An example of use can be seen in prepareSocket():
+
+ * @code
+ * int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+	if (sockfd < 0){
+	 error( "ERROR opening socket", 0 );
+	}
+	else{
+		//CODE TO BE EXECUTED IN SUCCESS.
+	}
+ * @endcode
+ *
+ * @todo Let error() accepts a random number of arguments, in order to implement a printf-like function.
+ *
+ * <b> General behaviour </b> @n
+ * The steps performed by error() are the following:
+ */
 void error(const char *msg, int status) {
 	char error_string[75];
 
+	/**
+	*	@details -# Backup of errno value in error_string string.
+	*/
 	strerror_r(errno, error_string, 75);
 
+	/**
+	* 	@details -# Printing of the error message, which is done after concatenate the
+	* message pointed by @p msg with the output string from strerror_r().
+	*/
 	printMsg(stderr, CONNECTION, "%s%s: %s.\n", KLRE, msg, error_string);
 	
+	/**
+	*	@details
+	*	-# If status equals to 1:
+	*		-# ::CONNECTED variable is set to zero
+	*		-# Another message noticing the disconnection is printed in stderr.
+	*/
 	if(status){
 		printMsg(stderr, CONNECTION, "DISCONNECTING.\n");
 		CONNECTED = 0;
 	}
 }
 
+/**
+ * @details
+ * prepareSocket() receives a port number (@p portno), in which a newly opened socket
+ * listens to accept new connections. If the function succeeds, the file descriptor of
+ * this socket is returned.
+ *  prints an error message to stderr, labeled as CONNECTION, using printMsg() function.
+ * Depending on @p status, error() forces the disconnection of all communication channels
+ * by setting ::CONNECTED globar variable to 0. If this occurs, in addition to the error message
+ * pointed by @p msg, another message is output to stderr, also labeled as CONNECTION, noticing
+ * the disconnection.
+ * 
+ * This function is usually called after an error is detected from send() or recv() functions, as
+ * well as from bind() or socket(). This function has to be called with @p status set to zero if,
+ * and only if, the connection is intended to be finished, because an error is encountered or because
+ * the user wants the connection to be manually finished.
+ *
+ * An example of use can be seen in prepareSocket():
+
+ * @code
+ * int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+	if (sockfd < 0){
+	 error( "ERROR opening socket", 0 );
+	}
+	else{
+		//CODE TO BE EXECUTED IN SUCCESS.
+	}
+ * @endcode
+
+ * <b> General behaviour </b> @n
+ * The steps performed by error() are the following:
+ */
 int prepareSocket(int portno){
 	int sockfd, newsockfd;
 	struct sockaddr_in serv_addr;
