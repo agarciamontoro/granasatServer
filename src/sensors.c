@@ -100,7 +100,7 @@ void readAndStoreAccelerometer(FILE* file){
 		fwrite(accelerometer, sizeof(*accelerometer), 6, file);
 		
 		/**
-		* The followin function appears to be useless, but it is completely necessary.
+		* The following function appears to be useless, but it is completely necessary.
 		* See man 3 fopen to read the following paragraph, where this issue is explained:
 		* Reads  and  writes  may be intermixed on read/write streams in any order.
 		* Note that ANSI C requires that a file positioning function intervene between
@@ -139,7 +139,7 @@ void readAndStoreMagnetometer(FILE* file){
 		fwrite(magnetometer, sizeof(*magnetometer), 6, file);
 		
 		/**
-		* The followin function appears to be useless, but it is completely necessary.
+		* The following function appears to be useless, but it is completely necessary.
 		* See man 3 fopen to read the following paragraph, where this issue is explained:
 		* Reads  and  writes  may be intermixed on read/write streams in any order.
 		* Note that ANSI C requires that a file positioning function intervene between
