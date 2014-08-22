@@ -219,7 +219,7 @@ char getCommand(int sockfd);
  * @note This function is actually a wrapper of <sys/socket.h> recv() function, with
  * flags MSG_NOSIGNAL and MSG_DONTWAIT set.
 
- * @warning This function can change CONNECTED variable.	 This can happen if the following
+ * @warning This function can change CONNECTED variable. This can happen if the following
  * conditions occured:
  * -# recv() returns a negative a number.
  * -# recv() set errno to an error differente to EAGAIN.

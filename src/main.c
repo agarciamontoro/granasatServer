@@ -108,7 +108,7 @@ void intHandler(int dummy){
         pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
         pthread_cancel(processing_thread);
-        //pthread_cancel(horizon_thread);
+        pthread_cancel(horizon_thread);
 }
 
 void* capture_images(void* useless){
@@ -490,7 +490,7 @@ int main(int argc, char** argv){
 
 	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
-	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
+	pthread_create( &horizon_thread, NULL, HS_test, NULL );
 	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
@@ -499,7 +499,7 @@ int main(int argc, char** argv){
     // ********  JOIN THREADS  *******
     // *******************************	
 	pthread_join( capture_thread, NULL );
-	//pthread_join( horizon_thread, NULL );
+	pthread_join( horizon_thread, NULL );
 	pthread_join( processing_thread, NULL );
 	pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );

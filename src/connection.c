@@ -286,7 +286,41 @@ char getCommand(int sockfd){
 }
 
 
+/**
+ * @details
+ * getData() acts basically as a wrapper of recv(), to provide an easy call in which
+ * all the server needs are fulfilled.
+ *
+ * Two important issues have to be considered:
+ *	-# getData() iterate through a loop until any of these conditions occurs:
+ * 		-# All @p n_bytes are received.
+ * 		-# A fatal error is detected.
+ *	-# getData() call recv() function with the following flags:
+ *		-# MSG_NOSIGNAL: To avoid the automatic signal handling by recv().
+ *		-# MSG_DONTWAIT: To set recv() as non-blocking function.
+ *
+ * getData() is used in the same way you would use recv(), taking into account the
+ * already implemented loop. See below an example of code:
+ *
+ * @code
+ 	int command, value;
+	command = getCommand(SOCKET_COMMANDS);
 
+	switch(command){
+		case MSG_SET_BRIGHTNESS:
+			if( getData(SOCKET_COMMANDS, &value, sizeof(value)) )
+				change_parameter(V4L2_CID_BRIGHTNESS, value);
+		break;
+
+		//REST OF COMMAND OPTIONS
+	}
+ * @endcode
+
+ * @todo Review error handling, in the definition and in any other place where this function is used.
+
+ * <b> General behaviour </b> @n
+ * The steps performed by getData() are the following:
+ */
 int getData(int sockfd, void* ptr, int n_bytes){
 	int n, success, bytes_sent;
 	char error_string[75];
@@ -294,7 +328,20 @@ int getData(int sockfd, void* ptr, int n_bytes){
 	success = 1;
 	bytes_sent = 0;
 
+	/**
+	*	@details
+	*	-# Start of recv() loop. It shall finish when the number of bytes actually received equals @p n_bytes.
+	*/
 	while (bytes_sent < n_bytes) {
+		/**
+		*	@details
+		*	-# Call of recv(), with MSG_NOSIGNAL | MSG_DONTWAIT flags.
+		*		-# If the value returned by recv is lower than zero, the loop is finished and a log message
+		*		is printed in stderr, labelled as ::CONNECTION, using printMsg() function.
+		*		-# If this error is different than EAGAIN (error that is throwed usually when the socket is full
+				or there is a temporary failure), the connection is shut down setting ::CONNECTED variable to zero.
+				If this occurs, another message noticing the fatal issue is printed.
+		*/
 		if ( ( n = recv(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL | MSG_DONTWAIT) ) < 0 ){
 			int err_num = errno;
 			strerror_r(err_num, error_string, 75);
@@ -314,9 +361,18 @@ int getData(int sockfd, void* ptr, int n_bytes){
 		}
 	}
 
+	/**
+	*	@details
+	*	-# If the loop finished succesfully, a success message is printed in stderr.
+	*/
 	if(success)
 		printMsg(stderr, CONNECTION, "%d bytes read\n", bytes_sent);
 
+
+	/**
+	*	@details
+	*	-# Returning of 1 or 0, depending if the function finished succesfully or any error was encountered.
+	*/
 	return success;
 }
 
