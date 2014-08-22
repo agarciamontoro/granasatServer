@@ -79,32 +79,32 @@ void error(const char *msg, int status) {
  * prepareSocket() receives a port number (@p portno), in which a newly opened socket
  * listens to accept new connections. If the function succeeds, the file descriptor of
  * this socket is returned.
- *  prints an error message to stderr, labeled as CONNECTION, using printMsg() function.
- * Depending on @p status, error() forces the disconnection of all communication channels
- * by setting ::CONNECTED globar variable to 0. If this occurs, in addition to the error message
- * pointed by @p msg, another message is output to stderr, also labeled as CONNECTION, noticing
- * the disconnection.
- * 
- * This function is usually called after an error is detected from send() or recv() functions, as
- * well as from bind() or socket(). This function has to be called with @p status set to zero if,
- * and only if, the connection is intended to be finished, because an error is encountered or because
- * the user wants the connection to be manually finished.
+ * Some information is logged using printMsg() function, labelled as ::CONNECTION.
  *
- * An example of use can be seen in prepareSocket():
+ * This function is never used alone, as it is intended to open a socket in which new connections
+ * will be accepted. Since it returns the file descriptor of the listening socket, this value
+ * shall be used as the single parameter of connectToSocket().
+ *
+ * The following piece of code is self-explanatory:
 
  * @code
- * int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	int portno = 51717;
+	int LISTEN_SOCKFD, SOCKFD;
 
-	if (sockfd < 0){
-	 error( "ERROR opening socket", 0 );
+	LISTEN_SOCKFD = prepareSocket(portno);
+
+	if (LISTEN_SOCKFD < 0){
+	 error( "ERROR opening listening socket", 0 );
 	}
 	else{
-		//CODE TO BE EXECUTED IN SUCCESS.
+		SOCKFD = connectToSocket(LISTEN_SOCKFD);
+
+		//ERROR HANDLING AND COMMUNICATION CODE IF SUCCESS
 	}
  * @endcode
 
  * <b> General behaviour </b> @n
- * The steps performed by error() are the following:
+ * The steps performed by prepareSocket() are the following:
  */
 int prepareSocket(int portno){
 	int sockfd, newsockfd;
@@ -114,6 +114,10 @@ int prepareSocket(int portno){
 
 	printMsg(stderr, CONNECTION, "Using port #%d\n", portno );
 
+	/**
+	*	@details -# Creation of an endpoint for communication with <sys/socket.h> socket() function. Return value
+	* stored in @c sockfd integer variable.
+	*/
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (sockfd < 0){
@@ -126,6 +130,10 @@ int prepareSocket(int portno){
 		serv_addr.sin_addr.s_addr = INADDR_ANY;
 		serv_addr.sin_port = htons( portno );
 
+		/**
+		*	@details -# If socket() succeeds, prepareSocket() binds the file descriptor returned -@c sockdf- to @p portno,
+		* with any incoming address allowed. This is obtained with <sys/socket.h> bind() function.
+		*/
 		if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0){
 			error( "ERROR on binding", 0 );
 			close(sockfd);
@@ -133,6 +141,12 @@ int prepareSocket(int portno){
 		}
 		else{
 
+			/**
+			*	@details -# If bind() succeeds, prepareSocket() set the file descriptor returned by socket() to listen
+			*  with <sys/socket.h> listen() function, passing 5 as backlog argument (see @c man @c 2 @c listen).
+			*  <br> Either in failure or in success, prepareSocket() prints a log message labelled as ::CONNECTION,
+			*  in stderr, with printMsg() function. If listen fails, the socket pointed by @c sockfd is closed.
+			*/
 			if(	listen(sockfd,5) == 0 ){
 				printMsg(stderr, CONNECTION, "Listening on socket %d\n", sockfd);
 			}
@@ -144,17 +158,65 @@ int prepareSocket(int portno){
 		}
 	}
 
+	/**
+	*	@details -# Returning of sockfd value. To check the function success, it is mandatory to see wether this value
+	* is greater than zero.
+	*/
 	return sockfd;
 }
 
+
+/**
+ * @details
+ * connectToSocket() receives a listening socket, usually opened with prepareSocket() -although it can be
+ * set manually-, and blocks until a new connection is present. When a new connection is accepted or an error
+ * is encountered, connectToSocket() returns either the new socket file descriptor or a negative value.
+ *
+ * This function has to be preceded by a successful opening of a listening socket.
+ *
+ * The following piece of code is self-explanatory:
+
+ * @code
+	int portno = 51717;
+	int LISTEN_SOCKFD, SOCKFD;
+
+	LISTEN_SOCKFD = prepareSocket(portno);
+
+	if (LISTEN_SOCKFD < 0){
+	 error( "ERROR opening listening socket", 0 );
+	}
+	else{
+		SOCKFD = connectToSocket(LISTEN_SOCKFD);
+
+		if (SOCKFD < 0){
+			error( "ERROR accepting connection", 0 );
+		}
+		else{
+			//CODE TO BE EXECUTED IN SUCCESS.
+		}
+	}
+ * @endcode
+
+ * <b> General behaviour </b> @n
+ * The steps performed by connectToSocket() are the following:
+ */
 int connectToSocket(int sockfd){
 	int newsockfd, clilen;
 	struct sockaddr_in cli_addr;
 
 	clilen = sizeof(cli_addr);
 
+	/**
+	*	@details -# Call to <sys/socket.h> accept() function with @p sockfd as the first argument. This blocks
+	* until a new connection is accepted or an error is encountered. The return value is stored in @c newsockfd,
+	* an integer variable.
+	*/
 	newsockfd = accept( sockfd, (struct sockaddr *) &cli_addr, (socklen_t*) &clilen);
 
+	/**
+	*	@details -# Either in failure or in success, connectToSocket() prints a log message in stderr, labelled
+	* as ::CONNECTION, using printMsg() function.
+	*/
 	if(newsockfd > 0){
 		printMsg(stderr, CONNECTION, "New socket opened: %d\n", newsockfd);
 	}
@@ -162,6 +224,10 @@ int connectToSocket(int sockfd){
 		printMsg(stderr, CONNECTION, "%sERROR accepting socket: %s%s\n", KRED, strerror(errno), KRES);
 	}
 
+	/**
+	*	@details -# Returning of newsockfd value. To check the function success, it is mandatory to see wether this value
+	* is greater than zero.
+	*/
 	return newsockfd;
 }
 

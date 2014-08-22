@@ -153,6 +153,9 @@ void error(const char *msg, int status);
  * printed in stderr.
 
  * @see connectToSocket()
+ * @see <a href="http://www.linuxmanpages.com/man2/socket.2.php">man 2 socket</a>
+ * @see <a href="http://www.linuxmanpages.com/man2/bind.2.php">man 2 bind</a>
+ * @see <a href="http://www.linuxmanpages.com/man2/listen.2.php">man 2 listen</a>
 
  * @note The errors encountered can be caused by the following issues:
  * -# An error opening the socket.
@@ -174,8 +177,11 @@ int prepareSocket(int portno);
  * printed in stderr.
 
  * @see prepareSocket()
+ * @see <a href="http://www.linuxmanpages.com/man2/accept.2.php">man 2 accept</a>
 
  * @note This function is actually a wrapper of <sys/socket.h> accept() function.
+ * @warning connectToSocket() does not check the integrity of @p sockfd. It is the user's
+ * responsability to pass a correctly opened listening socket file descriptor.
  */
 int connectToSocket(int sockfd);
 
