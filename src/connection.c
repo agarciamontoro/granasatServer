@@ -231,9 +231,51 @@ int connectToSocket(int sockfd){
 	return newsockfd;
 }
 
+
+/**
+ * @details
+ * getCommand() reads a single byte from the socket pointed by the file descriptor @p sockfd 
+ * and returns it as a command. Since it is no more than a wrapper of getData(), its processing
+ * is simple.
+
+ * See below an example of code, adapted from main.c control_connection()
+
+ * @code
+ 	//Open a listening socket
+ 	LISTEN_COMMANDS = prepareSocket(PORT_COMMANDS);
+
+ 	//Accepts a new connection
+ 	SOCKET_COMMANDS = connectToSocket(LISTEN_COMMANDS);
+
+ 	//Loop to read commands from the socket
+ 	do{
+		command = getCommand(SOCKET_COMMANDS);
+
+		switch(command){
+			//CODE TO PERFORM THE ACTIONS NEEDED BY EACH COMMAND
+		}
+ 	}while(command != MSG_END);
+
+ * @endcode
+
+ * @todo Implement an error handling to check if the byte received is actually a command, in order to handle
+ * the possible E-Link losses. It could be necessary to change the commands numbers in protocol.h.
+
+ * <b> General behaviour </b> @n
+ * The steps performed by getCommand() are the following:
+ */
 char getCommand(int sockfd){
 	char command;
 
+	/**
+	*	@details
+	*	-# Call of getData() with @p sockfd as the first argument and 1 as the last one, since the commands
+	* size is now of 1 byte.
+	*		-# If getData() returns zero -which notes an error-, the command returned is set to ::MSG_PASS.
+	*		-# If getData() returns a greater value, a log message is printed in stderr, labelled as
+	*		::CONNECTION, using printMsg() function.
+	*	-# Returning of the command received (or ::MSG_PASS if there was any error).
+	*/
 	if(!getData(sockfd, &command, 1))
 		command = MSG_PASS;
 
@@ -242,6 +284,8 @@ char getCommand(int sockfd){
 
 	return command;
 }
+
+
 
 int getData(int sockfd, void* ptr, int n_bytes){
 	int n, success, bytes_sent;

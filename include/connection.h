@@ -197,6 +197,7 @@ int connectToSocket(int sockfd);
 
  * @note Note that the return value can be ::MSG_PASS either if an error is encountered
  * or if ::MSG_PASS command is received.
+ * @note This function is actually a wrapper of getData().
  *
  * @warning This function can change CONNECTED variable since it calls getData().
  */
