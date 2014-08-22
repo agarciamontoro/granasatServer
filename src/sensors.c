@@ -75,11 +75,16 @@ void readAndSendAccelerometer(int socket){
 	/////////////////////////////////////////////////////////////////////////////////////
 	readACC(accelerometer, &timestamp);
 	/////////////////////////////////////////////////////////////////////////////////////
+	
+	int16_t a_raw[6];
+	*a_raw = (int16_t)(accelerometer[0] | accelerometer[1] << 8) >> 4;
+     *(a_raw+1) = (int16_t)(accelerometer[2] | accelerometer[3] << 8) >> 4;
+     *(a_raw+2) = (int16_t)(accelerometer[4] | accelerometer[5] << 8) >> 4;
 
 	float accF[3];
-	*(accF+0) = (float) *(accelerometer+0)*A_GAIN;
-	*(accF+1) = (float) *(accelerometer+1)*A_GAIN;
-	*(accF+2) = (float) *(accelerometer+2)*A_GAIN;
+	*(accF+0) = (float) *(a_raw+0)*A_GAIN;
+	*(accF+1) = (float) *(a_raw+1)*A_GAIN;
+	*(accF+2) = (float) *(a_raw+2)*A_GAIN;
 
 	printMsg(stderr, LSM303, "Processing accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
 	sendData(socket, accelerometer, sizeof(*accelerometer)*6);
@@ -92,30 +97,36 @@ void readAndStoreAccelerometer(FILE* file){
 	/////////////////////////////////////////////////////////////////////////////////////
 	pthread_rwlock_wrlock( &accelerometer_rw_lock );
 		readACC(accelerometer, &timestamp);
+		fwrite(accelerometer, sizeof(*accelerometer), 6, file);
+		
+		/**
+		* The followin function appears to be useless, but it is completely necessary.
+		* See man 3 fopen to read the following paragraph, where this issue is explained:
+		* Reads  and  writes  may be intermixed on read/write streams in any order.
+		* Note that ANSI C requires that a file positioning function intervene between
+		* output and input, unless an input operation encounters end-of-file.
+		* (If this condition is not met, then a read is allowed  to  return  the  result  of
+		* writes other than the most recent.)  Therefore it is good practice (and indeed
+		*sometimes necessary under Linux) to put an fseek(3) or fgetpos(3) operation
+		* between write and read operations on such a stream.  This operation may be an
+		* apparent no-op (as in fseek(..., 0L, SEEK_CUR) called for  its  synchronizing
+		* side effect.
+		*/
+		fseek(file, 0, SEEK_CUR);
 	pthread_rwlock_unlock( &accelerometer_rw_lock );
 	/////////////////////////////////////////////////////////////////////////////////////
 
-	/*
-	fwrite(&(timestamp.tv_sec), sizeof(timestamp.tv_sec), 1, file);
-	fwrite(&(timestamp.tv_nsec), sizeof(timestamp.tv_nsec), 1, file);
-	fwrite(accelerometer, 6*sizeof(unsigned char), 1, file);
-	*/
-	/*
-	int16_t acc[3];
-	*acc = (int16_t)(accelerometer[0] | accelerometer[1] << 8) >> 4;
-	*(acc+1) = (int16_t)(accelerometer[2] | accelerometer[3] << 8) >> 4;
-	*(acc+2) = (int16_t)(accelerometer[4] | accelerometer[5] << 8) >> 4;
-	*/
-
-	fwrite(accelerometer, sizeof(*accelerometer), 6, file);
+	int16_t a_raw[6];
+	*a_raw = (int16_t)(accelerometer[0] | accelerometer[1] << 8) >> 4;
+     *(a_raw+1) = (int16_t)(accelerometer[2] | accelerometer[3] << 8) >> 4;
+     *(a_raw+2) = (int16_t)(accelerometer[4] | accelerometer[5] << 8) >> 4;
 
 	float accF[3];
-	*(accF+0) = (float) *(accelerometer+0)*A_GAIN;
-	*(accF+1) = (float) *(accelerometer+1)*A_GAIN;
-	*(accF+2) = (float) *(accelerometer+2)*A_GAIN;
-	printMsg(stderr, LSM303, "%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
-    /*fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, accF[0],accF[1],accF[2]);*/
-	
+	*(accF+0) = (float) *(a_raw+0)*A_GAIN;
+	*(accF+1) = (float) *(a_raw+1)*A_GAIN;
+	*(accF+2) = (float) *(a_raw+2)*A_GAIN;
+
+	printMsg(stderr, LSM303, "ACC:\t%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);	
 }
 
 void readAndStoreMagnetometer(FILE* file){
@@ -125,24 +136,36 @@ void readAndStoreMagnetometer(FILE* file){
 	/////////////////////////////////////////////////////////////////////////////////////
 	pthread_rwlock_wrlock( &magnetometer_rw_lock );
 		readMAG(magnetometer, &timestamp);
+		fwrite(magnetometer, sizeof(*magnetometer), 6, file);
+		
+		/**
+		* The followin function appears to be useless, but it is completely necessary.
+		* See man 3 fopen to read the following paragraph, where this issue is explained:
+		* Reads  and  writes  may be intermixed on read/write streams in any order.
+		* Note that ANSI C requires that a file positioning function intervene between
+		* output and input, unless an input operation encounters end-of-file.
+		* (If this condition is not met, then a read is allowed  to  return  the  result  of
+		* writes other than the most recent.)  Therefore it is good practice (and indeed
+		*sometimes necessary under Linux) to put an fseek(3) or fgetpos(3) operation
+		* between write and read operations on such a stream.  This operation may be an
+		* apparent no-op (as in fseek(..., 0L, SEEK_CUR) called for  its  synchronizing
+		* side effect.
+		*/
+		fseek(file, 0, SEEK_CUR);
 	pthread_rwlock_unlock( &magnetometer_rw_lock );
 	/////////////////////////////////////////////////////////////////////////////////////
 
-	fwrite(magnetometer, sizeof(*magnetometer), 6, file);
-
 	int16_t m[3];
-	float MAG[3];
-
 	*m = (int16_t)(magnetometer[1] | magnetometer[0] << 8);
-	*(m+1) = (int16_t)(magnetometer[5] | magnetometer[4] << 8);
-	*(m+2) = (int16_t)(magnetometer[3] | magnetometer[2] << 8);
+    *(m+1) = (int16_t)(magnetometer[5] | magnetometer[4] << 8) ;
+    *(m+2) = (int16_t)(magnetometer[3] | magnetometer[2] << 8) ;
 
+	float MAG[3];
 	*(MAG+0) = (float) *(m+0)/M_XY_GAIN;
 	*(MAG+1) = (float) *(m+1)/M_XY_GAIN;
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
-	printMsg(stderr, LSM303, "%4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
-	/*fprintf(file, "%d %ld # %4.3f %4.3f %4.3f\n", (int)timestamp.tv_sec, timestamp.tv_nsec, MAG[0],MAG[1],MAG[2]);	*/
+	printMsg(stderr, LSM303, "MAG: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
 }
 
 int setGPIOValue(int GPIO_number, bool on){

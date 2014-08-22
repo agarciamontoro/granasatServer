@@ -105,9 +105,9 @@ void intHandler(int dummy){
 		close(LISTEN_SMALL);
 
         pthread_cancel(capture_thread);
-        //pthread_cancel(LS303DLHC_thread);
+        pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
-        //pthread_cancel(processing_thread);
+        pthread_cancel(processing_thread);
         //pthread_cancel(horizon_thread);
 }
 
@@ -154,8 +154,21 @@ void* control_LS303DLHC(void* useless){
 	//Enable LSM303 sensor - Magnetometer/Accelerometer
 	enableLSM303();
 
-	FILE* file_acc = fopen(acc_file_name, "w");
-	FILE* file_mag = fopen(mag_file_name, "w");
+	pthread_rwlock_wrlock( &accelerometer_rw_lock );
+		FILE* file_acc = fopen(acc_file_name, "w");
+	pthread_rwlock_unlock( &accelerometer_rw_lock );
+
+	pthread_rwlock_wrlock( &magnetometer_rw_lock );
+		FILE* file_mag = fopen(mag_file_name, "w");
+	pthread_rwlock_unlock( &magnetometer_rw_lock );
+
+
+	if(file_acc == NULL || file_mag == NULL){
+		printMsg(stderr, LSM303, "ERROR opening LSM303 files\n");
+		/**
+		* @todo Handle file opening error
+		*/
+	}
 
 	while(keep_running){
 		usleep(500000);
@@ -181,11 +194,24 @@ void* control_connection(void* useless){
 	timeout.tv_usec = 500000;
 	//END OF SELECT SETUP
 
+	//sleep(5);
 
 
 	//MAG AND ACC FILE OPENING
-	FILE* read_acc = fopen(acc_file_name, "r");
-	FILE* read_mag = fopen(mag_file_name, "r");
+	pthread_rwlock_rdlock( &accelerometer_rw_lock );
+		FILE* read_acc = fopen(acc_file_name, "r");
+	pthread_rwlock_unlock( &accelerometer_rw_lock );
+
+	pthread_rwlock_rdlock( &magnetometer_rw_lock );
+		FILE* read_mag = fopen(mag_file_name, "r");
+	pthread_rwlock_unlock( &magnetometer_rw_lock );
+
+	if(read_acc == NULL || read_mag == NULL){
+		printMsg(stderr, CONNECTION, "ERROR opening LSM303 files\n");
+		/**
+		* @todo Handle file opening error
+		*/
+	}
 
 
 	//START LISTENING FOR INCOMING CONNECTIONS
@@ -353,6 +379,9 @@ void* control_connection(void* useless){
 		printMsg(stderr, CONNECTION, "All comunication sockets closed.\n");
 	} //END while ( keep_running )
 
+	fclose(read_acc);
+	fclose(read_mag);
+
 	close(LISTEN_BIG);
 	close(LISTEN_SMALL);
 	close(LISTEN_COMMANDS);
@@ -461,19 +490,16 @@ int main(int argc, char** argv){
 
 	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
-	pthread_create( &horizon_thread, NULL, HS_test, NULL );
+	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
 	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
-
-		        		printf("Hola\n");
-
 
 
 	// *******************************
     // ********  JOIN THREADS  *******
     // *******************************	
 	pthread_join( capture_thread, NULL );
-	pthread_join( horizon_thread, NULL );
+	//pthread_join( horizon_thread, NULL );
 	pthread_join( processing_thread, NULL );
 	pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );

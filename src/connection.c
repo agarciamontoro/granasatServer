@@ -414,11 +414,15 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	int success = 0;
 
 	pthread_rwlock_rdlock( &magnetometer_rw_lock );
-		fread(buffer, sizeof(uint8_t), 6, mag_file);
+		fseek(mag_file, -6, SEEK_END);
+		//printMsg(stderr, MAIN, "MAG R position indicator: %ld\n", ftell(mag_file));
+		fread(buffer, sizeof(*buffer), 6, mag_file);
 	pthread_rwlock_unlock( &magnetometer_rw_lock );
 
 	pthread_rwlock_rdlock( &accelerometer_rw_lock );
-		fread(buffer+6, sizeof(uint8_t), 6, acc_file);
+		fseek(acc_file, -6, SEEK_END);
+		//printMsg(stderr, MAIN, "ACC R position indicator: %ld\n", ftell(acc_file));
+		fread(buffer+6, sizeof(*buffer), 6, acc_file);
 	pthread_rwlock_unlock( &accelerometer_rw_lock );
 
 	int16_t m[3];
@@ -432,13 +436,19 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	*(MAG+1) = (float) *(m+1)/M_XY_GAIN;
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
+	int16_t a[3];
 	float accF[3];
-	*(accF+0) = (float) *(buffer+6+0)*A_GAIN;
-	*(accF+1) = (float) *(buffer+6+1)*A_GAIN;
-	*(accF+2) = (float) *(buffer+6+2)*A_GAIN;
 
-	printMsg(stderr, LSM303, "Sending magnetometer: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
-	printMsg(stderr, LSM303, "Sending accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
+	*a = (int16_t)(buffer[0+6] | buffer[6+1] << 8) >> 4;
+    *(a+1) = (int16_t)(buffer[6+2] | buffer[6+3] << 8) >> 4;
+    *(a+2) = (int16_t)(buffer[6+4] | buffer[6+5] << 8) >> 4;
+
+	*(accF+0) = (float) *(a+0)*A_GAIN;
+	*(accF+1) = (float) *(a+1)*A_GAIN;
+	*(accF+2) = (float) *(a+2)*A_GAIN;
+
+	printMsg(stderr, CONNECTION, "Sending magnetometer: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
+	printMsg(stderr, CONNECTION, "Sending accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
 
 	success = sendData(sockfd, buffer, sizeof(*buffer) * 12);
 	
