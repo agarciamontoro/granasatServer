@@ -1382,3 +1382,38 @@ tr.heading h2 {
 	text-shadow: none;
 }
 
+/* Added by Alejandro
+ * FOOTER
+ */
+
+.social {
+	float: right;
+}
+
+.social ul {
+	float: left;
+	padding:0;
+	margin:0;
+}
+
+.social li {
+	float: left;
+	list-style:none;
+	margin-left:5px;
+}
+
+#social_fb {
+	background-image: url("");
+	background-repeat: no-repeat;
+}
+
+#social_tw {
+	background-image: url("");
+	background-repeat: no-repeat;
+}
+
+.authors {
+	text-align: left;
+	float: left;
+	display: block;
+}
