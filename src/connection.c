@@ -492,15 +492,15 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 
 /**
  * @details
- * sendImage() gets the last image taken by the camera and sends it through @p sockfd, which shall be
+ * sendImage() gets the latest image taken by the camera and sends it through @p sockfd, which shall be
  * a correct socket file descriptor. Since it is no more than a wrapper of sendData(), its processing
  * is simple. The importance of this function falls on how it deals with the camera lock (::camera_rw_lock)
- * to send the last image taken.
+ * to send the latest image taken.
 
  * The function performance is clear, and shall be called when an image should be sent.
  * This program uses this function, always, with the following call:
 
- @code sendImage(SOCKET_BIG) @endcode
+ @code sendImage(SOCKET_BIG); @endcode
 
  * The function is designed to send only new images, making use of global variables ::new_frame_send.
  * If it detects that the user wants an old image to be sent, the function will return with a failure
@@ -518,7 +518,7 @@ int sendImage(int sockfd){
 
 	/**
 	*	@details
-	*	-# The function blocks until it can access the camera buffer, where the last image
+	*	-# The function blocks until it can access the camera buffer, where the latest image
 	*	taken is stored. This is done using the camera lock: ::camera_rw_lock.
 	*/
 	pthread_rwlock_rdlock( &camera_rw_lock );
@@ -575,6 +575,30 @@ int sendImage(int sockfd){
 	return success;
 }
 
+
+/**
+ * @details
+ * sendAccAndMag() gets the latest measurements taken by LSM303 magnetometer/accelerometer,
+ * serializes them and sends them through @p sockfd, which should be a correct socket file
+ * descriptor.
+ * Since it is no more than a wrapper of sendData(), its processing is simple. The importance
+ * of this function falls on how it deals with the LSM303 files lock (::magnetometer_rw_lock
+ * and ::accelerometer_rw_lock).
+
+ * The function performance is clear, and shall be called when the measurements should be sent.
+ * This program uses this function, always, with the following call:
+
+   @code sendAccAndMag(read_mag, read_acc, SOCKET_SMALL); @endcode
+
+ * where read_mag and read_acc are the file descriptors associated to the LSM303 files, in which
+ * all the measurements are stored. These file descriptors should be opened only for reading.
+
+ * @todo Implement an algorithm, like in sendImage(), to avoids the sending of the same measurements
+ * more than once.
+
+ * <b> General behaviour </b> @n
+ * The steps performed by sendAccAndMag() are the following:
+ */
 int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	#define X   0
 	#define Y   1
@@ -587,18 +611,39 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	uint8_t buffer[12];
 	int success = 0;
 
+	/**
+	*	@details
+	*	-# The function blocks until it can access the magnetometer file, where the
+	*	magnetometer measurements are written. This lock is ::magnetometer_rw_lock.
+	*		-# When the file can be accessed, it moves the position indicator to the
+	*		latest measurement. Then, the latest magnetometer measurement is stored in
+	*		the first 6 bytes of a buffer.
+	*	-# The function unlocks ::magnetometer_rw_lock.
+	*/
 	pthread_rwlock_rdlock( &magnetometer_rw_lock );
 		fseek(mag_file, -6, SEEK_END);
-		//printMsg(stderr, MAIN, "MAG R position indicator: %ld\n", ftell(mag_file));
 		fread(buffer, sizeof(*buffer), 6, mag_file);
 	pthread_rwlock_unlock( &magnetometer_rw_lock );
 
+	/**
+	*	@details
+	*	-# The function blocks until it can access the accelerometer file, where the
+	*	accelerometer measurements are written. This lock is ::accelerometer_rw_lock.
+	*		-# When the file can be accessed, it moves the position indicator to the
+	*		latest measurement. Then, the latest accelerometer measurement is stored in
+	*		the last 6 bytes of the buffer.
+	*	-# The function unlocks ::accelerometer_rw_lock.
+	*/
 	pthread_rwlock_rdlock( &accelerometer_rw_lock );
 		fseek(acc_file, -6, SEEK_END);
-		//printMsg(stderr, MAIN, "ACC R position indicator: %ld\n", ftell(acc_file));
 		fread(buffer+6, sizeof(*buffer), 6, acc_file);
 	pthread_rwlock_unlock( &accelerometer_rw_lock );
 
+	/**
+	*	@details
+	*	-# Both measurements are processed in order to print a human readable message. A log message
+	*	is then printed with printMsg() function, labelled as ::CONNECTION.
+	*/
 	int16_t m[3];
 	float MAG[3];
 
@@ -624,12 +669,25 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	printMsg(stderr, CONNECTION, "Sending magnetometer: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
 	printMsg(stderr, CONNECTION, "Sending accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
 
+	/**
+	*	@details
+	*	-# The buffer in which both measurements were stored is sent to @p sockfd using sendData() function.
+	*/
 	success = sendData(sockfd, buffer, sizeof(*buffer) * 12);
 	
+	/**
+	*	@details
+	*	-# If sendData() was succesfull, a success log message is printed. If it returned a failure, an error
+	*	message is also printed.
+	*/
 	if(success)
 		printMsg(stderr, CONNECTION, "Sent new buffer.\n");
 	else
 		printMsg(stderr, CONNECTION, "Buffer not sent.\n");
 
+	/**
+	*	@details
+	*	-# The return value of sendData() is returned.
+	*/
 	return success;
 }
