@@ -259,7 +259,8 @@ int sendData(int sockfd, void* ptr, int n_bytes);
 
  * @return Returns the success of the function:
  * -# Returns 1 if the funtion succeded.
- * -# Returns 0 in any other case.
+ * -# Returns 0 in any other case. The failure can be caused because there is
+ * no new image to be sent or because an error in sendData() call.
 
  * @see sendData()
 

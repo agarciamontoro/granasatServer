@@ -489,6 +489,25 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 	return success;
 }
 
+
+/**
+ * @details
+ * sendImage() gets the last image taken by the camera and sends it through @p sockfd, which shall be
+ * a correct socket file descriptor. Since it is no more than a wrapper of sendData(), its processing
+ * is simple. The importance of this function falls on how it deals with the camera lock (::camera_rw_lock)
+ * to send the last image taken.
+
+ * The function performance is clear, and shall be called when an image should be sent.
+ * This program uses this function, always, with the following call:
+
+ @code sendImage(SOCKET_BIG) @endcode
+
+ * The function is designed to send only new images, making use of global variables ::new_frame_send.
+ * If it detects that the user wants an old image to be sent, the function will return with a failure
+
+ * <b> General behaviour </b> @n
+ * The steps performed by sendImage() are the following:
+ */
 int sendImage(int sockfd){
 	static int COUNT = 0;
 	int send_new_image = 0;
@@ -496,8 +515,26 @@ int sendImage(int sockfd){
 
 	int success = 0;
 
+
+	/**
+	*	@details
+	*	-# The function blocks until it can access the camera buffer, where the last image
+	*	taken is stored. This is done using the camera lock: ::camera_rw_lock.
+	*/
 	pthread_rwlock_rdlock( &camera_rw_lock );
 
+		/**
+		*	@details
+		*	-# The function checks whether the image stored in the buffer has been sent before.
+		*	This is done checking global variable ::new_frame_send, only changed from here and
+		*	from DMK41BU02.c process_image() function.
+		*		-# If there is no new image to be sent, the function does nothing and returns a failure.
+		*		-# If there is a new image to be sent, the function does the following:
+		*			-# It allocates 1280*960 bytes of memory.
+		*			-# It copies the shared buffer into the memory allocated.
+		*			-# It sets ::new_frame_send to zero, to avoid future calls of sendImage() to send the same image.
+
+		*/
 		if(new_frame_send){
 			image_stream = malloc(sizeof(*image_stream) * 1280*960);
 
@@ -509,14 +546,32 @@ int sendImage(int sockfd){
 		else
 			send_new_image = 0;
 
+	/**
+	*	@details
+	*	-# The function unlocks ::camera_rw_lock.
+	*/
 	pthread_rwlock_unlock( &camera_rw_lock );
 
+	/**
+	*	@details
+	*	-# If a new image has to be sent, sendImage() calls sendData() the proper way and stores its
+	*	return value to return to the caller of sendImage().
+	*/
 	if(send_new_image){
 		success = sendData(sockfd, image_stream, 1228800);
 	}
 
+	/**
+	*	@details
+	*	-# The memory is freed, even if it was not allocated.This throws no error because the pointer
+	*	is initialised to NULL.
+	*/
 	free(image_stream);
 
+	/**
+	*	@details
+	*	-# Returns the return value of sendData() or 0 if no image was sent.
+	*/
 	return success;
 }
 
