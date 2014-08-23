@@ -194,6 +194,7 @@ int connectToSocket(int sockfd);
  * is returned.
 
  * @see protocol.h
+ * @see getData()
 
  * @note Note that the return value can be ::MSG_PASS either if an error is encountered
  * or if ::MSG_PASS command is received.
@@ -215,6 +216,7 @@ char getCommand(int sockfd);
  * -# Returns 0 in any other case.
 
  * @see sendData()
+ * @see man 2 recv
 
  * @note This function is actually a wrapper of <sys/socket.h> recv() function, with
  * flags MSG_NOSIGNAL and MSG_DONTWAIT set.
@@ -238,6 +240,7 @@ int getData(int sockfd, void* ptr, int n_bytes);
  * -# Returns 0 in any other case.
 
  * @see getData()
+ * @see man 2 send
 
  * @note This function is actually a wrapper of <sys/socket.h> send() function, with
  * flags MSG_NOSIGNAL and MSG_DONTWAIT set.

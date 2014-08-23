@@ -376,6 +376,43 @@ int getData(int sockfd, void* ptr, int n_bytes){
 	return success;
 }
 
+
+/**
+ * @details
+ * senData() acts basically as a wrapper of send(), to provide an easy call in which
+ * all the server needs are fulfilled.
+ *
+ * Two important issues have to be considered:
+ *	-# sendData() iterate through a loop until any of these conditions occurs:
+ * 		-# All @p n_bytes are sent.
+ * 		-# A fatal error is detected.
+ *	-# sendData() call send() function with the following flags:
+ *		-# MSG_NOSIGNAL: To avoid the automatic signal handling by send().
+ *		-# MSG_DONTWAIT: To set send() as non-blocking function.
+ *
+ * sendData() is used in the same way you would use send(), taking into account the
+ * already implemented loop. See below an example of code, adapted from sendImage():
+ *
+ * @code
+	uint8_t* image_stream = NULL;
+	int success;
+
+	image_stream = malloc(sizeof(*image_stream) * 1280*960);
+
+	memcpy(image_stream, current_frame, 1280*960);
+	
+	success = sendData(sockfd, image_stream, 1228800);
+
+	free(image_stream);
+
+	return success;
+ * @endcode
+
+ * @todo Review error handling, in the definition and in any other place where this function is used.
+
+ * <b> General behaviour </b> @n
+ * The steps performed by sendData() are the following:
+ */
 int sendData(int sockfd, void* ptr, int n_bytes){
 	int n, success, bytes_sent;
 	char error_string[75];
@@ -385,8 +422,26 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 
 	printMsg(stderr, CONNECTION, "Start sending: %d bytes to be sent.\n", n_bytes);
 
+	/**
+	*	@details
+	*	-# Test wether the connection is correct, checking ::CONNECTED variable.
+	*/
 	if(CONNECTED){
+		/**
+		*	@details
+		*	-# Start of send() loop. It shall finish when the number of bytes actually sent equals @p n_bytes.
+		*/
 		while (bytes_sent < n_bytes) {
+			/**
+			*	@details
+			*	-# Call of send(), with MSG_NOSIGNAL | MSG_DONTWAIT flags.
+			*		-# If the value returned by recv is lower than zero, a log message
+			*		is printed in stderr, labelled as ::CONNECTION, using printMsg() function.
+			*		-# If this error is different than EAGAIN (error that is throwed usually when the socket is full
+					or there is a temporary failure), the loop is finished and the connection is shut down setting ::CONNECTED variable to zero.
+					If this occurs, another message noticing the fatal issue is printed.
+					-# If the number of bytes sent is 0, the function returns a failure but do not disconnect the server.
+			*/
 			if ( ( n = send(sockfd, ptr + bytes_sent, n_bytes - bytes_sent, MSG_NOSIGNAL | MSG_DONTWAIT) ) < 0 ){
 				int err_num = errno;
 
@@ -421,8 +476,16 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 	else
 		success = 0;
 
+	/**
+	*	@details
+	*	-# A log message is printed in stderr with a summary of the function performance.
+	*/
 	printMsg(stderr, CONNECTION, "Finish sending: %d of %d bytes sent.\n", bytes_sent, n_bytes);
 
+	/**
+	*	@details
+	*	-# Returning of 1 or 0, depending if the function finished succesfully or any error was encountered.
+	*/
 	return success;
 }
 
