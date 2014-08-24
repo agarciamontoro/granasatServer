@@ -6,7 +6,6 @@
 Earth’s magnetic field measurements
 
  * @mainpage .
-
  * @section what_sec GranaSAT: what and why?
  * Pico and nano satellite used for research and study have specific attitude 
 determination methods and associated sensors. Apart from sun sensors and 
@@ -33,7 +32,7 @@ Hence, performing the experiment in conditions environmentally similar to those 
 outer space may be very instructive for us. 
 
  * @section objectives_sec Experiment objectives
- * @subsec Primary objectives
+ * <b> Primary objectives </b>
  * - The main objective of this experiment is to build and test in real conditions an 
 attitude measurement system during the BEXUS 19 campaign.
  * - To test the accuracy of the attitude measurement system using a star sensor.
@@ -44,7 +43,7 @@ magntometer.
  * - To check whether or not the attitude system is adequate for the GranaSAT pico 
 satellite. 
 
- * @subsec Secondary objectives
+ * <b> Secondary objectives </b>
  * - To gain know-how about space missions and their future application in other 
 UGR space projects.
  * - To learn how to document a space related project.

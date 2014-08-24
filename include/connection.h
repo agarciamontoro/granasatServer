@@ -275,7 +275,7 @@ int sendImage(int sockfd);
  * @brief Sends accelerometer and magnetometer measurements to a socket.
 
  * @param mag_file FILE* variable, which points to a file of magnetometer measurements.
- * @param mag_file FILE* variable, which points to a file of accelerometer measurements.
+ * @param acc_file FILE* variable, which points to a file of accelerometer measurements.
  * @param sockfd Socket file descriptor, enabled to write in it.
 
  * @return Returns the success of the function:

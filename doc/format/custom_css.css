@@ -355,6 +355,7 @@ div.center img {
 }
 
 address.footer {
+	width: 100%;
 	text-align: right;
 	padding-right: 12px;
 }
@@ -1159,8 +1160,8 @@ dl.section dd {
 {
 	padding: 10px 0px;
 	margin-left: 25px;
-	/*width: 80%;  /*Added by Alejandro. Before: "width: 100%;" */
-	/*margin:auto; /*Added by Alejandro. Before: "margin: 0px;" */
+	width: 100%;
+	margin: 0px;
 	border:none;
 }
 
@@ -1386,20 +1387,35 @@ tr.heading h2 {
  * FOOTER
  */
 
-.social {
+.social{
 	float: right;
 }
 
 .social ul {
 	float: left;
 	padding:0;
-	margin:0;
+	margin: 0;
+	margin-right: 15px;
+	margin-bottom: 5px;
 }
 
 .social li {
 	float: left;
 	list-style:none;
 	margin-left:5px;
+}
+
+.social img {
+	width: 36px;
+	opacity: 0.7;
+    filter: alpha(opacity=70); /* For IE8 and earlier */
+    -webkit-transition: opacity 0.6s; /* For Safari 3.1 to 6.0 */
+    transition: opacity 0.6s;
+}
+
+.social img:hover {
+	opacity: 1.0;
+    filter: alpha(opacity=100); /* For IE8 and earlier */
 }
 
 #social_fb {
@@ -1413,6 +1429,8 @@ tr.heading h2 {
 }
 
 .authors {
+	margin-left: 15px;
+	margin-top: 8px;
 	text-align: left;
 	float: left;
 	display: block;
