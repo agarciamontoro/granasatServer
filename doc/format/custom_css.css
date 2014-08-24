@@ -357,18 +357,6 @@ div.center img {
 	border: 0px;
 }
 
-footer {
-	width: 100%;
-	max-height: 36px;
-	position: fixed;
-	bottom: 0px;
-	left:0px;
-	border-top: 3px solid #444;
-	margin: 0;
-	text-align: right;
-	padding: 5px 0;
-	background-color: #FFFFFF;
-}
 
 img.footer {
 	border: 0px;
@@ -1172,8 +1160,10 @@ dl.section dd {
 	padding: 10px 0px;
 	margin-left: 25px;
 	width: 100%;
+	//height: 100px;
 	margin: 0px;
 	border:none;
+	//background-color: #FF0000;
 }
 
 /*Added by Alejandro
@@ -1319,14 +1309,13 @@ tr.heading h2 {
 
 .tabs, .tabs2, .tabs3 {
 	background-image: none;
-	background-color: #2f3a48;
-	color: white;
+	background-color: #0d1826;//#2f3a48;
+	color: white;//#0d1826;
 
 }
 
-
 .tabs2 {
-	background-color: #51637b;
+	background-color: #0d1826;//#51637b;
 }
 
 .tablist li {
@@ -1336,7 +1325,7 @@ tr.heading h2 {
 
 .tablist a {
 	background-image: none;
-	color: white;
+	color: white;//#0d1826;
 	//text-shadow: none;
 	text-shadow: none;
 }
@@ -1350,17 +1339,26 @@ tr.heading h2 {
 
 .tablist li.current a {
 	background-image: none;
-	//color: #ccc;
+	color: white;//#0d1826;
 	text-shadow: none;
 }
 
 
 .tabs li.current {
 	background-color: #51637b;
+	color: white;
+	border-top-left-radius: 10px;
+	border-top-right-radius: 10px;
+}
+
+.tabs2 li{
+	background-color: #0d1826;
 }
 
 .tabs2 li.current {
-	background-color: #888;
+	border-top-left-radius: 10px;
+	border-top-right-radius: 10px;
+	background-color: #51637b;
 }
 
 
@@ -1446,4 +1444,43 @@ tr.heading h2 {
 	text-align: left;
 	float: left;
 	display: block;
+}
+
+header{
+	width:100%;
+	height: 120px;
+	background-color: #0d1826;//rgb(47, 58, 72);
+	text-align: center;
+	vertical-align: center;
+	//position:fixed;
+	//top:0px;
+	//left:0px;
+}
+
+header img{
+	height: 100px;
+	margin-top: 8px;
+}
+
+#top{
+	//margin-top: 120px;
+}
+
+footer {
+	width: 100%;
+	max-height: 36px;
+	position: fixed;
+	bottom: 0px;
+	left:0px;
+	border-top: 3px solid #444;
+	margin: 0;
+	text-align: right;
+	padding: 5px 0;
+	background-color: #FFFFFF;
+}
+
+.headertitle{
+	background-color: #51637b;
+	margin-bottom: 20px;
+	color: white;
 }
