@@ -2,7 +2,7 @@
 
 body, table, div, p, dl {
 	// font: 400 14px/22px Roboto,sans-serif;	
-	font: 13px "Lucida Grande", "Lucida Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
+	font: 14px "Lucida Grande", "Lucida Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
 }
 
 /* @group Heading Levels */
@@ -134,7 +134,7 @@ a {
 
 .contents a:visited {
 	//color: #4665A2;
-	color: rgb(51, 102, 204);
+	color: rgb(51, 102, 204);	
 }
 
 a:hover {
@@ -161,6 +161,13 @@ a.el {
 	font-family: Courier, Consolas, monospace;
 	//font-weight: bold;
 	font-weight: normal;
+}
+dt a.el{
+color: #DDDDFF;
+}
+
+dt a.el:visited{
+	color: #DDDDFF;
 }
 
 a.elRef {
@@ -595,7 +602,8 @@ table.memberdecls {
         //padding: 6px 0px 6px 0px;
 	   padding: 6px;
         //color: #253555;
-	   color: black;
+	   //color: black;
+	   color: white;
         font-weight: bold;
         text-shadow: none;
         /*text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.9);
@@ -605,7 +613,8 @@ table.memberdecls {
         //background-repeat:repeat-x;
         //background-color: #E2E8F2;
 	   //background-color: rgb(235, 238, 241);
-	   background-color: #ccc;
+	   //background-color: #ccc;
+	   background-color: #51637b;
         /* opera specific markup */
         box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
         //border-top-right-radius: 4px;
@@ -626,7 +635,21 @@ table.memberdecls {
         -webkit-box-shadow: none;
         -webkit-border-top-right-radius: 0px;
         -webkit-border-top-left-radius: 0px;
+}
 
+.memproto .paramname{
+	color: white;
+}
+
+div.#memproto{
+	border-top-right-radius: 10px;
+    border-top-left-radius: 10px;
+
+    -moz-border-radius-topright: 4px;
+    -moz-border-radius-topleft: 4px;
+
+    -webkit-border-top-right-radius: 4px;
+    -webkit-border-top-left-radius: 4px;
 }
 
 .memdoc, dl.reflist dd {
@@ -706,7 +729,7 @@ dl.reflist dd {
 	   font-family: Courier, Consolas, monospace;
 	   font-style: italic;
 	   font-weight: normal;
-	   text-shadow: rgba(0, 0, 0, 0.3) 0px 1px 1px;
+	   //text-shadow: rgba(0, 0, 0, 0.3) 0px 1px 1px;
 }
 
 .params .paramtype {
@@ -999,6 +1022,7 @@ div.summary
 div.summary a
 {
 	white-space: nowrap;
+	color: white;
 }
 
 div.ingroups
@@ -1325,17 +1349,18 @@ tr.heading h2 {
 
 .tablist a {
 	background-image: none;
-	color: white;//#0d1826;
+	color: #aaa;//#0d1826;
 	//text-shadow: none;
 	text-shadow: none;
+	transition: color 0.6s;
 }
 
 
 .tablist a:hover {
 	background-image: none;
 	text-shadow: none;
+	color: white;
 }
-
 
 .tablist li.current a {
 	background-image: none;
@@ -1369,7 +1394,7 @@ tr.heading h2 {
 
 .navpath ul {
 	background-image: none;
-	background-color: #888;
+	background-color: #51637b;
 	border: none;
 }
 
@@ -1459,7 +1484,7 @@ header{
 
 header img{
 	height: 100px;
-	margin-top: 8px;
+	margin-top: 20px;
 }
 
 #top{
@@ -1472,7 +1497,7 @@ footer {
 	position: fixed;
 	bottom: 0px;
 	left:0px;
-	border-top: 3px solid #444;
+	border-top: 3px solid #51637b;
 	margin: 0;
 	text-align: right;
 	padding: 5px 0;
