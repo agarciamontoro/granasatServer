@@ -310,6 +310,7 @@ div.contents{
     text-align: justify;
     text-justify: inter-word;
 	margin:auto;
+	margin-bottom: 60px;
 }
 
 td.indexkey {
@@ -356,10 +357,17 @@ div.center img {
 	border: 0px;
 }
 
-address.footer {
+footer {
 	width: 100%;
+	max-height: 36px;
+	position: fixed;
+	bottom: 0px;
+	left:0px;
+	border-top: 3px solid #444;
+	margin: 0;
 	text-align: right;
-	padding-right: 12px;
+	padding: 5px 0;
+	background-color: #FFFFFF;
 }
 
 img.footer {
@@ -1398,8 +1406,8 @@ tr.heading h2 {
 	float: left;
 	padding:0;
 	margin: 0;
-	margin-right: 15px;
-	margin-bottom: 5px;
+	margin-right: 10px;
+	//margin-bottom: 5px;
 }
 
 .social li {
@@ -1410,6 +1418,7 @@ tr.heading h2 {
 
 .social img {
 	width: 36px;
+	//margin: 4px 0px;
 	opacity: 0.7;
     filter: alpha(opacity=70); /* For IE8 and earlier */
     -webkit-transition: opacity 0.6s; /* For Safari 3.1 to 6.0 */
@@ -1432,8 +1441,8 @@ tr.heading h2 {
 }
 
 .authors {
-	margin-left: 15px;
-	margin-top: 8px;
+	margin-left: 10px;
+	margin-top: 6px;
 	text-align: left;
 	float: left;
 	display: block;
