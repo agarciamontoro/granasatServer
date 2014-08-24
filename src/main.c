@@ -5,7 +5,7 @@
  * @brief Attitude determination for a pico satellite based in a star tracker and 
 Earth’s magnetic field measurements
 
- * @mainpage .
+ * @mainpage GranaSAT Server Documentation
  * @section what_sec GranaSAT: what and why?
  * Pico and nano satellite used for research and study have specific attitude 
 determination methods and associated sensors. Apart from sun sensors and 
@@ -26,7 +26,7 @@ flight.
 A device called <b> star tracker </b> is normally used to obtain the information about the 
 orientation of a satellite in 3-dimensional coordinates. However, if the camera fails to 
 detect the stellar field, we will use the measurements provided by the <b> magnetometer 
-sensor </b>, the <b> accelerometer sensor </b> and a <b> horizon sensor </b> to calculate the attitude. 
+sensor</b>, the <b> accelerometer sensor </b> and a <b> horizon sensor </b> to calculate the attitude. 
 The experiment is designed to be placed in a university GranaSAT pico satellite. 
 Hence, performing the experiment in conditions environmentally similar to those in 
 outer space may be very instructive for us. 

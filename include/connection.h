@@ -153,9 +153,9 @@ void error(const char *msg, int status);
  * printed in stderr.
 
  * @see connectToSocket()
- * @see <a href="http://www.linuxmanpages.com/man2/socket.2.php">man 2 socket</a>
- * @see <a href="http://www.linuxmanpages.com/man2/bind.2.php">man 2 bind</a>
- * @see <a href="http://www.linuxmanpages.com/man2/listen.2.php">man 2 listen</a>
+ * @see <a href="http://man7.org/linux/man-pages/man2/socket.2.html">man 2 socket</a>
+ * @see <a href="http://man7.org/linux/man-pages/man2/bind.2.html">man 2 bind</a>
+ * @see <a href="http://man7.org/linux/man-pages/man2/listen.2.html">man 2 listen</a>
 
  * @note The errors encountered can be caused by the following issues:
  * -# An error opening the socket.
@@ -177,7 +177,7 @@ int prepareSocket(int portno);
  * printed in stderr.
 
  * @see prepareSocket()
- * @see <a href="http://www.linuxmanpages.com/man2/accept.2.php">man 2 accept</a>
+ * @see <a href="http://man7.org/linux/man-pages/man2/accept.2.html">man 2 accept</a>
 
  * @note This function is actually a wrapper of <sys/socket.h> accept() function.
  * @warning connectToSocket() does not check the integrity of @p sockfd. It is the user's
@@ -216,7 +216,7 @@ char getCommand(int sockfd);
  * -# Returns 0 in any other case.
 
  * @see sendData()
- * @see man 2 recv
+ * @see <a href="http://man7.org/linux/man-pages/man2/recv.2.html">man 2 recv</a>
 
  * @note This function is actually a wrapper of <sys/socket.h> recv() function, with
  * flags MSG_NOSIGNAL and MSG_DONTWAIT set.
@@ -240,7 +240,7 @@ int getData(int sockfd, void* ptr, int n_bytes);
  * -# Returns 0 in any other case.
 
  * @see getData()
- * @see man 2 send
+ * @see <a href="http://man7.org/linux/man-pages/man2/send.2.html">man 2 send</a>
 
  * @note This function is actually a wrapper of <sys/socket.h> send() function, with
  * flags MSG_NOSIGNAL and MSG_DONTWAIT set.
@@ -288,8 +288,7 @@ int sendImage(int sockfd);
 
  * @warning This function can change CONNECTED variable, since it calls sendData().
  * @warning @p mag_file and @p acc_file should be ready file descriptors, since no file
- * error handling is done inside the function. The reading pointer of both files
- * should allow the fread() function to read at least a measurement (6 bytes).
+ * error handling is done inside the function.).
  *
  */
 int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd);
