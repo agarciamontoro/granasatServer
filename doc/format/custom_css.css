@@ -15,7 +15,7 @@ h1.groupheader {
 .title {
 	//font: 400 14px/28px Roboto,sans-serif;
 	font-family: "Lucida Grande", "Lucida Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
-	font-size: 24px;
+	font-size: 20px;
 	font-weight: normal;
 	margin: 10px 2px;
 }
@@ -163,11 +163,19 @@ a.el {
 	font-weight: normal;
 }
 dt a.el{
-color: #DDDDFF;
+color: white;
 }
 
 dt a.el:visited{
-	color: #DDDDFF;
+	color: white;
+}
+
+td.memname a.el{
+	color: white;
+}
+
+td.paramtype a.el{
+	color: white;
 }
 
 a.elRef {
@@ -313,11 +321,13 @@ div.contents{
 	margin-left: 12px;
 	margin-right: 8px;*/
 	/*Added by Alejandro*/
-	max-width: 800px;
+	max-width: 70%;
     text-align: justify;
     text-justify: inter-word;
 	margin:auto;
+	margin-top: 250px;/*214px;*/
 	margin-bottom: 60px;
+	background-color: white;
 }
 
 td.indexkey {
@@ -1047,6 +1057,7 @@ div.header
 	margin:  0px;
 	//border-bottom: 1px solid #C4CFE5;
 	border: none;
+	max-height: 58px
 }
 
 div.headertitle
@@ -1320,6 +1331,7 @@ tr.heading h2 {
   h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }
   .summary { display: none; }
   .memitem { page-break-inside: avoid; }
+  footer { display: none;}
   #doc-content
   {
     margin-left:0 !important;
@@ -1477,9 +1489,9 @@ header{
 	background-color: #0d1826;//rgb(47, 58, 72);
 	text-align: center;
 	vertical-align: center;
-	//position:fixed;
-	//top:0px;
-	//left:0px;
+	position:fixed;
+	top:0px;
+	left:0px;
 }
 
 header img{
@@ -1487,8 +1499,21 @@ header img{
 	margin-top: 20px;
 }
 
+#navrowl{
+	height:100px;
+}
+
 #top{
-	//margin-top: 120px;
+	position: fixed;
+	top: 120px;
+	left: 0px;
+	width: 100%;
+}
+
+.header{
+	position: fixed;
+	top: 156px;
+	width: 100%;
 }
 
 footer {
@@ -1508,4 +1533,17 @@ footer {
 	background-color: #51637b;
 	margin-bottom: 20px;
 	color: white;
+}
+
+#search_td{
+	border: 100px solid #FF0000;
+}
+
+#MSearchSelectWindow {
+	position: absolute;
+	
+}
+
+#nav-path{
+	display:none;
 }
