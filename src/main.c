@@ -88,6 +88,9 @@ const char* acc_file_name = "accelerometer_measurements.data";
 const char* mag_file_name = "magnetometer_measurements.data";
 
 void intHandler(int dummy){
+		/** @todo Nice-to-have: Calling printf() from a signal handler is not
+	       strictly correct, since printf() is not async-signal-safe;
+	       see signal(7) and fix the error */
 		printf("\n");
 		printMsg(stderr, MAIN, "Finishing all threads\n");
 		
