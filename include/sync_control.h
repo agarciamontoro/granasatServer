@@ -20,6 +20,9 @@
 #include <pthread.h>			// C-threads management
 #include <stdio.h>				// I/O: printf, fprintf...
 #include <stdarg.h>				// Variable number of arguments
+#include <errno.h>					// Error constants
+#include <stdlib.h>					// General functions: atoi, rand, malloc, free...
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
@@ -255,6 +258,16 @@ struct timespec nsec_to_timespec(long long nsec);
  * @return Returns nothing.
  */
 void printMsg( FILE* stream, enum msg_type type, const char* format, ... );
+
+
+/**
+ * @brief .
+
+ * @param .
+
+ * @return .
+ */
+int LED_control();
 
 
 #endif

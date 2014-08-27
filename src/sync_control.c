@@ -238,7 +238,7 @@ void printMsg(FILE* stream, enum msg_type type, const char* format, ... ) {
 	pthread_mutex_unlock ( &mutex_print_msg );
 }
 
-int LED_control{
+int LED_control(){
 	int childpid, fd[2];
 
 	pipe(fd);
