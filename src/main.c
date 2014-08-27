@@ -486,6 +486,41 @@ int main(int argc, char** argv){
 	//Initilise clock
 	clock_gettime(CLOCK_MONOTONIC, &T_ZERO);
 
+
+
+	// *******************************
+    // ******** LED CHILD FORK *******
+    // *******************************
+	int childpid, fd[2];
+
+	pipe(fd);
+
+	if( (childpid = fork()) == -1 ){
+                printMsg(stderr, MAIN, "FATAL ERROR: Fork unsuccessful. %s\n", strerror(errno));
+                exit(1);
+	}
+
+    if(childpid == 0){
+            /* Child process closes up input side of pipe */
+            close(fd[1]);
+
+            /* Send "string" through the output side of pipe */
+            int val;
+            while(1){
+            	read(fd[0], &val, sizeof(val));
+            }
+
+            exit(0); //This should never be reached.
+    }
+    else
+    {
+            /* Parent process closes up output side of pipe */
+            close(fd[0]);
+
+            LED_FD = fd[1];
+    }
+
+
 	// *******************************
     // ******** START  THREADS *******
     // *******************************

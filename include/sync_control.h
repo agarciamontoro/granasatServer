@@ -68,6 +68,15 @@
 /////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * @brief LED file descriptor
+ *
+ * @details File descriptor used to synchronise the main program
+ * performance and the LEDs blinking. It is initialised in main(),
+ * with pipe() function, before any thread starts.
+ */
+extern int LED_FD;
+
+/**
  * @brief T=0 timestamp
  *
  * @details T_ZERO gives all the program timestamps a zero reference

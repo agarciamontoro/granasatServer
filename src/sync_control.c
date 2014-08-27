@@ -8,6 +8,7 @@
 
 #include "sync_control.h"
 
+int LED_FD = -1;
 struct timespec T_ZERO;
 pthread_rwlock_t camera_rw_lock;
 pthread_rwlock_t magnetometer_rw_lock;
