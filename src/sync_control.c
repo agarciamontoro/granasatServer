@@ -237,3 +237,35 @@ void printMsg(FILE* stream, enum msg_type type, const char* format, ... ) {
 		fflush(stream);
 	pthread_mutex_unlock ( &mutex_print_msg );
 }
+
+int LED_control{
+	int childpid, fd[2];
+
+	pipe(fd);
+
+	if( (childpid = fork()) == -1 ){
+		printMsg(stderr, MAIN, "FATAL ERROR: Fork unsuccessful. %s\n", strerror(errno));
+		return -1;
+	}
+
+    if(childpid == 0){
+            /* Child process closes up output side of pipe */
+            close(fd[1]);
+
+            /* Receive command through the input side of pipe */
+            int val;
+
+            while(1){
+            	read(fd[0], &val, sizeof(val));
+            }
+
+            exit(0); //This should never be reached.
+    }
+    else
+    {
+            /* Parent process closes up output side of pipe */
+            close(fd[0]);
+
+            return fd[1];
+    }
+}
