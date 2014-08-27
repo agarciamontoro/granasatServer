@@ -493,6 +493,10 @@ int main(int argc, char** argv){
     // *******************************
 	LED_FD = LED_control();
 
+	if( LED_FD == -1){
+		printMsg(stderr, MAIN, "FATAL ERROR: Fork unsuccessful. %s\n", strerror(errno));
+		exit(1);
+	}
 
 	// *******************************
     // ******** START  THREADS *******

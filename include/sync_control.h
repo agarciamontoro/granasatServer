@@ -22,7 +22,8 @@
 #include <stdarg.h>				// Variable number of arguments
 #include <errno.h>					// Error constants
 #include <stdlib.h>					// General functions: atoi, rand, malloc, free...
-
+#include <signal.h>
+#include <time.h>
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
@@ -71,6 +72,54 @@
 /////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * @brief Datatype to control which thread prints a message in the stream.
+
+ * @see printMsg()
+ *
+ * @details Tahnks to enum msg_type, printMsg() function is able to identify the thread from
+ * which the function is called and act in consequence, adding an identifier to the timestamped
+ * log and, for example, changing the colour of the printed message for each thread.
+ */
+enum msg_type{
+	MAIN,
+	STARTRACKER,
+	HORIZONSENSOR,
+	CONNECTION,
+	DMK41BU02,
+	DS1621,
+	LSM303,
+	SENSORS
+};
+
+/**
+ * @brief .
+
+ * @see .
+ *
+ * @details .
+ */
+enum LED_ID{
+	LED_RED,
+	LED_GRN,
+	LED_WHT,
+	LED_BLU
+};
+
+/**
+ * @brief .
+
+ * @see .
+ *
+ * @details .
+ */
+struct LED_st{
+	enum LED_ID LED_id;
+	int LED_status;
+	int LED_freq;
+	timer_t LED_timer;
+};
+
+/**
  * @brief LED file descriptor
  *
  * @details File descriptor used to synchronise the main program
@@ -78,6 +127,15 @@
  * with pipe() function, before any thread starts.
  */
 extern int LED_FD;
+
+/**
+ * @brief LED status
+ *
+ * @details File descriptor used to synchronise the main program
+ * performance and the LEDs blinking. It is initialised in main(),
+ * with pipe() function, before any thread starts.
+ */
+extern struct LED_st LEDs[4];
 
 /**
  * @brief T=0 timestamp
@@ -169,26 +227,6 @@ extern int new_frame_send;
  */
 extern int keep_running;
 
-/**
- * @brief Datatype to control which thread prints a message in the stream.
-
- * @see printMsg()
- *
- * @details Tahnks to enum msg_type, printMsg() function is able to identify the thread from
- * which the function is called and act in consequence, adding an identifier to the timestamped
- * log and, for example, changing the colour of the printed message for each thread.
- */
-enum msg_type{
-	MAIN,
-	STARTRACKER,
-	HORIZONSENSOR,
-	CONNECTION,
-	DMK41BU02,
-	DS1621,
-	LSM303,
-	SENSORS
-};
-
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////                    /////////////////////////////////////
@@ -269,5 +307,12 @@ void printMsg( FILE* stream, enum msg_type type, const char* format, ... );
  */
 int LED_control();
 
+int timer_init(timer_t* TIMERID);
+
+int timer_start(timer_t* TIMERID, int sec, long long nsec);
+
+void LED_init(enum LED_ID led);
+
+int LED_blink(struct LED_st* led);
 
 #endif

@@ -9,6 +9,7 @@
 #include "sync_control.h"
 
 int LED_FD = -1;
+struct LED_st LEDs[4];
 struct timespec T_ZERO;
 pthread_rwlock_t camera_rw_lock;
 pthread_rwlock_t magnetometer_rw_lock;
@@ -244,28 +245,101 @@ int LED_control(){
 	pipe(fd);
 
 	if( (childpid = fork()) == -1 ){
-		printMsg(stderr, MAIN, "FATAL ERROR: Fork unsuccessful. %s\n", strerror(errno));
 		return -1;
 	}
 
     if(childpid == 0){
+    		enum LED_ID led_msg;
             /* Child process closes up output side of pipe */
             close(fd[1]);
 
-            /* Receive command through the input side of pipe */
-            int val;
+			/* Init LED and timers */
+			LED_init(LED_RED);
+			LED_init(LED_GRN);
+			LED_init(LED_WHT);
+			LED_init(LED_BLU);
 
+			/* Loop to control timers and LED blinking */
             while(1){
-            	read(fd[0], &val, sizeof(val));
-            }
+            	read(fd[0], led_msg, sizeof(led_msg));
+            	LED_blink(&(LEDs[led_msg]));
+			}
 
             exit(0); //This should never be reached.
     }
     else
     {
-            /* Parent process closes up output side of pipe */
+            /* Parent process closes up input side of pipe */
             close(fd[0]);
-
             return fd[1];
     }
+}
+
+int timer_init(timer_t* TIMERID){
+	int success = 0;
+
+	/**************************************************************
+	 	SETTING UP THE SIGNAL ACTION TRIGGERED BY THE TIMER
+	***************************************************************/
+
+	struct sigevent evp; //This structure specifies how the caller should be notified when the timer expires.
+
+	//This field specefies how notification is to be performed. Set to signal the process.
+	evp.sigev_notify = SIGEV_SIGNAL;
+
+	//This field scpecifies the signal to be delivered. Set to a real-time signal (the first available is SIGRTMIN, the others are used by the SO)
+	evp.sigev_signo = SIGRTMIN;
+
+	//This field is used to pass data with the signal notification. Set to the TIMERID to distinguish between several of them.
+	evp.sigev_value.sival_ptr = TIMERID;
+	
+
+	/**************************************************************
+	 	CREATING THE TIMER
+	***************************************************************/
+
+
+	if( timer_create(CLOCK_MONOTONIC, &evp, TIMERID) != 0){
+		printf("ERROR CREATING TIMER: %s\n", strerror(errno));
+		success = 0;
+	}
+	else{
+		printf("Timer %ld created.\n", (long) *TIMERID);
+		success = 1;
+	}
+
+	return success;
+}
+
+int LED_blink(struct LED_st* led){
+	if(led->LED_status == 0){
+		//FORK
+			//CHILDREN:
+			//EXECUTE NEW PROGAM WITH NEEDED FREQ
+			/////////////////////////////////////
+			//PARENT:
+			//START TIMER
+			//CHANGE LED_status TO 1
+			//ADD CHILDREN PID TO LED STRUCT
+	}
+	else{
+		//RESTART TIMER
+	}
+}
+
+static void handler(int sig, siginfo_t *si, void *uc){
+	timer_t *timer_ptr;
+
+	timer_ptr = si->si_value.sival_ptr;
+
+	//SEARCH LED_st from LEDs in which LED_timer == *timer_ptr
+	//KILL THE PROCESS from LED_child_pid;
+	//SET LED_status TO 0
+}
+
+void LED_init(enum LED_ID led){
+	LEDs[led].LED_id = led;
+	LEDs[led].LED_status = 0;
+	LEDs[led].LED_freq = 1;
+	timer_init(&(LEDs[led].LED_timer));
 }
