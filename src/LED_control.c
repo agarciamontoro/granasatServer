@@ -81,8 +81,8 @@ int LED_control(){
 	}
 
     if(childpid == 0){
+    		printMsg(stderr, MAIN, "Process %d created to control LEDs\n", getpid());
            	signal(SIGINT, SIG_IGN);
-	    	signal(SIGTERM, LED_blink_handler);
             /* Child process closes up output side of pipe */
             close(fd[1]);
 
@@ -108,11 +108,15 @@ int LED_control(){
 				return 1;
 			}
 
+	    	if (signal(SIGTERM, LED_blink_handler) == SIG_ERR)
+	    		printMsg(stderr, MAIN, "ERROR setting handler for SIGTERM: %s\n", strerror(errno));
+
 			/* Loop to control timers and LED blinking */
 			enum LED_ID led_msg;
 			int n;
             while(LED_ON){
             	n = read(fd[0], &led_msg, sizeof(led_msg));
+            	
             	switch(n){
             		case 0:
             			break;
@@ -144,6 +148,7 @@ int LED_control(){
     {
             /* Parent process closes up input side of pipe */
             close(fd[0]);
+            LED_CONTROL_PID = childpid;
             signal(LED_SIGNAL, SIG_IGN);
             return fd[1];
     }
@@ -247,6 +252,6 @@ static void LED_control_handler(int sig, siginfo_t *si, void *uc){
 }
 
 void LED_blink_handler(int sig_num){
-	//printMsg(stderr, MAIN, "Signal %d received in process %d\n", sig_num, getpid());
+	printMsg(stderr, MAIN, "Signal %d received in process %d\n", sig_num, getpid());
 	LED_ON = 0;
 }

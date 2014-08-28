@@ -93,7 +93,12 @@ void intHandler(int dummy){
 	       strictly correct, since printf() is not async-signal-safe;
 	       see signal(7) and fix the error */
 		printf("\n");
-		kill(LED_CONTROL_PID, SIGTERM);
+
+		printMsg(stderr, MAIN, "Sending signal %d to process %d\n", SIGKILL, LED_CONTROL_PID);
+		
+
+		if( kill(LED_CONTROL_PID, SIGTERM) == -1)
+			printMsg(stderr, MAIN, "ERROR sending signal %d to process %d: %s\n", SIGKILL, LED_CONTROL_PID, strerror(errno));
 		
         CONNECTED = keep_running = 0;
 
@@ -107,11 +112,11 @@ void intHandler(int dummy){
 		close(LISTEN_BIG);
 		close(LISTEN_SMALL);
 
-        pthread_cancel(capture_thread);
-        pthread_cancel(LS303DLHC_thread);
+        //pthread_cancel(capture_thread);
+        //pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
-        pthread_cancel(processing_thread);
-        pthread_cancel(horizon_thread);
+        //pthread_cancel(processing_thread);
+        //pthread_cancel(horizon_thread);
 }
 
 void* capture_images(void* useless){
