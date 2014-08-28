@@ -12,7 +12,7 @@ void  readBlock(uint8_t command, uint8_t size, uint8_t *data){
 
 void selectDevice(int file, int addr){
      if (ioctl(file, I2C_SLAVE, addr) < 0) {
-          printMsg(stderr, LSM303, "Error: Could not select device LSM303: %s\n", strerror_r(errno));
+          printMsg(stderr, LSM303, "Error: Could not select device LSM303: %s\n", strerror(errno));
      }
 }
 

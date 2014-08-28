@@ -24,6 +24,9 @@
 #include <stdlib.h>					// General functions: atoi, rand, malloc, free...
 #include <signal.h>
 #include <time.h>
+#include <string.h>				// strerror()
+#include <fcntl.h>
+#include <netinet/in.h>				// Socket constants and data-types
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
@@ -62,6 +65,8 @@
 
 	/**@brief Inverse of nano factor: 1E9*/
 #define NANO_FACTOR 1000000000
+
+#define LED_SIGNAL SIGRTMIN
 
 #define RED_GPIO	27
 #define GRN_GPIO	4
@@ -317,6 +322,9 @@ int LED_control();
 int timer_init(timer_t* TIMERID);
 
 int timer_start(timer_t* TIMERID, int sec, long long nsec);
+
+static void LED_control_handler(int sig, siginfo_t *si, void *uc);
+void LED_blink_handler(int dummy);
 
 void LED_init(enum LED_ID led);
 
