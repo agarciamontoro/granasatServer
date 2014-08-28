@@ -255,7 +255,7 @@ int LED_control(){
 	}
 
     if(childpid == 0){
-    		int led_msg = 0;
+           	signal(SIGINT, SIG_IGN);
             /* Child process closes up output side of pipe */
             close(fd[1]);
 
@@ -282,6 +282,7 @@ int LED_control(){
 			}
 
 			/* Loop to control timers and LED blinking */
+			enum LED_ID led_msg;
 			int n;
             while(1){
             	n = read(fd[0], &led_msg, sizeof(led_msg));
@@ -334,11 +335,11 @@ int timer_init(timer_t* TIMERID){
 
 
 	if( timer_create(CLOCK_MONOTONIC, &evp, TIMERID) != 0){
-		printf("ERROR CREATING TIMER: %s\n", strerror(errno));
+		printMsg(stderr, MAIN, "ERROR CREATING TIMER: %s\n", strerror(errno));
 		success = 0;
 	}
 	else{
-		printf("Timer %ld created.\n", (long) *TIMERID);
+		printMsg(stderr, MAIN, "Timer %ld created.\n", (long) *TIMERID);
 		success = 1;
 	}
 
@@ -359,11 +360,11 @@ int timer_start(timer_t* TIMERID, int sec, long long nsec){
 	its.it_interval.tv_nsec = its.it_value.tv_nsec;
 
 	if ( timer_settime(*TIMERID, 0, &its, NULL) != 0 ){
-		printf("ERROR SETTING TIMER: %s\n", strerror(errno));
+		printMsg(stderr, MAIN, "ERROR SETTING TIMER: %s\n", strerror(errno));
 		success = 0;
 	}
 	else{
-		printf("Timer started...\n");
+		printMsg(stderr, MAIN, "Timer started...\n");
 		success = 1;
 	}
 
@@ -383,9 +384,9 @@ int LED_blink(struct LED_st* led){
 	    	signal(SIGTERM, LED_blink_handler);
 
 			while(LED_ON){
-				printf("%d: Blink ON.\n", getpid());
+				printMsg(stderr, MAIN, "%d: Blink ON.\n", getpid());
 				sleep(1);
-				printf("%d: BLINK OFF.\n", getpid());
+				printMsg(stderr, MAIN, "%d: BLINK OFF.\n", getpid());
 				sleep(1);
 			}
 

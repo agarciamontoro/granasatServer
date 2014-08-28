@@ -239,7 +239,10 @@ void* control_connection(void* useless){
 		//TIMES SETUP
 		count = 0;
 
+		enum LED_ID led = LED_RED;
 		while(CONNECTED){
+			write(LED_FD, &led, sizeof(led));
+
 			FD_ZERO(&desc_set); //SELECT SETUP
 			FD_SET(SOCKET_COMMANDS, &desc_set); //SELECT SETUP
 
@@ -497,9 +500,6 @@ int main(int argc, char** argv){
 		printMsg(stderr, MAIN, "FATAL ERROR: Fork unsuccessful. %s\n", strerror(errno));
 		exit(1);
 	}
-
-	int led = LED_GRN;
-	write(LED_FD, &led, sizeof(led));
 
 	// *******************************
     // ******** START  THREADS *******
