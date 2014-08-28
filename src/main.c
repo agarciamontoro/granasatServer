@@ -93,7 +93,14 @@ void intHandler(int dummy){
 	       strictly correct, since printf() is not async-signal-safe;
 	       see signal(7) and fix the error */
 		printf("\n");
-		printMsg(stderr, MAIN, "Finishing all threads\n");
+		printMsg(stderr, MAIN, "%d: Finishing all threads\n", getpid());
+
+		int i = 0;
+		for (i = 0; i < 4; ++i)
+		{
+			if(LEDs[i].LED_child_pid != -1)
+				kill(LEDs[i].LED_child_pid, SIGTERM);
+		}
 		
         CONNECTED = keep_running = 0;
 
@@ -173,7 +180,10 @@ void* control_LS303DLHC(void* useless){
 		*/
 	}
 
+	enum LED_ID LSM303_led;
 	while(keep_running){
+		write(LED_FD, &LSM303_led, sizeof(LSM303_led));
+
 		usleep(500000);
 
 		readAndStoreAccelerometer(file_acc);
@@ -240,9 +250,9 @@ void* control_connection(void* useless){
 		//TIMES SETUP
 		count = 0;
 
-		enum LED_ID led = LED_RED;
+		enum LED_ID connection_led = LED_BLU;
 		while(CONNECTED){
-			write(LED_FD, &led, sizeof(led));
+			write(LED_FD, &connection_led, sizeof(connection_led));
 
 			FD_ZERO(&desc_set); //SELECT SETUP
 			FD_SET(SOCKET_COMMANDS, &desc_set); //SELECT SETUP
@@ -501,6 +511,9 @@ int main(int argc, char** argv){
 		printMsg(stderr, MAIN, "FATAL ERROR: Fork unsuccessful. %s\n", strerror(errno));
 		exit(1);
 	}
+
+	enum LED_ID power_led = LED_GRN;
+	write(LED_FD, &power_led, sizeof(power_led));
 
 	// *******************************
     // ******** START  THREADS *******

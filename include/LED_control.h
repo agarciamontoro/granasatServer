@@ -3,7 +3,7 @@
 #include <stdlib.h>			// General functions: atoi, rand, malloc, free...
 
 #include "sync_control.h"	// Timestamp management and synchronisation control
-
+#include "PJ_RPI.h"			// GPIO control. Made by Pieter Jan (http://www.pieter-jan.com/)
 #define LED_SIGNAL SIGRTMIN
 
 #define RED_GPIO	27
@@ -60,23 +60,16 @@ extern int LED_FD;
 extern struct LED_st LEDs[4];
 
 
-
-/**
- * @brief .
-
- * @param .
-
- * @return .
- */
-int LED_control();
-
 int timer_init(timer_t* TIMERID);
 
 int timer_start(timer_t* TIMERID, int sec, long long nsec);
 
-static void LED_control_handler(int sig, siginfo_t *si, void *uc);
-void LED_blink_handler(int dummy);
+int LED_control();
 
 void LED_init(enum LED_ID led);
 
 int LED_blink(struct LED_st* led);
+
+static void LED_control_handler(int sig, siginfo_t *si, void *uc);
+
+void LED_blink_handler(int dummy);
