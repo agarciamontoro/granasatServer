@@ -311,19 +311,52 @@ int timer_init(timer_t* TIMERID){
 	return success;
 }
 
-int LED_blink(struct LED_st* led){
-	if(led->LED_status == 0){
-		//FORK
-			//CHILDREN:
-			//EXECUTE NEW PROGAM WITH NEEDED FREQ
-			/////////////////////////////////////
-			//PARENT:
-			//START TIMER
-			//CHANGE LED_status TO 1
-			//ADD CHILDREN PID TO LED STRUCT
+int timer_start(timer_t* TIMERID, int sec, long long nsec){
+	int success = 0;
+	/**************************************************************
+	 	STARTING THE TIMER
+	***************************************************************/
+
+	struct itimerspec its;
+
+	its.it_value.tv_sec = sec;
+	its.it_value.tv_nsec = nsec;
+	its.it_interval.tv_sec = its.it_value.tv_sec;
+	its.it_interval.tv_nsec = its.it_value.tv_nsec;
+
+	if ( timer_settime(*TIMERID, 0, &its, NULL) != 0 ){
+		printf("ERROR SETTING TIMER: %s\n", strerror(errno));
+		success = 0;
 	}
 	else{
-		//RESTART TIMER
+		printf("Timer started...\n");
+		success = 1;
+	}
+
+	return success;
+}
+
+int LED_blink(struct LED_st* led){
+	if(led->LED_status == 0){
+		int childpid, fd[2];
+
+		if( (childpid = fork()) == -1 ){
+			return -1;
+		}
+
+	    if(childpid == 0){
+	    	char buffer[100];
+	    	sprintf(buffer, "bin/LED_blink %d %d", led->LED_gpio, led->LED_freq);
+	    	exit(0);
+	    }
+	    else{
+	    	led->LED_status = 1;
+	    	led->LED_child_pid = childpid;
+			timer_start(&(led->LED_timer), 3, 0);
+	    }
+	}
+	else{
+		timer_start(&(led->LED_timer), 3, 0);
 	}
 }
 
@@ -332,14 +365,46 @@ static void handler(int sig, siginfo_t *si, void *uc){
 
 	timer_ptr = si->si_value.sival_ptr;
 
-	//SEARCH LED_st from LEDs in which LED_timer == *timer_ptr
-	//KILL THE PROCESS from LED_child_pid;
-	//SET LED_status TO 0
+	int i, found, pos;
+	i = found = 0;
+	pos = -1;
+	for (i = 0; i < 4 && !found; ++i)
+	{
+		if(*timer_ptr == LEDs[i].LED_timer){
+			pos = i;
+			found = 1;
+		}
+	}
+
+	if(found){
+		kill(LEDs[pos].LED_child_pid, SIGTERM);
+		LEDs[pos].LED_status = 0;
+		LEDs[pos].LED_child_pid = -1;
+	}
 }
 
 void LED_init(enum LED_ID led){
 	LEDs[led].LED_id = led;
 	LEDs[led].LED_status = 0;
 	LEDs[led].LED_freq = 1;
+	LEDs[led].LED_child_pid = -1;
 	timer_init(&(LEDs[led].LED_timer));
+
+	switch(led){
+		case LED_RED:
+			LEDs[led].LED_gpio = RED_GPIO;
+			break;
+			
+		case LED_GRN:
+			LEDs[led].LED_gpio = GRN_GPIO;
+			break;
+			
+		case LED_BLU:
+			LEDs[led].LED_gpio = BLU_GPIO;
+			break;
+			
+		case LED_WHT:
+			LEDs[led].LED_gpio = WHT_GPIO;
+			break;
+	}
 }

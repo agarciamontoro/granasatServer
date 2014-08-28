@@ -63,6 +63,11 @@
 	/**@brief Inverse of nano factor: 1E9*/
 #define NANO_FACTOR 1000000000
 
+#define RED_GPIO	27
+#define GRN_GPIO	4
+#define BLU_GPIO	8
+#define WHT_GPIO	16
+
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////                    /////////////////////////////////////
@@ -99,10 +104,10 @@ enum msg_type{
  * @details .
  */
 enum LED_ID{
-	LED_RED,
-	LED_GRN,
-	LED_WHT,
-	LED_BLU
+	LED_RED = 0,
+	LED_GRN = 1,
+	LED_WHT = 2,
+	LED_BLU = 3
 };
 
 /**
@@ -114,8 +119,10 @@ enum LED_ID{
  */
 struct LED_st{
 	enum LED_ID LED_id;
+	int LED_gpio;
 	int LED_status;
 	int LED_freq;
+	pid_t LED_child_pid;
 	timer_t LED_timer;
 };
 
