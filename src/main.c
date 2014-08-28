@@ -82,6 +82,7 @@ UGR space projects.
 #include "sensors.h"				// Sensors management
 #include "sync_control.h"			// Timestamp management and synchronisation control
 #include "HorizonSensor.h"
+#include "LED_control.h"
 
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, horizon_thread;
 const char* acc_file_name = "accelerometer_measurements.data";

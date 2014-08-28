@@ -66,13 +66,6 @@
 	/**@brief Inverse of nano factor: 1E9*/
 #define NANO_FACTOR 1000000000
 
-#define LED_SIGNAL SIGRTMIN
-
-#define RED_GPIO	27
-#define GRN_GPIO	4
-#define BLU_GPIO	8
-#define WHT_GPIO	16
-
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////                    /////////////////////////////////////
@@ -100,54 +93,6 @@ enum msg_type{
 	LSM303,
 	SENSORS
 };
-
-/**
- * @brief .
-
- * @see .
- *
- * @details .
- */
-enum LED_ID{
-	LED_RED = 0,
-	LED_GRN = 1,
-	LED_WHT = 2,
-	LED_BLU = 3
-};
-
-/**
- * @brief .
-
- * @see .
- *
- * @details .
- */
-struct LED_st{
-	enum LED_ID LED_id;
-	int LED_gpio;
-	int LED_status;
-	int LED_freq;
-	pid_t LED_child_pid;
-	timer_t LED_timer;
-};
-
-/**
- * @brief LED file descriptor
- *
- * @details File descriptor used to synchronise the main program
- * performance and the LEDs blinking. It is initialised in main(),
- * with pipe() function, before any thread starts.
- */
-extern int LED_FD;
-
-/**
- * @brief LED status
- *
- * @details File descriptor used to synchronise the main program
- * performance and the LEDs blinking. It is initialised in main(),
- * with pipe() function, before any thread starts.
- */
-extern struct LED_st LEDs[4];
 
 /**
  * @brief T=0 timestamp
@@ -308,26 +253,5 @@ struct timespec nsec_to_timespec(long long nsec);
  * @return Returns nothing.
  */
 void printMsg( FILE* stream, enum msg_type type, const char* format, ... );
-
-
-/**
- * @brief .
-
- * @param .
-
- * @return .
- */
-int LED_control();
-
-int timer_init(timer_t* TIMERID);
-
-int timer_start(timer_t* TIMERID, int sec, long long nsec);
-
-static void LED_control_handler(int sig, siginfo_t *si, void *uc);
-void LED_blink_handler(int dummy);
-
-void LED_init(enum LED_ID led);
-
-int LED_blink(struct LED_st* led);
 
 #endif
