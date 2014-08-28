@@ -93,14 +93,7 @@ void intHandler(int dummy){
 	       strictly correct, since printf() is not async-signal-safe;
 	       see signal(7) and fix the error */
 		printf("\n");
-		printMsg(stderr, MAIN, "%d: Finishing all threads\n", getpid());
-
-		int i = 0;
-		for (i = 0; i < 4; ++i)
-		{
-			if(LEDs[i].LED_child_pid != -1)
-				kill(LEDs[i].LED_child_pid, SIGTERM);
-		}
+		kill(LED_CONTROL_PID, SIGTERM);
 		
         CONNECTED = keep_running = 0;
 

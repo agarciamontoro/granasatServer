@@ -59,6 +59,8 @@ extern int LED_FD;
  */
 extern struct LED_st LEDs[4];
 
+extern pid_t LED_CONTROL_PID;
+
 
 int timer_init(timer_t* TIMERID);
 

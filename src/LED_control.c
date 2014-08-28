@@ -2,6 +2,7 @@
 
 int LED_FD = -1;
 struct LED_st LEDs[4];
+pid_t LED_CONTROL_PID = -1;
 
 int LED_ON = 1;
 
@@ -81,6 +82,7 @@ int LED_control(){
 
     if(childpid == 0){
            	signal(SIGINT, SIG_IGN);
+	    	signal(SIGTERM, LED_blink_handler);
             /* Child process closes up output side of pipe */
             close(fd[1]);
 
@@ -109,7 +111,7 @@ int LED_control(){
 			/* Loop to control timers and LED blinking */
 			enum LED_ID led_msg;
 			int n;
-            while(1){
+            while(LED_ON){
             	n = read(fd[0], &led_msg, sizeof(led_msg));
             	switch(n){
             		case 0:
@@ -124,7 +126,19 @@ int LED_control(){
 			}
 
 
-            exit(0); //This should never be reached.
+			printMsg(stderr, MAIN, "%ld - %ld: Finishing all LEDs\n", getpid(), pthread_self());
+
+			int i = 0;
+			for (i = 0; i < 4; ++i)
+			{
+				if(LEDs[i].LED_child_pid > 0 ){
+					printMsg(stderr, MAIN, "%ld - %ld: Sending signal %d to process %ld\n", getpid(), pthread_self(), SIGTERM, LEDs[i].LED_child_pid);
+					kill(LEDs[i].LED_child_pid, SIGTERM);
+				}
+			}
+
+
+            exit(0);
     }
     else
     {
@@ -190,6 +204,7 @@ int LED_blink(struct LED_st* led){
 	    else{
 	    	led->LED_status = 1;
 	    	led->LED_child_pid = childpid;
+	    	printMsg(stderr, MAIN, "The LED %d has childpid = %ld\n", led->LED_id, led->LED_child_pid);
 			timer_start(&(led->LED_timer), 3, 0);
 	    }
 	}
@@ -232,6 +247,6 @@ static void LED_control_handler(int sig, siginfo_t *si, void *uc){
 }
 
 void LED_blink_handler(int sig_num){
-	printMsg(stderr, MAIN, "Signal %d received in process %d\n", sig_num, getpid());
+	//printMsg(stderr, MAIN, "Signal %d received in process %d\n", sig_num, getpid());
 	LED_ON = 0;
 }
