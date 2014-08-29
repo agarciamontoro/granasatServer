@@ -34,9 +34,9 @@ void readAndSendMagnetometer(int socket);
 
 void readAndSendAccelerometer(int socket);
 
-void readAndStoreAccelerometer(FILE* file);
+int readAndStoreAccelerometer(FILE* file);
 
-void readAndStoreMagnetometer(FILE* file);
+int readAndStoreMagnetometer(FILE* file);
 
 int setGPIOValue(int GPIO_number, bool on);
 

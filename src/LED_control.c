@@ -197,11 +197,33 @@ int LED_blink(struct LED_st* led){
 	    	signal(SIGINT, SIG_IGN);
 	    	signal(SIGTERM, LED_blink_handler);
 
+	    	/*
+    		if(map_peripheral(&gpio) == -1){
+	       	 	printf("Failed to map the physical GPIO registers into the virtual memory space.\n");
+	        	return -1;
+			}
+
+			int gpio_pin = led->LED_gpio;
+			useconds_t sleep_time = MICRO_FACTOR / led->LED_freq;
+
+			// Define gpio gpio_pin as output
+			INP_GPIO(gpio_pin);
+			OUT_GPIO(gpio_pin);
+			*/
+
 			while(LED_ON){
 				printMsg(stderr, MAIN, "%d: Blink ON.\n", getpid());
 				sleep(1);
 				printMsg(stderr, MAIN, "%d: BLINK OFF.\n", getpid());
 				sleep(1);
+				/*
+				// Toggle gpio_pin (blink a led!)
+				GPIO_SET = 1 << gpio_pin;
+				usleep(sleep_time);
+
+				GPIO_CLR = 1 << gpio_pin;
+				sleep(sleep_time);
+				*/
 			}
 
 	    	exit(0);

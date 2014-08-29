@@ -90,29 +90,34 @@ void readAndSendAccelerometer(int socket){
 	sendData(socket, accelerometer, sizeof(*accelerometer)*6);
 }
 
-void readAndStoreAccelerometer(FILE* file){
+int readAndStoreAccelerometer(FILE* file){
+	int success = 0;
 	uint8_t accelerometer[6];
 
 	struct timespec timestamp;
 	/////////////////////////////////////////////////////////////////////////////////////
 	pthread_rwlock_wrlock( &accelerometer_rw_lock );
-		readACC(accelerometer, &timestamp);
-		fwrite(accelerometer, sizeof(*accelerometer), 6, file);
 		
-		/**
-		* The following function appears to be useless, but it is completely necessary.
-		* See man 3 fopen to read the following paragraph, where this issue is explained:
-		* Reads  and  writes  may be intermixed on read/write streams in any order.
-		* Note that ANSI C requires that a file positioning function intervene between
-		* output and input, unless an input operation encounters end-of-file.
-		* (If this condition is not met, then a read is allowed  to  return  the  result  of
-		* writes other than the most recent.)  Therefore it is good practice (and indeed
-		*sometimes necessary under Linux) to put an fseek(3) or fgetpos(3) operation
-		* between write and read operations on such a stream.  This operation may be an
-		* apparent no-op (as in fseek(..., 0L, SEEK_CUR) called for  its  synchronizing
-		* side effect.
-		*/
-		fseek(file, 0, SEEK_CUR);
+		if(readACC(accelerometer, &timestamp)){
+			success = ( fwrite(accelerometer, sizeof(*accelerometer), 6, file) == 6 );
+			
+
+		
+			/**
+			* The following function appears to be useless, but it is completely necessary.
+			* See man 3 fopen to read the following paragraph, where this issue is explained:
+			* Reads  and  writes  may be intermixed on read/write streams in any order.
+			* Note that ANSI C requires that a file positioning function intervene between
+			* output and input, unless an input operation encounters end-of-file.
+			* (If this condition is not met, then a read is allowed  to  return  the  result  of
+			* writes other than the most recent.)  Therefore it is good practice (and indeed
+			*sometimes necessary under Linux) to put an fseek(3) or fgetpos(3) operation
+			* between write and read operations on such a stream.  This operation may be an
+			* apparent no-op (as in fseek(..., 0L, SEEK_CUR) called for  its  synchronizing
+			* side effect.
+			*/
+			fseek(file, 0, SEEK_CUR);
+		}
 	pthread_rwlock_unlock( &accelerometer_rw_lock );
 	/////////////////////////////////////////////////////////////////////////////////////
 
@@ -127,31 +132,34 @@ void readAndStoreAccelerometer(FILE* file){
 	*(accF+2) = (float) *(a_raw+2)*A_GAIN;
 
 	printMsg(stderr, LSM303, "ACC:\t%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);	
+	return success;
 }
 
-void readAndStoreMagnetometer(FILE* file){
+int readAndStoreMagnetometer(FILE* file){
+	int success = 0;
 	uint8_t magnetometer[6];
 
 	struct timespec timestamp;
 	/////////////////////////////////////////////////////////////////////////////////////
 	pthread_rwlock_wrlock( &magnetometer_rw_lock );
-		readMAG(magnetometer, &timestamp);
-		fwrite(magnetometer, sizeof(*magnetometer), 6, file);
+		if(readMAG(magnetometer, &timestamp)){
+			success = ( fwrite(magnetometer, sizeof(*magnetometer), 6, file) == 6 );
 		
-		/**
-		* The following function appears to be useless, but it is completely necessary.
-		* See man 3 fopen to read the following paragraph, where this issue is explained:
-		* Reads  and  writes  may be intermixed on read/write streams in any order.
-		* Note that ANSI C requires that a file positioning function intervene between
-		* output and input, unless an input operation encounters end-of-file.
-		* (If this condition is not met, then a read is allowed  to  return  the  result  of
-		* writes other than the most recent.)  Therefore it is good practice (and indeed
-		*sometimes necessary under Linux) to put an fseek(3) or fgetpos(3) operation
-		* between write and read operations on such a stream.  This operation may be an
-		* apparent no-op (as in fseek(..., 0L, SEEK_CUR) called for  its  synchronizing
-		* side effect.
-		*/
-		fseek(file, 0, SEEK_CUR);
+			/**
+			* The following function appears to be useless, but it is completely necessary.
+			* See man 3 fopen to read the following paragraph, where this issue is explained:
+			* Reads  and  writes  may be intermixed on read/write streams in any order.
+			* Note that ANSI C requires that a file positioning function intervene between
+			* output and input, unless an input operation encounters end-of-file.
+			* (If this condition is not met, then a read is allowed  to  return  the  result  of
+			* writes other than the most recent.)  Therefore it is good practice (and indeed
+			*sometimes necessary under Linux) to put an fseek(3) or fgetpos(3) operation
+			* between write and read operations on such a stream.  This operation may be an
+			* apparent no-op (as in fseek(..., 0L, SEEK_CUR) called for  its  synchronizing
+			* side effect.
+			*/
+			fseek(file, 0, SEEK_CUR);
+		}
 	pthread_rwlock_unlock( &magnetometer_rw_lock );
 	/////////////////////////////////////////////////////////////////////////////////////
 
@@ -166,6 +174,7 @@ void readAndStoreMagnetometer(FILE* file){
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
 	printMsg(stderr, LSM303, "MAG: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
+	return success;
 }
 
 int setGPIOValue(int GPIO_number, bool on){

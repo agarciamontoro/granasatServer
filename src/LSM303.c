@@ -2,12 +2,15 @@
 
 int file;
 
-void  readBlock(uint8_t command, uint8_t size, uint8_t *data){
-     int result = i2c_smbus_read_i2c_block_data(file, command, size, data);
-     if (result != size) {
-          printMsg(stderr, LSM303, "Failed to read block from I2C.");
+int  readBlock(uint8_t command, uint8_t size, uint8_t *data){
+    int result = i2c_smbus_read_i2c_block_data(file, command, size, data);
+
+    if (result != size) {
+        printMsg(stderr, LSM303, "Failed to read block from I2C.");
           exit(1);
     }
+
+    return result;
 }
 
 void selectDevice(int file, int addr){
@@ -16,44 +19,53 @@ void selectDevice(int file, int addr){
      }
 }
 
-void readACC(uint8_t* a, struct timespec* timestamp){
+int readACC(uint8_t* a, struct timespec* timestamp){
+    int success = 0;
     struct timespec init, end;
     selectDevice(file,ACC_ADDRESS);
     //Read a 6bit-block. Start at address LSM303_OUT_X_L_A (0x28) and end at address OUT_Z_H_A(0x2D)
     //Read p28 of datasheet for further information.
     clock_gettime(CLOCK_MONOTONIC, &init);
-        readBlock(0x80 | LSM303_OUT_X_L_A, 6, a);
+        success = ( readBlock(0x80 | LSM303_OUT_X_L_A, 6, a) == 6 );
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
     timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
+
+    return success;
 }
 
-void readMAG(uint8_t* m, struct timespec* timestamp){
+int readMAG(uint8_t* m, struct timespec* timestamp){
+    int success = 0;
     struct timespec init, end;
     selectDevice(file,MAG_ADDRESS);
 
     clock_gettime(CLOCK_MONOTONIC, &init);
-        readBlock(0x80 | LSM303_OUT_X_H_M, 6, m);  //Read p28 of datasheet for further information
+        success = ( readBlock(0x80 | LSM303_OUT_X_H_M, 6, m) == 6 );  //Read p28 of datasheet for further information
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
     timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
+    
+    return success;
 }
 
-void readTMP(uint8_t* t, struct timespec* timestamp){
+int readTMP(uint8_t* t, struct timespec* timestamp){
+    int success = 0;
     struct timespec init, end;
     //uint8_t block[2];
     selectDevice(file,MAG_ADDRESS);
     //Read p39 of datasheet for further information
     clock_gettime(CLOCK_MONOTONIC, &init);
-        readBlock(0x80 | LSM303_TEMP_OUT_H_M, 2, t);
+        success = ( readBlock(0x80 | LSM303_TEMP_OUT_H_M, 2, t) == 2 );
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
     timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
     //High bytes first
     //*t = (int16_t)(block[1] | block[0] << 8) >> 4;
+
+    return success;
 }
 void writeAccReg(uint8_t reg, uint8_t value){
     selectDevice(file,ACC_ADDRESS);

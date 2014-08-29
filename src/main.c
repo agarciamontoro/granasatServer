@@ -159,6 +159,7 @@ void* capture_images(void* useless){
 }
 
 void* control_LS303DLHC(void* useless){
+	int success;
 	//Enable LSM303 sensor - Magnetometer/Accelerometer
 	enableLSM303();
 
@@ -178,14 +179,12 @@ void* control_LS303DLHC(void* useless){
 		*/
 	}
 
-	enum LED_ID LSM303_led;
+	enum LED_ID LSM303_led = LED_WHT;
 	while(keep_running){
-		write(LED_FD, &LSM303_led, sizeof(LSM303_led));
-
 		usleep(500000);
 
-		readAndStoreAccelerometer(file_acc);
-		readAndStoreMagnetometer(file_mag);
+		if(readAndStoreAccelerometer(file_acc) && readAndStoreMagnetometer(file_mag))
+			write(LED_FD, &LSM303_led, sizeof(LSM303_led));
 	}
 
 	fclose(file_acc);
