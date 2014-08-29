@@ -154,6 +154,9 @@ void* capture_images(void* useless){
 		else{
 			capture_frame(image_data);
 			clock_gettime(CLOCK_MONOTONIC, &old);
+			/**
+			* @todo Handle write errors
+			*/
 			write(LED_FD, &camera_led, sizeof(camera_led));
 		}
 	}
@@ -193,6 +196,9 @@ void* control_LS303DLHC(void* useless){
 		usleep(500000);
 
 		if(readAndStoreAccelerometer(file_acc) && readAndStoreMagnetometer(file_mag))
+			/**
+			* @todo Handle write errors
+			*/
 			write(LED_FD, &LSM303_led, sizeof(LSM303_led));
 	}
 
@@ -383,7 +389,7 @@ void* control_connection(void* useless){
 			} //END OF SELECT IF
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
 				//Send magnetometer and accelerometer packet
-				//sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
+				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
 				
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
@@ -396,10 +402,11 @@ void* control_connection(void* useless){
 			if(count >= 3){
 				count = 0;
 				printMsg(stderr, CONNECTION, "Sending image\n");
-				sendImage(SOCKET_BIG);
+				//sendImage(SOCKET_BIG);
 			}
+			printMsg(stderr, MAIN, "BLUBLU\n");
 		} //END while ( connected )
-
+			printMsg(stderr, MAIN, "CLosing sockets\n");
 		close(SOCKET_BIG);
 		close(SOCKET_SMALL);
 		close(SOCKET_COMMANDS);
@@ -449,7 +456,6 @@ void* process_images(void* useless){
 				memcpy(image, current_frame, sizeof(uint8_t) * 1280*960);
 				new_frame_proc = 0;
 				is_processable = 1;
-				write(LED_FD, &processing_led, sizeof(processing_led));
 			}
 			else
 				is_processable = 0;
@@ -457,7 +463,10 @@ void* process_images(void* useless){
 		pthread_rwlock_unlock( &camera_rw_lock );
 
 		if(is_processable && !first){
-
+			/**
+			* @todo Handle write errors
+			*/
+			write(LED_FD, &processing_led, sizeof(processing_led));
 			switch(ATTITUDE_MODE){
 				case MODE_AUTO:
 					clock_gettime(CLOCK_MONOTONIC, &before);
@@ -533,6 +542,9 @@ int main(int argc, char** argv){
 	}
 
 	enum LED_ID power_led = LED_GRN;
+	/**
+	* @todo Handle write errors
+	*/
 	write(LED_FD, &power_led, sizeof(power_led));
 
 	// *******************************
@@ -570,7 +582,9 @@ int main(int argc, char** argv){
 	pthread_mutex_destroy( &mutex_horizon_sensor );
 	pthread_mutex_destroy( &mutex_print_msg );
 
-	printMsg(stderr, MAIN, "Bye.\n");
+	sleep(2);
+
+	printMsg(stderr, MAIN, "Bye. Good luck.\n");
 
 	return 0;
 }

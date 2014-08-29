@@ -131,7 +131,7 @@ int readAndStoreAccelerometer(FILE* file){
 	*(accF+1) = (float) *(a_raw+1)*A_GAIN;
 	*(accF+2) = (float) *(a_raw+2)*A_GAIN;
 
-	printMsg(stderr, LSM303, "ACC:\t%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);	
+	//printMsg(stderr, LSM303, "ACC:\t%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);	
 	return success;
 }
 
@@ -173,7 +173,7 @@ int readAndStoreMagnetometer(FILE* file){
 	*(MAG+1) = (float) *(m+1)/M_XY_GAIN;
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
-	printMsg(stderr, LSM303, "MAG: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
+	//printMsg(stderr, LSM303, "MAG: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
 	return success;
 }
 
