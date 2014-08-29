@@ -31,11 +31,11 @@ int timer_init(timer_t* TIMERID){
 
 
 	if( timer_create(CLOCK_MONOTONIC, &evp, TIMERID) != 0){
-		printMsg(stderr, MAIN, "ERROR CREATING TIMER: %s\n", strerror(errno));
+		printMsg(stderr, MAIN, "%d: ERROR CREATING TIMER: %s\n", getpid(), strerror(errno));
 		success = 0;
 	}
 	else{
-		printMsg(stderr, MAIN, "Timer %ld created.\n", (long) *TIMERID);
+		printMsg(stderr, MAIN, "%d: Timer %ld created.\n", getpid(), (long) *TIMERID);
 		success = 1;
 	}
 
@@ -56,11 +56,10 @@ int timer_start(timer_t* TIMERID, int sec, long long nsec){
 	its.it_interval.tv_nsec = its.it_value.tv_nsec;
 	
 	if ( timer_settime(*TIMERID, 0, &its, NULL) != 0 ){
-		printMsg(stderr, MAIN, "ERROR SETTING TIMER: %s\n", strerror(errno));
+		printMsg(stderr, MAIN, "%d: ERROR SETTING TIMER: %s\n", getpid(), strerror(errno));
 		success = 0;
 	}
 	else{
-		printMsg(stderr, MAIN, "Timer started...\n");
 		success = 1;
 	}
 
@@ -71,7 +70,7 @@ int LED_control(){
 	int childpid, fd[2];
 
 	if(pipe(fd) == -1){
-		printMsg(stderr, MAIN, "ERROR creating the pipe: %s\n", strerror(errno));
+		printMsg(stderr, MAIN, "%d: ERROR creating the pipe: %s\n", getpid(), strerror(errno));
 		return -1;
 	}
 
@@ -81,7 +80,7 @@ int LED_control(){
 	}
 
     if(childpid == 0){
-    		printMsg(stderr, MAIN, "Process %d created to control LEDs\n", getpid());
+    		printMsg(stderr, MAIN, "%d: Process created to control LEDs\n", getpid());
            	signal(SIGINT, SIG_IGN);
             /* Child process closes up output side of pipe */
             close(fd[1]);
@@ -105,12 +104,12 @@ int LED_control(){
 			sa.sa_sigaction = LED_control_handler;
 
 			if (sigaction(LED_SIGNAL, &sa, NULL) == -1){
-				printMsg(stderr, MAIN, "ERROR setting handler: %s\n", strerror(errno));
+				printMsg(stderr, MAIN, "%d:ERROR setting handler: %s\n", getpid(), strerror(errno));
 				return 1;
 			}
 
 	    	if (signal(SIGTERM, LED_blink_handler) == SIG_ERR)
-	    		printMsg(stderr, MAIN, "ERROR setting handler for SIGTERM: %s\n", strerror(errno));
+	    		printMsg(stderr, MAIN, "%d: ERROR setting handler for SIGTERM: %s\n", getpid(), strerror(errno));
 
 			/* Loop to control timers and LED blinking */
 			enum LED_ID led_msg;
@@ -121,7 +120,7 @@ int LED_control(){
             		case 0:
             			break;
             		case -1:
-						printMsg(stderr, MAIN, "ERROR reading from pipe: %s\n", strerror(errno));
+						printMsg(stderr, MAIN, "%d: ERROR reading from pipe: %s\n", getpid(), strerror(errno));
 						break;
 					default:
             			LED_blink(&(LEDs[led_msg]));
@@ -130,17 +129,18 @@ int LED_control(){
 			}
 
 
-			printMsg(stderr, MAIN, "%ld - %ld: Finishing all LEDs\n", getpid(), pthread_self());
+			printMsg(stderr, MAIN, "%d: Finishing all LEDs\n", getpid());
 
 			int i = 0;
 			for (i = 0; i < NUM_LEDS; ++i)
 			{
 				if(LEDs[i].LED_child_pid > 0 ){
-					printMsg(stderr, MAIN, "%ld - %ld: Sending signal %d to process %ld\n", getpid(), pthread_self(), SIGTERM, LEDs[i].LED_child_pid);
+					printMsg(stderr, MAIN, "%d: Sending signal %d to process %ld\n", getpid(), SIGTERM, LEDs[i].LED_child_pid);
 					kill(LEDs[i].LED_child_pid, SIGTERM);
 				}
 			}
 
+			printMsg(stderr, MAIN, "%d: All LEDs finished. Terminating LED-control.\n", getpid());
 
             exit(0);
     }
@@ -224,14 +224,14 @@ int LED_blink(struct LED_st* led){
 				usleep(sleep_time);
 			}
 
-			printMsg(stderr, MAIN, "PID%d: LED %d finished", getpid(), gpio_pin);
+			printMsg(stderr, MAIN, "%d: LED %d finished\n", getpid(), gpio_pin);
 
 	    	exit(0);
 	    }
 	    else{
 	    	led->LED_status = 1;
 	    	led->LED_child_pid = childpid;
-	    	printMsg(stderr, MAIN, "The LED %d has childpid = %ld\n", led->LED_id, led->LED_child_pid);
+	    	printMsg(stderr, MAIN, "%d: The LED %d has childpid = %ld\n", getpid(), led->LED_id, led->LED_child_pid);
 			if(led->LED_id != LED_GRN)
 				timer_start(&(led->LED_timer), 20, 0);
 	    }
@@ -248,7 +248,7 @@ static void LED_control_handler(int sig, siginfo_t *si, void *uc){
 	timer_t *timer_ptr;
 	timer_ptr = si->si_value.sival_ptr;
 
-	printMsg(stderr, MAIN, "Finishing LED child with timer %d\n", *timer_ptr);
+	printMsg(stderr, MAIN, "%d: Finishing LED child with timer %d\n", getpid(), *timer_ptr);
 
 	
 	int i, found, pos;
@@ -264,20 +264,20 @@ static void LED_control_handler(int sig, siginfo_t *si, void *uc){
 
 	if(found){
 		if(kill(LEDs[pos].LED_child_pid, SIGTERM) == -1){
-			printMsg(stderr, MAIN, "ERROR delivering signal: %s\n", strerror(errno));
+			printMsg(stderr, MAIN, "%d: ERROR delivering signal: %s\n", getpid(), strerror(errno));
 		}
 		else{
-			printMsg(stderr, MAIN, "Signal %d delivered to %d\n", SIGTERM, LEDs[pos].LED_child_pid);
+			printMsg(stderr, MAIN, "%d: Signal %d delivered to %d\n", getpid(), SIGTERM, LEDs[pos].LED_child_pid);
 		}
 		LEDs[pos].LED_status = 0;
 		LEDs[pos].LED_child_pid = -1;
 		timer_start(timer_ptr, 0, 0);
 		timer_init(&(LEDs[pos].LED_timer));
-		printMsg(stderr, MAIN, "LED child KILLED\n");
+		printMsg(stderr, MAIN, "%d: LED child KILLED\n", getpid());
 	}
 }
 
 void LED_blink_handler(int sig_num){
-	printMsg(stderr, MAIN, "Signal %d received in process %d\n", sig_num, getpid());
+	printMsg(stderr, MAIN, "%d: Signal %d received\n", getpid(), sig_num);
 	LED_ON = 0;
 }

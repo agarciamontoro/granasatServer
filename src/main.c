@@ -112,14 +112,18 @@ void intHandler(int dummy){
 		close(LISTEN_BIG);
 		close(LISTEN_SMALL);
 
-        //pthread_cancel(capture_thread);
-        //pthread_cancel(LS303DLHC_thread);
+        pthread_cancel(capture_thread);
+        pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
         pthread_cancel(processing_thread);
         //pthread_cancel(horizon_thread);
+        printMsg(stderr, MAIN, "All threads CANCELLED\n", SIGTERM, LED_CONTROL_PID);
 }
 
 void* capture_images(void* useless){
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
 	uint8_t* image_data;
 	struct timespec old, current, difference;
 	int time_passed = 0;
@@ -161,6 +165,9 @@ void* capture_images(void* useless){
 }
 
 void* control_LS303DLHC(void* useless){
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
 	int success;
 	//Enable LSM303 sensor - Magnetometer/Accelerometer
 	enableLSM303();
@@ -196,6 +203,9 @@ void* control_LS303DLHC(void* useless){
 }
 
 void* control_connection(void* useless){
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	
 	int command, value, count;
 
 	//SELECT SETUP
@@ -410,6 +420,9 @@ void* control_connection(void* useless){
 }
 
 void* process_images(void* useless){
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	
 	uint8_t* image;
 	int is_processable = 0;
 	image = malloc(sizeof(*image) * 1280*960);
@@ -526,23 +539,23 @@ int main(int argc, char** argv){
     // ******** START  THREADS *******
     // *******************************
 
-	//pthread_create( &capture_thread, NULL, capture_images, NULL );
+	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
-	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
+	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 
 	// *******************************
     // ********  JOIN THREADS  *******
     // *******************************	
-	//pthread_join( capture_thread, NULL );
+	pthread_join( capture_thread, NULL );
 	//pthread_join( horizon_thread, NULL );
 	pthread_join( processing_thread, NULL );
-	//pthread_join( LS303DLHC_thread, NULL );
+	pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
 
-	printMsg(stderr, MAIN, "Killing all children");
+	printMsg(stderr, MAIN, "Killing all remaining children.\n");
 	if( kill(LED_CONTROL_PID, SIGTERM) == -1)
 		printMsg(stderr, MAIN, "ERROR sending signal %d to process %d: %s\n", SIGTERM, LED_CONTROL_PID, strerror(errno));
 
