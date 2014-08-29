@@ -54,7 +54,7 @@ int timer_start(timer_t* TIMERID, int sec, long long nsec){
 	its.it_value.tv_nsec = nsec;
 	its.it_interval.tv_sec = its.it_value.tv_sec;
 	its.it_interval.tv_nsec = its.it_value.tv_nsec;
-
+	
 	if ( timer_settime(*TIMERID, 0, &its, NULL) != 0 ){
 		printMsg(stderr, MAIN, "ERROR SETTING TIMER: %s\n", strerror(errno));
 		success = 0;
@@ -116,7 +116,6 @@ int LED_control(){
 			int n;
             while(LED_ON){
             	n = read(fd[0], &led_msg, sizeof(led_msg));
-            	
             	switch(n){
             		case 0:
             			break;
@@ -186,8 +185,9 @@ void LED_init(enum LED_ID led){
 }
 
 int LED_blink(struct LED_st* led){
+	int childpid = -1;
+
 	if(led->LED_status == 0){
-		int childpid;
 
 		if( (childpid = fork()) == -1 ){
 			return -1;
@@ -210,12 +210,16 @@ int LED_blink(struct LED_st* led){
 	    	led->LED_status = 1;
 	    	led->LED_child_pid = childpid;
 	    	printMsg(stderr, MAIN, "The LED %d has childpid = %ld\n", led->LED_id, led->LED_child_pid);
-			timer_start(&(led->LED_timer), 3, 0);
+			if(led->LED_id != LED_GRN)
+				timer_start(&(led->LED_timer), 3, 0);
 	    }
 	}
 	else{
-		timer_start(&(led->LED_timer), 3, 0);
+		if(led->LED_id != LED_GRN)
+			timer_start(&(led->LED_timer), 3, 0);
 	}
+
+	return childpid;
 }
 
 static void LED_control_handler(int sig, siginfo_t *si, void *uc){

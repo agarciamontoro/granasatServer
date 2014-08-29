@@ -94,11 +94,11 @@ void intHandler(int dummy){
 	       see signal(7) and fix the error */
 		printf("\n");
 
-		printMsg(stderr, MAIN, "Sending signal %d to process %d\n", SIGKILL, LED_CONTROL_PID);
+		printMsg(stderr, MAIN, "Sending signal %d to process %d\n", SIGTERM, LED_CONTROL_PID);
 		
 
 		if( kill(LED_CONTROL_PID, SIGTERM) == -1)
-			printMsg(stderr, MAIN, "ERROR sending signal %d to process %d: %s\n", SIGKILL, LED_CONTROL_PID, strerror(errno));
+			printMsg(stderr, MAIN, "ERROR sending signal %d to process %d: %s\n", SIGTERM, LED_CONTROL_PID, strerror(errno));
 		
         CONNECTED = keep_running = 0;
 
@@ -116,7 +116,7 @@ void intHandler(int dummy){
         //pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
         //pthread_cancel(processing_thread);
-        //pthread_cancel(horizon_thread);
+        pthread_cancel(horizon_thread);
 }
 
 void* capture_images(void* useless){
@@ -250,7 +250,18 @@ void* control_connection(void* useless){
 
 		enum LED_ID connection_led = LED_BLU;
 		while(CONNECTED){
-			write(LED_FD, &connection_led, sizeof(connection_led));
+			int n_wr = write(LED_FD, &connection_led, sizeof(connection_led));
+        	switch(n_wr){
+        		case 0:
+					printMsg(stderr, MAIN, "0 bytes written\n");
+        			break;
+        		case -1:
+					printMsg(stderr, MAIN, "ERROR writing in pipe: %s\n", strerror(errno));
+					break;
+				default:
+					printMsg(stderr, MAIN, "%d bytes written\n", n_wr);
+        			break;
+        	}
 
 			FD_ZERO(&desc_set); //SELECT SETUP
 			FD_SET(SOCKET_COMMANDS, &desc_set); //SELECT SETUP
@@ -334,7 +345,7 @@ void* control_connection(void* useless){
 
 					case MSG_SET_ERROR:
 						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						//changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
+						changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
 						break;
 
 
@@ -518,7 +529,7 @@ int main(int argc, char** argv){
     // *******************************
 
 	//pthread_create( &capture_thread, NULL, capture_images, NULL );
-	//pthread_create( &processing_thread, NULL, process_images, NULL );
+	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
 	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
@@ -528,7 +539,7 @@ int main(int argc, char** argv){
     // ********  JOIN THREADS  *******
     // *******************************	
 	//pthread_join( capture_thread, NULL );
-	//pthread_join( horizon_thread, NULL );
+	pthread_join( horizon_thread, NULL );
 	//pthread_join( processing_thread, NULL );
 	//pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
