@@ -112,11 +112,11 @@ void intHandler(int dummy){
 		close(LISTEN_BIG);
 		close(LISTEN_SMALL);
 
-        //pthread_cancel(capture_thread);
-        //pthread_cancel(LS303DLHC_thread);
+        pthread_cancel(capture_thread);
+        pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
-        //pthread_cancel(processing_thread);
-        pthread_cancel(horizon_thread);
+        pthread_cancel(processing_thread);
+        //pthread_cancel(horizon_thread);
 }
 
 void* capture_images(void* useless){
@@ -249,18 +249,10 @@ void* control_connection(void* useless){
 
 		enum LED_ID connection_led = LED_BLU;
 		while(CONNECTED){
-			int n_wr = write(LED_FD, &connection_led, sizeof(connection_led));
-        	switch(n_wr){
-        		case 0:
-					printMsg(stderr, MAIN, "0 bytes written\n");
-        			break;
-        		case -1:
-					printMsg(stderr, MAIN, "ERROR writing in pipe: %s\n", strerror(errno));
-					break;
-				default:
-					printMsg(stderr, MAIN, "%d bytes written\n", n_wr);
-        			break;
-        	}
+			/**
+			* @todo Handle write errors
+			*/
+			write(LED_FD, &connection_led, sizeof(connection_led));
 
 			FD_ZERO(&desc_set); //SELECT SETUP
 			FD_SET(SOCKET_COMMANDS, &desc_set); //SELECT SETUP
@@ -527,20 +519,20 @@ int main(int argc, char** argv){
     // ******** START  THREADS *******
     // *******************************
 
-	//pthread_create( &capture_thread, NULL, capture_images, NULL );
+	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
-	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
+	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 
 	// *******************************
     // ********  JOIN THREADS  *******
     // *******************************	
-	//pthread_join( capture_thread, NULL );
-	pthread_join( horizon_thread, NULL );
-	//pthread_join( processing_thread, NULL );
-	//pthread_join( LS303DLHC_thread, NULL );
+	pthread_join( capture_thread, NULL );
+	//pthread_join( horizon_thread, NULL );
+	pthread_join( processing_thread, NULL );
+	pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
 
 
