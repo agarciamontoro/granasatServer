@@ -14,13 +14,6 @@
 #define WHT_GPIO	24
 #define ORN_GPIO	8
 
-/**
- * @brief .
-
- * @see .
- *
- * @details .
- */
 enum LED_ID{
 	LED_RED = 0,	//Camera
 	LED_GRN = 1,	//Power ON
@@ -30,19 +23,16 @@ enum LED_ID{
 };
 
 /**
- * @brief .
-
- * @see .
- *
- * @details .
+ * @struct LED_st
+ * @brief Structure to maintain all LED-related variables.
  */
 struct LED_st{
-	enum LED_ID LED_id;
-	int LED_gpio;
-	int LED_status;
-	int LED_freq;
-	pid_t LED_child_pid;
-	timer_t LED_timer;
+	enum LED_ID LED_id;		/**< LED identificator. It could be: LED_RED, LED_GRN, LED_WHT, LED_BLU, LED_ORN. */
+	int LED_gpio;			/**< LED gpio pin. These values are defined in the XXX_GPIO macros. */
+	int LED_status;			/**< LED status. It shall be 1 (LED ON) or 0 (LED OFF). */
+	int LED_freq;			/**< The frequency with which the LED shall blink. */
+	pid_t LED_child_pid;	/**< This value, initialised to -1, is set to the process identificator returned by fork(). It specifies which process controls the LED blinking. */
+	timer_t LED_timer;		/**< Timer which controls the keepalive signals. When it finishes, the LED shall be turned off. */
 };
 
 /**
@@ -50,19 +40,27 @@ struct LED_st{
  *
  * @details File descriptor used to synchronise the main program
  * performance and the LEDs blinking. It is initialised in main(),
- * with pipe() function, before any thread starts.
+ * from LED_control() function, before any thread starts.
  */
 extern int LED_FD;
 
 /**
- * @brief LED status
+ * @brief Array of LEDs
  *
- * @details File descriptor used to synchronise the main program
- * performance and the LEDs blinking. It is initialised in main(),
- * with pipe() function, before any thread starts.
+ * @details Array to monitor all LEDs, each of one is specified as a 
+ * @c struct @c LED_st. This structure is used from the child process
+ * created with LED_control() function.
  */
 extern struct LED_st LEDs[NUM_LEDS];
 
+/**
+ * @brief ID of LED control process
+ *
+ * @details The LED control process, which is a child of the main process,
+ * is in charge of monitoring the blinking of all LEDs, reading the keepalive
+ * signals sent from the main process and controlling the child processes 
+ * (grandchildren for the main process) for each LED.
+ */
 extern pid_t LED_CONTROL_PID;
 
 
