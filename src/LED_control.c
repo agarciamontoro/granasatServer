@@ -1,7 +1,7 @@
 #include "LED_control.h"
 
 int LED_FD = -1;
-struct LED_st LEDs[4];
+struct LED_st LEDs[NUM_LEDS];
 pid_t LED_CONTROL_PID = -1;
 
 int LED_ON = 1;
@@ -91,6 +91,7 @@ int LED_control(){
 			LED_init(LED_GRN);
 			LED_init(LED_WHT);
 			LED_init(LED_BLU);
+			LED_init(LED_ORN);
 
 			/**************************************************************
 			 	ESTABLIHSING HANLDER FOR TIMER SIGNAL
@@ -132,7 +133,7 @@ int LED_control(){
 			printMsg(stderr, MAIN, "%ld - %ld: Finishing all LEDs\n", getpid(), pthread_self());
 
 			int i = 0;
-			for (i = 0; i < 4; ++i)
+			for (i = 0; i < NUM_LEDS; ++i)
 			{
 				if(LEDs[i].LED_child_pid > 0 ){
 					printMsg(stderr, MAIN, "%ld - %ld: Sending signal %d to process %ld\n", getpid(), pthread_self(), SIGTERM, LEDs[i].LED_child_pid);
@@ -178,6 +179,10 @@ void LED_init(enum LED_ID led){
 		case LED_WHT:
 			LEDs[led].LED_gpio = WHT_GPIO;
 			break;
+			
+		case LED_ORN:
+			LEDs[led].LED_gpio = ORN_GPIO;
+			break;
 	}
 
 	if(timer_on)
@@ -197,7 +202,6 @@ int LED_blink(struct LED_st* led){
 	    	signal(SIGINT, SIG_IGN);
 	    	signal(SIGTERM, LED_blink_handler);
 
-	    	/*
     		if(map_peripheral(&gpio) == -1){
 	       	 	printf("Failed to map the physical GPIO registers into the virtual memory space.\n");
 	        	return -1;
@@ -209,22 +213,18 @@ int LED_blink(struct LED_st* led){
 			// Define gpio gpio_pin as output
 			INP_GPIO(gpio_pin);
 			OUT_GPIO(gpio_pin);
-			*/
+			
 
-			while(LED_ON){
-				printMsg(stderr, MAIN, "%d: Blink ON.\n", getpid());
-				sleep(1);
-				printMsg(stderr, MAIN, "%d: BLINK OFF.\n", getpid());
-				sleep(1);
-				/*
-				// Toggle gpio_pin (blink a led!)
+			while(LED_ON){				
+				// Toggle gpio_pin
 				GPIO_SET = 1 << gpio_pin;
 				usleep(sleep_time);
 
 				GPIO_CLR = 1 << gpio_pin;
-				sleep(sleep_time);
-				*/
+				usleep(sleep_time);
 			}
+
+			printMsg(stderr, MAIN, "PID%d: LED %d finished", getpid(), gpio_pin);
 
 	    	exit(0);
 	    }
@@ -233,12 +233,12 @@ int LED_blink(struct LED_st* led){
 	    	led->LED_child_pid = childpid;
 	    	printMsg(stderr, MAIN, "The LED %d has childpid = %ld\n", led->LED_id, led->LED_child_pid);
 			if(led->LED_id != LED_GRN)
-				timer_start(&(led->LED_timer), 3, 0);
+				timer_start(&(led->LED_timer), 20, 0);
 	    }
 	}
 	else{
 		if(led->LED_id != LED_GRN)
-			timer_start(&(led->LED_timer), 3, 0);
+			timer_start(&(led->LED_timer), 20, 0);
 	}
 
 	return childpid;
@@ -254,7 +254,7 @@ static void LED_control_handler(int sig, siginfo_t *si, void *uc){
 	int i, found, pos;
 	i = found = 0;
 	pos = -1;
-	for (i = 0; i < 4 && !found; ++i)
+	for (i = 0; i < NUM_LEDS && !found; ++i)
 	{
 		if(*timer_ptr == LEDs[i].LED_timer){
 			pos = i;

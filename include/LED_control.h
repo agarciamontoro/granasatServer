@@ -6,10 +6,13 @@
 #include "PJ_RPI.h"			// GPIO control. Made by Pieter Jan (http://www.pieter-jan.com/)
 #define LED_SIGNAL SIGRTMIN
 
+#define NUM_LEDS	5
+
 #define RED_GPIO	27
-#define GRN_GPIO	4
-#define BLU_GPIO	8
-#define WHT_GPIO	16
+#define GRN_GPIO	22
+#define BLU_GPIO	25
+#define WHT_GPIO	24
+#define ORN_GPIO	8
 
 /**
  * @brief .
@@ -19,10 +22,11 @@
  * @details .
  */
 enum LED_ID{
-	LED_RED = 0,
-	LED_GRN = 1,
-	LED_WHT = 2,
-	LED_BLU = 3
+	LED_RED = 0,	//Camera
+	LED_GRN = 1,	//Power ON
+	LED_WHT = 2,	//LSM303
+	LED_BLU = 3,	//Connection
+	LED_ORN = 4		//Processing
 };
 
 /**
@@ -57,7 +61,7 @@ extern int LED_FD;
  * performance and the LEDs blinking. It is initialised in main(),
  * with pipe() function, before any thread starts.
  */
-extern struct LED_st LEDs[4];
+extern struct LED_st LEDs[NUM_LEDS];
 
 extern pid_t LED_CONTROL_PID;
 

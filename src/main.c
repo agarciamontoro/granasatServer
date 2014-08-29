@@ -112,8 +112,8 @@ void intHandler(int dummy){
 		close(LISTEN_BIG);
 		close(LISTEN_SMALL);
 
-        pthread_cancel(capture_thread);
-        pthread_cancel(LS303DLHC_thread);
+        //pthread_cancel(capture_thread);
+        //pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
         pthread_cancel(processing_thread);
         //pthread_cancel(horizon_thread);
@@ -139,6 +139,7 @@ void* capture_images(void* useless){
 
 	clock_gettime(CLOCK_MONOTONIC, &old);
 
+	enum LED_ID camera_led = LED_RED;
 	while(keep_running){
 		clock_gettime(CLOCK_MONOTONIC, &current);
 
@@ -149,6 +150,7 @@ void* capture_images(void* useless){
 		else{
 			capture_frame(image_data);
 			clock_gettime(CLOCK_MONOTONIC, &old);
+			write(LED_FD, &camera_led, sizeof(camera_led));
 		}
 	}
 
@@ -371,7 +373,7 @@ void* control_connection(void* useless){
 			} //END OF SELECT IF
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
 				//Send magnetometer and accelerometer packet
-				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
+				//sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
 				
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
@@ -384,7 +386,7 @@ void* control_connection(void* useless){
 			if(count >= 3){
 				count = 0;
 				printMsg(stderr, CONNECTION, "Sending image\n");
-				//sendImage(SOCKET_BIG);
+				sendImage(SOCKET_BIG);
 			}
 		} //END while ( connected )
 
@@ -395,8 +397,11 @@ void* control_connection(void* useless){
 		printMsg(stderr, CONNECTION, "All comunication sockets closed.\n");
 	} //END while ( keep_running )
 
-	fclose(read_acc);
-	fclose(read_mag);
+	if(read_acc != NULL)
+		fclose(read_acc);
+	
+	if(read_mag != NULL)
+		fclose(read_mag);
 
 	close(LISTEN_BIG);
 	close(LISTEN_SMALL);
@@ -423,6 +428,7 @@ void* process_images(void* useless){
 
 	int first = 1;
 
+	enum LED_ID processing_led = LED_ORN;
 	while(keep_running){
 		pthread_rwlock_rdlock( &camera_rw_lock );
 
@@ -430,6 +436,7 @@ void* process_images(void* useless){
 				memcpy(image, current_frame, sizeof(uint8_t) * 1280*960);
 				new_frame_proc = 0;
 				is_processable = 1;
+				write(LED_FD, &processing_led, sizeof(processing_led));
 			}
 			else
 				is_processable = 0;
@@ -519,21 +526,25 @@ int main(int argc, char** argv){
     // ******** START  THREADS *******
     // *******************************
 
-	pthread_create( &capture_thread, NULL, capture_images, NULL );
+	//pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
-	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
+	//pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 
 	// *******************************
     // ********  JOIN THREADS  *******
     // *******************************	
-	pthread_join( capture_thread, NULL );
+	//pthread_join( capture_thread, NULL );
 	//pthread_join( horizon_thread, NULL );
 	pthread_join( processing_thread, NULL );
-	pthread_join( LS303DLHC_thread, NULL );
+	//pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
+
+	printMsg(stderr, MAIN, "Killing all children");
+	if( kill(LED_CONTROL_PID, SIGTERM) == -1)
+		printMsg(stderr, MAIN, "ERROR sending signal %d to process %d: %s\n", SIGTERM, LED_CONTROL_PID, strerror(errno));
 
 
 	// *******************************
@@ -545,6 +556,8 @@ int main(int argc, char** argv){
 	pthread_mutex_destroy( &mutex_star_tracker );
 	pthread_mutex_destroy( &mutex_horizon_sensor );
 	pthread_mutex_destroy( &mutex_print_msg );
+
+	printMsg(stderr, MAIN, "Bye.\n");
 
 	return 0;
 }
