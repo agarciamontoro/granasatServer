@@ -94,7 +94,7 @@ void init_device(struct v4l2_parameters* params);
 
 void close_device(void);
 
-void open_device(void);
+int open_device(void);
 
 void enable_DMK41BU02(struct v4l2_parameters* params);
 

@@ -729,7 +729,7 @@ void close_device(void)
 	fd = -1;
 }
 
-void open_device(void)
+int open_device(void)
 {
 	struct stat st;
 	char error_string[75];
@@ -737,12 +737,12 @@ void open_device(void)
 	if (-1 == stat(dev_name, &st)) {
 		strerror_r(errno, error_string, 75);
 		printMsg(stderr, DMK41BU02, "Cannot identify '%s': %d, %s\n", dev_name, errno, error_string);
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 	if (!S_ISCHR(st.st_mode)) {
 		printMsg(stderr, DMK41BU02, "%s is no device\n", dev_name);
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 	fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
@@ -750,13 +750,17 @@ void open_device(void)
 	if (-1 == fd) {
 		strerror_r(errno, error_string, 75);
 		printMsg(stderr, DMK41BU02, "Cannot open '%s': %d, %s\n", dev_name, errno, error_string);
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
+
+	return EXIT_SUCCESS;
 }
 
 //TODO: Error handling
-void enable_DMK41BU02(struct v4l2_parameters* params)
+int enable_DMK41BU02(struct v4l2_parameters* params)
 {
+	int success;
+
 	dev_name = "/dev/video0";
 	io = IO_METHOD_MMAP;
 	out_buf++;
@@ -765,9 +769,9 @@ void enable_DMK41BU02(struct v4l2_parameters* params)
 
 	current_frame = malloc(sizeof(uint8_t) * 1280*960);
 
-	open_device();
-	init_device(params);
-	start_capturing();
+	success = (open_device() == EXIT_SUCCESS);
+	success &&= (init_device(params) == EXIT_SUCCESS);
+	success &&= (start_capturing() == EXIT_SUCCESS);
 }
 
 void disable_DMK41BU02(){
