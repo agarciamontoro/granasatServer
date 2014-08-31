@@ -18,7 +18,7 @@
 static char             *dev_name;
 static enum io_method   io = IO_METHOD_MMAP;
 static int              fd = -1;
-struct buffer           *buffers;
+struct buffer           *buffers = NULL;
 static unsigned int    n_buffers;
 static int              out_buf;
 static int              force_format = 0;
@@ -325,6 +325,7 @@ int read_frame(uint8_t* image_data)
 
 		default:
 			errno_exit("VIDIOC_DQBUF");
+			return 0;
 		}
 	}
 
@@ -346,7 +347,7 @@ int read_frame(uint8_t* image_data)
 	return 1;
 }
 
-void capture_frame(uint8_t* image_data)
+int capture_frame(uint8_t* image_data, int* err_number)
 {
 	//unsigned char* frame;
 
@@ -367,6 +368,7 @@ void capture_frame(uint8_t* image_data)
 		FD_SET(fd, &fds);
 
 		/* Timeout. */
+		/**@todo Experimentally fix timeout values in capture_frame()*/
 		tv.tv_sec = 0; // aqui originalmente ponia 2
 		tv.tv_usec = 500000; // aqui originalmente ponia 0
 
@@ -376,21 +378,29 @@ void capture_frame(uint8_t* image_data)
 			if (EINTR == errno)
 				continue;
 			errno_exit("select");
+			return EXIT_FAILURE;
 		}
 
 		if (0 == r) {
 			printMsg(stderr, DMK41BU02, "Select timeout\n");
-			exit(EXIT_FAILURE);
+			/** @todo This shall never be reached. Test and fix timeout values appropiately */
+			return EXIT_FAILURE;
 		}
 
 		if ( (read_frame(image_data)))
 			break;
-		else
+		else{
+			if (errno == EBADF){
+				printMsg(stderr, DMK41BU02, "ERROR: BAD FILE DESCRIPTOR");
+				*err_number = EBADF;
+				return EXIT_FAILURE;
+			}
 			printMsg(stderr, DMK41BU02, "ERROR: Couldn't read frame");
-		/* EAGAIN - continue select loop. */
+			/* EAGAIN - continue select loop. */
+		}
 	}
 
-	//return frame;
+	return EXIT_SUCCESS;
 
 }
 
@@ -481,8 +491,9 @@ void uninit_device(void)
 
 	case IO_METHOD_MMAP:
 		for (i = 0; i < n_buffers; ++i)
-			if (-1 == munmap(buffers[i].start, buffers[i].length))
-				errno_exit("munmap");
+			if(buffers[i].start != NULL)
+				if (-1 == munmap(buffers[i].start, buffers[i].length))
+					errno_exit("munmap");
 		break;
 
 	case IO_METHOD_USERPTR:
@@ -564,8 +575,12 @@ void init_mmap(void)
 						MAP_SHARED /* recommended */,
 						fd, buf.m.offset);
 
-		if (MAP_FAILED == buffers[n_buffers].start)
+		if (MAP_FAILED == buffers[n_buffers].start){
+			buffers[n_buffers].start = NULL;
 			errno_exit("mmap");
+			/**@todo CRITICAL: Handle errors here*/
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 
@@ -800,7 +815,9 @@ int enable_DMK41BU02(struct v4l2_parameters* params)
 void disable_DMK41BU02(){
 	stop_capturing();
 	uninit_device();
-	close_device();
+
+	if(fd != -1)
+		close_device();
 
 	free(current_frame);
 

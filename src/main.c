@@ -1,4 +1,9 @@
 /**
+ * @todo Change all functions retunring "boolean" to return EXIT_SUCCESS or EXIT_FAILURE.
+ * It will suppose some more code, but more readable.
+ */
+
+/**
  * @file main.c
  * @author Alejandro García Montoro
  * @date 27 Jul 2014
@@ -128,6 +133,9 @@ void* capture_images(void* useless){
 	struct timespec old, current, difference;
 	int time_passed = 0;
 
+	int camera_connected = 0;
+	int err_number;
+
 	image_data = malloc(sizeof(*image_data) * 1280*960);
 
 	//Enable DMK41BU02 sensor - Camera
@@ -139,29 +147,54 @@ void* capture_images(void* useless){
 	params.exp_mode_ = 1;
 	params.exp_value_ = 200;
 	
-	enable_DMK41BU02(&params);
-
-	clock_gettime(CLOCK_MONOTONIC, &old);
-
-	enum LED_ID camera_led = LED_RED;
-	while(keep_running){
-		clock_gettime(CLOCK_MONOTONIC, &current);
-
-		if( (time_passed = diff_times(&old, &current)) < CAPTURE_RATE_NSEC ){
-			difference = nsec_to_timespec(CAPTURE_RATE_NSEC - time_passed);
-			nanosleep( &difference, NULL );
-		}
-		else{
-			capture_frame(image_data);
-			clock_gettime(CLOCK_MONOTONIC, &old);
-			/**
-			* @todo Handle write errors
-			*/
-			write(LED_FD, &camera_led, sizeof(camera_led));
-		}
+	if( enable_DMK41BU02(&params) != EXIT_SUCCESS ){
+		printMsg(stderr, DMK41BU02, "%sFATAL ERROR: Camera could not be enabled. ABORTING!", KRED);
+		exit(EXIT_FAILURE);
 	}
 
-	disable_DMK41BU02();
+	enum LED_ID camera_led = LED_RED;
+
+	while(keep_running){
+
+		if( enable_DMK41BU02(&params) != EXIT_SUCCESS ){
+			printMsg(stderr, DMK41BU02, "%sFATAL ERROR: Camera could not be enabled.", KRED);
+			camera_connected = 0;
+			sleep(2); //Waits for the camera to be reconnected.
+		}
+		else{
+			camera_connected = 1;
+			clock_gettime(CLOCK_MONOTONIC, &old);
+		}
+
+		while(camera_connected){
+			clock_gettime(CLOCK_MONOTONIC, &current);
+
+			if( (time_passed = diff_times(&old, &current)) < CAPTURE_RATE_NSEC ){
+				difference = nsec_to_timespec(CAPTURE_RATE_NSEC - time_passed);
+				nanosleep( &difference, NULL );
+			}
+			else{
+				if( capture_frame(image_data, &err_number) == EXIT_FAILURE ){
+					if(err_number == EBADF)
+						camera_connected = 0;
+					/**@todo Handle other errors*/
+				}
+				else{
+					clock_gettime(CLOCK_MONOTONIC, &old);
+					/**
+					* @todo Handle write errors
+					*/
+					write(LED_FD, &camera_led, sizeof(camera_led));
+				}
+			}
+
+		}//END OF camera_connected WHILE
+
+		/**@todo Test if disable_DMK41BU02 can be achieved after a failed enable_DMK41BU02*/
+		disable_DMK41BU02();
+
+	} //END OF KEEP_RUNNING WHILE
+
 	free(image_data);
 
 	return NULL;

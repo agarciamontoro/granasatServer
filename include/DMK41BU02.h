@@ -76,7 +76,7 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 
 int read_frame(uint8_t* image_data); //void* read_frame();
 
-void capture_frame(uint8_t* image_data); //void* get_next_image(struct v4l2_parameters* params);
+int capture_frame(uint8_t* image_data, int* err_number); //void* get_next_image(struct v4l2_parameters* params);
 
 void stop_capturing(void);
 
