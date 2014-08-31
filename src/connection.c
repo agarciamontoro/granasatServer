@@ -536,9 +536,9 @@ int sendImage(int sockfd){
 
 		*/
 		if(new_frame_send){
-			image_stream = malloc(sizeof(*image_stream) * 1280*960);
+			image_stream = malloc(IMG_FILE_SIZE);
 
-			memcpy(image_stream, current_frame, 1280*960);
+			memcpy(image_stream, current_frame, IMG_FILE_SIZE);
 
 			new_frame_send = 0;
 			send_new_image = 1;
@@ -558,7 +558,7 @@ int sendImage(int sockfd){
 	*	return value to return to the caller of sendImage().
 	*/
 	if(send_new_image){
-		success = sendData(sockfd, image_stream, 1228800);
+		success = sendData(sockfd, image_stream, IMG_FILE_SIZE);
 	}
 
 	/**

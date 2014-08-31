@@ -465,7 +465,7 @@ void* process_images(void* useless){
 	
 	uint8_t* image;
 	int is_processable = 0;
-	image = malloc(sizeof(*image) * 1280*960);
+	image = malloc(IMG_DATA_SIZE);
 
 	long long n_nsec, n_nsec_mean;
 
@@ -486,7 +486,7 @@ void* process_images(void* useless){
 		pthread_rwlock_rdlock( &camera_rw_lock );
 
 			if(new_frame_proc){
-				memcpy(image, current_frame, sizeof(uint8_t) * 1280*960);
+				memcpy(image, current_frame, IMG_DATA_SIZE);
 				new_frame_proc = 0;
 				is_processable = 1;
 			}
