@@ -99,7 +99,12 @@ int readAndStoreAccelerometer(FILE* file){
 	pthread_rwlock_wrlock( &accelerometer_rw_lock );
 		
 		if(readACC(accelerometer, &timestamp)){
-			success = ( fwrite(accelerometer, sizeof(*accelerometer), 6, file) == 6 );
+			success = ( ( fwrite(accelerometer, sizeof(*accelerometer), 6, file) == 6 )
+						&&
+						( fwrite(&(timestamp.tv_sec), 1, TV_SEC_SIZE, file) == TV_SEC_SIZE )
+						&&
+						( fwrite(&(timestamp.tv_nsec), 1, TV_NSEC_SIZE, file) == TV_NSEC_SIZE )
+					  );
 			
 
 		
@@ -143,7 +148,12 @@ int readAndStoreMagnetometer(FILE* file){
 	/////////////////////////////////////////////////////////////////////////////////////
 	pthread_rwlock_wrlock( &magnetometer_rw_lock );
 		if(readMAG(magnetometer, &timestamp)){
-			success = ( fwrite(magnetometer, sizeof(*magnetometer), 6, file) == 6 );
+			success = ( ( fwrite(magnetometer, sizeof(*magnetometer), 6, file) == 6 )
+						&&
+						( fwrite(&(timestamp.tv_sec), 1, TV_SEC_SIZE, file) == TV_SEC_SIZE )
+						&&
+						( fwrite(&(timestamp.tv_nsec), 1, TV_NSEC_SIZE, file) == TV_NSEC_SIZE )
+					  );
 		
 			/**
 			* The following function appears to be useless, but it is completely necessary.
