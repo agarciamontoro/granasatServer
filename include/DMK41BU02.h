@@ -80,7 +80,7 @@ void capture_frame(uint8_t* image_data); //void* get_next_image(struct v4l2_para
 
 void stop_capturing(void);
 
-void start_capturing(void);
+int start_capturing(void);
 
 void uninit_device(void);
 
@@ -90,13 +90,13 @@ void init_mmap(void);
 
 void init_userp(unsigned int buffer_size);
 
-void init_device(struct v4l2_parameters* params);
+int init_device(struct v4l2_parameters* params);
 
 void close_device(void);
 
 int open_device(void);
 
-void enable_DMK41BU02(struct v4l2_parameters* params);
+int enable_DMK41BU02(struct v4l2_parameters* params);
 
 void disable_DMK41BU02();
 

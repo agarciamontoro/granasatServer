@@ -35,7 +35,7 @@ void errno_exit(const char *s)
 
 	strerror_r(errno, error_string, 75);
 	printMsg(stderr, DMK41BU02, "%s%s error %d, %s\n", KLRE, s, errno, error_string);
-	exit(EXIT_FAILURE);
+	//exit(EXIT_FAILURE);
 }
 
 int xioctl(int fh, int request, void *arg)
@@ -412,7 +412,7 @@ void stop_capturing(void)
 	}
 }
 
-void start_capturing(void)
+int start_capturing(void)
 {
 	unsigned int i;
 	enum v4l2_buf_type type;
@@ -431,12 +431,16 @@ void start_capturing(void)
 			buf.memory = V4L2_MEMORY_MMAP;
 			buf.index = i;
 
-			if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
+			if (-1 == xioctl(fd, VIDIOC_QBUF, &buf)){
 				errno_exit("VIDIOC_QBUF");
+				return EXIT_FAILURE;
+			}
 		}
 		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		if (-1 == xioctl(fd, VIDIOC_STREAMON, &type))
+		if (-1 == xioctl(fd, VIDIOC_STREAMON, &type)){
 			errno_exit("VIDIOC_STREAMON");
+			return EXIT_FAILURE;
+		}
 		break;
 
 	case IO_METHOD_USERPTR:
@@ -450,14 +454,20 @@ void start_capturing(void)
 			buf.m.userptr = (unsigned long)buffers[i].start;
 			buf.length = buffers[i].length;
 
-			if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
+			if (-1 == xioctl(fd, VIDIOC_QBUF, &buf)){
 				errno_exit("VIDIOC_QBUF");
+				return EXIT_FAILURE;
+			}
 		}
 		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		if (-1 == xioctl(fd, VIDIOC_STREAMON, &type))
+		if (-1 == xioctl(fd, VIDIOC_STREAMON, &type)){
 			errno_exit("VIDIOC_STREAMON");
+			return EXIT_FAILURE;
+		}
 		break;
 	}
+
+	return EXIT_SUCCESS;
 }
 
 void uninit_device(void)
@@ -596,7 +606,7 @@ void init_userp(unsigned int buffer_size)
 	}
 }
 
-void init_device(struct v4l2_parameters* params)
+int init_device(struct v4l2_parameters* params)
 {
 	struct v4l2_capability cap;
 	struct v4l2_cropcap cropcap;
@@ -607,22 +617,22 @@ void init_device(struct v4l2_parameters* params)
 	if (-1 == xioctl(fd, VIDIOC_QUERYCAP, &cap)) {
 		if (EINVAL == errno) {
 			printMsg(stderr, DMK41BU02, "%s is no V4L2 device\n", dev_name);
-			exit(EXIT_FAILURE);
 		} else {
 			errno_exit("VIDIOC_QUERYCAP");
 		}
+		return EXIT_FAILURE;
 	}
 
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
 		printMsg(stderr, DMK41BU02, "%s is no video capture device\n", dev_name);
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 	switch (io) {
 	case IO_METHOD_READ:
 		if (!(cap.capabilities & V4L2_CAP_READWRITE)) {
 			printMsg(stderr, DMK41BU02, "%s does not support read I/O\n", dev_name);
-			exit(EXIT_FAILURE);
+			return EXIT_FAILURE;;
 		}
 		break;
 
@@ -630,7 +640,7 @@ void init_device(struct v4l2_parameters* params)
 	case IO_METHOD_USERPTR:
 		if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
 			printMsg(stderr, DMK41BU02, "%s does not support streaming I/O\n", dev_name);
-			exit(EXIT_FAILURE);
+			return EXIT_FAILURE;
 		}
 		break;
 	}
@@ -680,14 +690,18 @@ void init_device(struct v4l2_parameters* params)
 			fmt.fmt.pix.field	= V4L2_FIELD_INTERLACED;
 		}
 
-		if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt))
+		if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt)){
 			errno_exit("VIDIOC_S_FMT");
+			return EXIT_FAILURE;
+		}
 
 		/* Note VIDIOC_S_FMT may change width and height. */
 	} else {
 		/* Preserve original settings as set by v4l2-ctl for example */
-		if (-1 == xioctl(fd, VIDIOC_G_FMT, &fmt))
+		if (-1 == xioctl(fd, VIDIOC_G_FMT, &fmt)){
 			errno_exit("VIDIOC_G_FMT");
+			return EXIT_FAILURE;
+		}
 	}
 
 	/* Buggy driver paranoia. */
@@ -716,9 +730,11 @@ void init_device(struct v4l2_parameters* params)
 	//Change all parameters with user information
 	if(params != NULL){
         if(!change_all_parameters(params)){
-        	exit(EXIT_FAILURE); //TODO: improve error handling, please
+        	return EXIT_FAILURE; /**@todo Improve error handling.*/
         }
 	}
+
+	return EXIT_SUCCESS;
 }
 
 void close_device(void)
@@ -769,9 +785,16 @@ int enable_DMK41BU02(struct v4l2_parameters* params)
 
 	current_frame = malloc(sizeof(uint8_t) * 1280*960);
 
-	success = (open_device() == EXIT_SUCCESS);
-	success &&= (init_device(params) == EXIT_SUCCESS);
-	success &&= (start_capturing() == EXIT_SUCCESS);
+	if(open_device() != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	
+	if(init_device(params) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+
+	if(start_capturing() != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+
+	return EXIT_SUCCESS;
 }
 
 void disable_DMK41BU02(){
