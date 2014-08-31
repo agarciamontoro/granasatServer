@@ -100,6 +100,7 @@
 #include "protocol.h"		// Connection protocol, shared with granasatClient
 #include "sync_control.h"	// Timestamp management and synchronisation control
 #include "DMK41BU02.h"		// Camera management library
+#include "LSM303.h"					// Magnetomere-accelerometer library
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////

@@ -608,7 +608,7 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	#define M_Z_GAIN 980	//[LSB/Gauss] GN=001
 	#define T_GAIN 8	//[LSB/ºC]
 
-	uint8_t buffer[12];
+	uint8_t buffer[MAG_FM_SIZE + ACC_FM_SIZE];
 	int success = 0;
 
 	/**
@@ -621,8 +621,8 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	*	-# The function unlocks ::magnetometer_rw_lock.
 	*/
 	pthread_rwlock_rdlock( &magnetometer_rw_lock );
-		fseek(mag_file, -6, SEEK_END);
-		fread(buffer, sizeof(*buffer), 6, mag_file);
+		fseek(mag_file, -MAG_FM_SIZE, SEEK_END);
+		fread(buffer, sizeof(*buffer), MAG_FM_SIZE, mag_file);
 	pthread_rwlock_unlock( &magnetometer_rw_lock );
 
 	/**
@@ -635,8 +635,8 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	*	-# The function unlocks ::accelerometer_rw_lock.
 	*/
 	pthread_rwlock_rdlock( &accelerometer_rw_lock );
-		fseek(acc_file, -6, SEEK_END);
-		fread(buffer+6, sizeof(*buffer), 6, acc_file);
+		fseek(acc_file, -ACC_FM_SIZE, SEEK_END);
+		fread(buffer+MAG_FM_SIZE, sizeof(*buffer), ACC_FM_SIZE, acc_file);
 	pthread_rwlock_unlock( &accelerometer_rw_lock );
 
 	/**
@@ -658,9 +658,9 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	int16_t a[3];
 	float accF[3];
 
-	*a = (int16_t)(buffer[0+6] | buffer[6+1] << 8) >> 4;
-    *(a+1) = (int16_t)(buffer[6+2] | buffer[6+3] << 8) >> 4;
-    *(a+2) = (int16_t)(buffer[6+4] | buffer[6+5] << 8) >> 4;
+	*a = (int16_t)(buffer[0+MAG_FM_SIZE] | buffer[MAG_FM_SIZE+1] << 8) >> 4;
+    *(a+1) = (int16_t)(buffer[MAG_FM_SIZE+2] | buffer[MAG_FM_SIZE+3] << 8) >> 4;
+    *(a+2) = (int16_t)(buffer[MAG_FM_SIZE+4] | buffer[MAG_FM_SIZE+5] << 8) >> 4;
 
 	*(accF+0) = (float) *(a+0)*A_GAIN;
 	*(accF+1) = (float) *(a+1)*A_GAIN;
@@ -673,7 +673,7 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	*	@details
 	*	-# The buffer in which both measurements were stored is sent to @p sockfd using sendData() function.
 	*/
-	success = sendData(sockfd, buffer, sizeof(*buffer) * 12);
+	success = sendData(sockfd, buffer, MAG_FM_SIZE + ACC_FM_SIZE);
 	
 	/**
 	*	@details
