@@ -29,8 +29,9 @@ int readACC(uint8_t* a, struct timespec* timestamp){
         success = ( readBlock(0x80 | LSM303_OUT_X_L_A, 6, a) == 6 );
     clock_gettime(CLOCK_MONOTONIC, &end);
 
-    timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
-    timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
+    /**@todo Review timestamp. It has bugs */
+    timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2;
+    timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2;
 
     return success;
 }
@@ -44,8 +45,9 @@ int readMAG(uint8_t* m, struct timespec* timestamp){
         success = ( readBlock(0x80 | LSM303_OUT_X_H_M, 6, m) == 6 );  //Read p28 of datasheet for further information
     clock_gettime(CLOCK_MONOTONIC, &end);
 
-    timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
-    timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
+    /**@todo Review timestamp. It has bugs */
+    timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2;
+    timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2;
     
     return success;
 }
@@ -60,8 +62,9 @@ int readTMP(uint8_t* t, struct timespec* timestamp){
         success = ( readBlock(0x80 | LSM303_TEMP_OUT_H_M, 2, t) == 2 );
     clock_gettime(CLOCK_MONOTONIC, &end);
 
-    timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2 - T_ZERO.tv_sec;
-    timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2 - T_ZERO.tv_nsec;
+    /**@todo Review timestamp. It has bugs */
+    timestamp->tv_sec = (init.tv_sec + end.tv_sec) / 2;
+    timestamp->tv_nsec = (init.tv_nsec + end.tv_nsec) / 2;
     //High bytes first
     //*t = (int16_t)(block[1] | block[0] << 8) >> 4;
 

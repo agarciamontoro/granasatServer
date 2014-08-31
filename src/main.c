@@ -200,13 +200,16 @@ void* capture_images(void* useless){
 	return NULL;
 }
 
-void* control_LS303DLHC(void* useless){
+void* control_LS303DLHC_and_temp(void* useless){
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	int success;
+	
 	//Enable LSM303 sensor - Magnetometer/Accelerometer
 	enableLSM303();
+	//Enable DS1621 sensor - Temperature 1
+	ds1621_setup();
 
 	pthread_rwlock_wrlock( &accelerometer_rw_lock );
 		FILE* file_acc = fopen(acc_file_name, "w");
@@ -587,7 +590,7 @@ int main(int argc, char** argv){
 	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
-	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC, NULL );
+	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC_and_temp, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 
