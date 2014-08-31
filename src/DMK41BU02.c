@@ -226,21 +226,33 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 	char error_string[75];
 	struct v4l2_parameters param;
 
-	if(get_parameters(&param)){
-		sprintf(base_file_name, "IMG_%05d_B%d-Gm%d-Gn%d-M%d-E%d",
+	int params_OK = get_parameters(&param);
+
+	/*******************************************************
+	*****************  Creating file name  *****************
+	********************************************************/
+	if(!params_OK){
+		param.brightness_ = -1;
+		param.gamma_ = -1;
+		param.gain_ = -1;
+		param.exp_mode_ = -1;
+		param.exp_value_ = -1;
+	}
+
+	sprintf(base_file_name, "IMG_%05d_B%d-Gm%d-Gn%d-M%d-E%d",
 				LAST_IMG_SAVED%10,
 				param.brightness_,
 				param.gamma_,
 				param.gain_,
 				param.exp_mode_,
 				param.exp_value_
-		);
-	}
-	else{
-		sprintf(base_file_name, "IMG_%05d_ERROR", LAST_IMG_SAVED%10);
-	}
+		   );
 
 	sprintf(full_file_name, "%s.raw", base_file_name);
+
+	/*******************************************************
+	*****************     Opening file     *****************
+	********************************************************/
 
 	FILE * raw_img = fopen(full_file_name, "w");
 
@@ -250,55 +262,67 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 		return;
 	}
 
-	int num_bytes; //Number of bytes written. Debugging purposes.
+	/*******************************************************
+	***************** Writing data to file *****************
+	********************************************************/
 
-	//Write timestamp in the photo
-	num_bytes = fwrite(&(timestamp.tv_sec), 1, sizeof(timestamp.tv_sec), raw_img);
-	num_bytes += fwrite(&(timestamp.tv_nsec), 1, sizeof(timestamp.tv_nsec), raw_img);
+	int num_bytes; //Number of bytes written. Debugging purposes.
 	
-	num_bytes += fwrite(p, 1, size, raw_img);
-	//printf("%d bytes written in %s.\n", num_bytes, full_file_name);
+	//IMAGE DATA
+	num_bytes = fwrite(p, 1, size, raw_img);
+	
+	//TIMESTAMP
+	num_bytes += fwrite(&(timestamp.tv_sec), 1, TV_SEC_SIZE, raw_img);
+	num_bytes += fwrite(&(timestamp.tv_nsec), 1, TV_NSEC_SIZE, raw_img);
+
+	//PARAMETERS
+	num_bytes += fwrite(&(param.brightness_), 1, PARAM_SIZE, raw_img);
+	num_bytes += fwrite(&(param.gamma_), 1, PARAM_SIZE, raw_img);
+	num_bytes += fwrite(&(param.gain_), 1, PARAM_SIZE, raw_img);
+	num_bytes += fwrite(&(param.exp_mode_), 1, PARAM_SIZE, raw_img);
+	num_bytes += fwrite(&(param.exp_value_), 1, PARAM_SIZE, raw_img);
 
 	if(ferror(raw_img)){
 		strerror_r(errno, error_string, 75);
-		printMsg(stderr, DMK41BU02, "Error writing file %s: %s.\n", full_file_name, error_string);
+		printMsg(stderr, DMK41BU02, "Error writing file %s: %s. %d bytes written out of %d\n", full_file_name, error_string, num_bytes, IMG_FILE_SIZE);
 		return;
 	}
 
-	////////////////////////////////////////////////////////////////////////////////////////
-	/*
-	//Save jpg image
-	IplImage* image = cvCreateImage(cvSize(1280,960),8,1);
-	cvSetZero(image);
-	int x,y;
-
-	for(y=0 ; y < image->height ; y++){
-		for(x=0; x < image->width ; x++){
-			(image->imageData+image->widthStep*y)[x] = ( (unsigned char*) p)[y*image->width +x]; // put data to a new image file
-		}
-	}
-
-	sprintf(full_file_name, "%s.bmp", base_file_name);
-
-	cvSaveImage(full_file_name, image, NULL);
-	*/
+	fclose(raw_img);
 
 	LAST_IMG_SAVED++; //Message to the world: there is another image to be sent
 
-	/*
-	printf("Timeval of the photo:\t%d seconds, %d microseconds\n", timestamp.tv_sec, timestamp.tv_usec);
-	struct timespec time_;
-	clock_gettime(CLOCK_MONOTONIC, &time_);
-	printf("Current timespec:\t%d seconds, %d nanoseconds\n", time_.tv_sec, time_.tv_nsec);
-	*/
-	//unsigned char* data = malloc(sizeof(unsigned char)*1280*960);
+
+	/*******************************************************
+	*****************   Updating  buffer   *****************
+	********************************************************/
+	int offset = 0;
 
 	pthread_rwlock_wrlock( &camera_rw_lock );
-		memcpy(current_frame, p, sizeof(uint8_t) * 1280*960);
+		//Actual image to shared buffer
+		memcpy(current_frame + offset, p, IMG_DATA_SIZE);
+		offset += IMG_DATA_SIZE;
+
+		//Actual timestamp to shared buffer
+		memcpy(current_frame + offset, &(timestamp.tv_sec), TV_SEC_SIZE);
+		offset += TV_SEC_SIZE;
+		memcpy(current_frame + offset, &(timestamp.tv_nsec), TV_NSEC_SIZE);
+		offset += TV_NSEC_SIZE;
+
+		//Actual parameters to shared buffer
+		memcpy(current_frame + offset, &(param.brightness_), PARAM_SIZE);
+		offset += PARAM_SIZE;
+		memcpy(current_frame + offset, &(param.gamma_), PARAM_SIZE);
+		offset += PARAM_SIZE;
+		memcpy(current_frame + offset, &(param.gain_), PARAM_SIZE);
+		offset += PARAM_SIZE;
+		memcpy(current_frame + offset, &(param.exp_mode_), PARAM_SIZE);
+		offset += PARAM_SIZE;
+		memcpy(current_frame + offset, &(param.exp_value_), PARAM_SIZE);
+		offset += PARAM_SIZE;
+
 		new_frame_proc = new_frame_send = 1;
 	pthread_rwlock_unlock( &camera_rw_lock );
-
-	fclose(raw_img);
 
 	//return data;
 }
@@ -799,7 +823,7 @@ int enable_DMK41BU02(struct v4l2_parameters* params)
 	force_format = 2;
 	frame_count = 1;
 
-	current_frame = malloc(sizeof(uint8_t) * 1280*960);
+	current_frame = malloc(IMG_FILE_SIZE);
 
 	if(open_device() != EXIT_SUCCESS)
 		return EXIT_FAILURE;

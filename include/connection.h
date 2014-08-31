@@ -41,6 +41,12 @@
  *	-# <b>Temperature measurement</b> (TC74 device): 9 B
  *		- Temperature data: sizeof(signed char) = 1 B
  *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
+ *	-# <b>Temperature measurement</b> (LSM303 device): 10 B
+ *		- Temperature data: 2 B
+ *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
+ *	-# <b>Temperature measurement</b> (BCM2835 device): 10 B
+ *		- Temperature data: 2 B
+ *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
 
   * <b> Data exchanged (CLIENT > SERVER) </b>
  *	-# <b>Command</b>: 1 B
