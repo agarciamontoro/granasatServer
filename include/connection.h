@@ -24,7 +24,7 @@
  * The connection error handling is now controlled only from getData() and sendData() functions.
  * It could be improved in the future.
  *
- * <b> Data exchanged (SERVER > CLIENT) </b>
+ * <b>Data exchanged (SERVER > CLIENT) </b>
  *	-# <b>Image</b> (DMK41BU02 device): 1228828 B
  *		- Image data: 1280*960 px * 1 B/px = 1228800 B
  *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
@@ -48,7 +48,7 @@
  *		- Temperature data: 2 B
  *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
 
-  * <b> Data exchanged (CLIENT > SERVER) </b>
+ * <b>Data exchanged (CLIENT > SERVER) </b>
  *	-# <b>Command</b>: 1 B
  *		- Command data: 1 B
  *	-# <b>Brightness value</b> (for device DMK41BU02): 4 B

@@ -600,13 +600,6 @@ int sendImage(int sockfd){
  * The steps performed by sendAccAndMag() are the following:
  */
 int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
-	#define X   0
-	#define Y   1
-	#define Z   2
-	#define A_GAIN 0.004    	//[G/LSB] FS=10
-	#define M_XY_GAIN 1100   	//[LSB/Gauss] GN=001
-	#define M_Z_GAIN 980	//[LSB/Gauss] GN=001
-	#define T_GAIN 8	//[LSB/ºC]
 
 	uint8_t buffer[MAG_FM_SIZE + ACC_FM_SIZE];
 	int success = 0;
