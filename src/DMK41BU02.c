@@ -395,6 +395,7 @@ int capture_frame(uint8_t* image_data, int* err_number)
 				*err_number = EBADF;
 				return EXIT_FAILURE;
 			}
+			/**@todo Handle other errors. */
 			printMsg(stderr, DMK41BU02, "ERROR: Couldn't read frame");
 			/* EAGAIN - continue select loop. */
 		}

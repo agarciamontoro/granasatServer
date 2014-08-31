@@ -23,6 +23,59 @@
  * 
  * The connection error handling is now controlled only from getData() and sendData() functions.
  * It could be improved in the future.
+ *
+ * <b> Data exchanged (SERVER > CLIENT) </b>
+ *	-# <b>Image</b> (DMK41BU02 device): 1228828 B
+ *		- Image data: 1280*960 px * 1 B/px = 1228800 B
+ *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
+ *		- Parameters: sizeof(int) * 5 = 20
+ *	-# <b>Magnetomer measurement</b> (LSM303 device): 14 B
+ *		- Magnetometer data: 6 B
+ *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
+ *	-# <b>Accelerometer measurement</b> (LSM303 device): 14 B
+ *		- Magnetometer data: 6 B
+ *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
+ *	-# <b>Temperature measurement</b> (DS1621 device): 10 B
+ *		- Temperature data: sizeof(unsigned char) + sizeof(signed char) = 2 B
+ *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
+ *	-# <b>Temperature measurement</b> (TC74 device): 9 B
+ *		- Temperature data: sizeof(signed char) = 1 B
+ *		- Timestamp: sizeof(time_t) + sizeof(long) = 8 B
+
+  * <b> Data exchanged (CLIENT > SERVER) </b>
+ *	-# <b>Command</b>: 1 B
+ *		- Command data: 1 B
+ *	-# <b>Brightness value</b> (for device DMK41BU02): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Gamma value</b> (for device DMK41BU02): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Gain value</b> (for device DMK41BU02): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Exposition mode</b> (for device DMK41BU02): 4 B
+ *		- Mode: sizeof(int) = 4 B
+ *	-# <b>Exposition value</b> (for device DMK41BU02): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Brightness value</b> (for device DMK41BU02): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Number of centroids</b> (for star tracker algorithm): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Catalog</b> (for star tracker algorithm): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Pixel threshold</b> (for star tracker algorithm): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>ROI size</b> (for star tracker algorithm): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Minimum points</b> (for star tracker algorithm): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Error</b> (for star tracker algorithm): 8 B
+ *		- Value: sizeof(double) = 8 B
+ *	-# <b>Binary threshold</b> (for horizon sensor algorithm): 4 B
+ *		- Value: sizeof(int) = 4 B
+ *	-# <b>Canny threshold</b> (for horizon sensor algorithm): 4 B
+ *		- Value: sizeof(int) = 4 B
+
+ *	
+
  */
 
 #ifndef CONNECTION_H__
