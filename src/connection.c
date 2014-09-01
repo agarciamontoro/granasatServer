@@ -357,6 +357,7 @@ int getData(int sockfd, void* ptr, int n_bytes){
 			break;
 		}
 		else{
+			/** @todo Handle error in getData() after recv returns 0 */
 			if(n == 0 && bytes_sent == 0){
 				CONNECTED = 0;
 				printMsg(stderr, CONNECTION, "%sDISCONNECTING.%s\n", KRED, KRES);
@@ -689,4 +690,70 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	*	-# The return value of sendData() is returned.
 	*/
 	return success;
+}
+
+int sendTemperatures(int sockfd){
+	int send_new_temp = 0;
+	uint8_t* temp_stream = NULL;
+
+	int success = 0;
+
+
+	/**
+	*	@details
+	*	-# The function blocks until it can access the camera buffer, where the latest image
+	*	taken is stored. This is done using the camera lock: ::camera_rw_lock.
+	*/
+	pthread_rwlock_rdlock( &temperatures_rw_lock );
+
+		/**
+		*	@details
+		*	-# The function checks whether the image stored in the buffer has been sent before.
+		*	This is done checking global variable ::new_frame_send, only changed from here and
+		*	from DMK41BU02.c process_image() function.
+		*		-# If there is no new image to be sent, the function does nothing and returns a failure.
+		*		-# If there is a new image to be sent, the function does the following:
+		*			-# It allocates 1280*960 bytes of memory.
+		*			-# It copies the shared buffer into the memory allocated.
+		*			-# It sets ::new_frame_send to zero, to avoid future calls of sendImage() to send the same image.
+
+		*/
+		if(new_temp_send){
+			temp_stream = malloc(TEMP_FILE_SIZE);
+
+			memcpy(temp_stream, current_temperature, TEMP_FILE_SIZE);
+
+			new_temp_send = 0;
+			send_new_temp = 1;
+		}
+		else
+			send_new_temp = 0;
+
+	/**
+	*	@details
+	*	-# The function unlocks ::camera_rw_lock.
+	*/
+	pthread_rwlock_unlock( &temperatures_rw_lock );
+
+	/**
+	*	@details
+	*	-# If a new image has to be sent, sendImage() calls sendData() the proper way and stores its
+	*	return value to return to the caller of sendImage().
+	*/
+	if(send_new_temp){
+		success = sendData(sockfd, temp_stream, TEMP_FILE_SIZE);
+	}
+
+	/**
+	*	@details
+	*	-# The memory is freed, even if it was not allocated.This throws no error because the pointer
+	*	is initialised to NULL.
+	*/
+	free(temp_stream);
+
+	/**
+	*	@details
+	*	-# Returns the return value of sendData() or 0 if no image was sent.
+	*/
+	return success;	
 }

@@ -119,6 +119,16 @@ extern struct timespec T_ZERO;
 extern pthread_rwlock_t camera_rw_lock;
 
 /**
+ * @brief Lock to control temperature buffers
+ *
+ * @details This reader/writer lock let the temperature sensors and
+ * the sending unit share a buffer in which the last temperature measurements
+ * taken are saved.
+ * It is initialised in main(), before any thread starts.
+ */
+extern pthread_rwlock_t temperatures_rw_lock;
+
+/**
  * @brief Lock to control magnetomer file
  *
  * @details This reader/writer lock let the magnetometer and the connection
@@ -180,6 +190,14 @@ extern int new_frame_proc;
  * It is changed from DMK41BU02.h process_image() and from connection.h sendImage().
  */
 extern int new_frame_send;
+
+/**
+ * @brief Variable to control that the sending unit sends only new temperatures
+ *
+ * @details new_temp_send controls that the sending unit sends only new temperatures.
+ * It is changed from sensors.h readAndStoreTemperatures() and from connection.h sendTemperatures().
+ */
+extern int new_temp_send;
 
 /**
  * @brief Variable to keep threads alive

@@ -101,6 +101,7 @@
 #include "sync_control.h"	// Timestamp management and synchronisation control
 #include "DMK41BU02.h"		// Camera management library
 #include "LSM303.h"					// Magnetomere-accelerometer library
+#include "sensors.h"				// Sensors management
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
@@ -352,5 +353,21 @@ int sendImage(int sockfd);
  *
  */
 int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd);
+
+/**
+ * @brief Sends temperature measurements to a socket
+
+ * @return Returns the success of the function:
+ * -# Returns 1 if the funtion succeded.
+ * -# Returns 0 in any other case.
+
+ * @see sendData()
+
+ * @note This function is actually a wrapper of sendData() function.
+
+ * @warning This function can change CONNECTED variable, since it calls sendData().
+ *
+ */
+int sendTemperatures(int sockfd);
 
 #endif

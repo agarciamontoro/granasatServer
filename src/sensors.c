@@ -10,6 +10,8 @@
 pid_t LED_PID = -1;
 FILE* CPU_temp_file = NULL;
 
+void* current_temperature = NULL;
+
 void readAndSendMagnetometer(int socket){
 	uint8_t magnetometer[6];
 	int n, bytes_sent, total_bytes;
@@ -193,17 +195,26 @@ int readCPUtemperature(){
 	return temperature;
 }
 
-int readAndStoreTemperatures(FILE* file, int DS1621_fd){
-	struct timespec timestamp;
-
+int readAndStoreTemperatures(FILE* file){
 	signed char DS1621_high;
 	unsigned char DS1621_low;
+	int CPU_temp;
 	uint8_t LSM303_temp[2];
 
-	readDS1621Sensor(DS1621_fd, &DS1621_high, &DS1621_low);
+	struct timespec timestamp;
+
+	/*******************************************************
+	***************** Reading temperatures *****************
+	********************************************************/
+
+	readDS1621Sensor(&DS1621_high, &DS1621_low);
 	//readTC74sensor();
-	int CPU_temp = readCPUtemperature();
+	CPU_temp = readCPUtemperature();
 	readTMP(LSM303_temp, &timestamp);
+
+	/*******************************************************
+	*****************    Writing to file   *****************
+	********************************************************/
 
 	//Write temperatures
 	fwrite(&DS1621_high, 1, sizeof(DS1621_high), file);
@@ -216,4 +227,58 @@ int readAndStoreTemperatures(FILE* file, int DS1621_fd){
 	fwrite(&(timestamp.tv_sec), 1, TV_SEC_SIZE, file);
 	fwrite(&(timestamp.tv_nsec), 1, TV_NSEC_SIZE, file);
 
+	/*******************************************************
+	*****************   Updating  buffer   *****************
+	********************************************************/
+	int offset = 0;
+
+	pthread_rwlock_wrlock( &temperatures_rw_lock );
+		//Actual DS1621 temperature to shared buffer
+		memcpy(current_temperature + offset, &DS1621_high, sizeof(DS1621_high));
+		offset += sizeof(DS1621_high);
+		memcpy(current_temperature + offset, &DS1621_low, sizeof(DS1621_low));
+		offset += sizeof(DS1621_low);
+
+		//Actual TC74 temperature to shared buffer
+		//memcpy(current_temperature + offset, &TC74, sizeof(TC74));
+		//offset += sizeof(TC74);
+
+		//Actual CPU temperature to shared buffer
+		memcpy(current_temperature + offset, &CPU_temp, sizeof(CPU_temp));
+		offset += sizeof(CPU_temp);
+
+		//Actual LSM303 temperature to shared buffer
+		memcpy(current_temperature + offset, &LSM303_temp, sizeof(*LSM303_temp)*2);
+		offset += sizeof(*LSM303_temp)*2;
+
+
+		//Actual timestamp to shared buffer
+		memcpy(current_temperature + offset, &(timestamp.tv_sec), TV_SEC_SIZE);
+		offset += TV_SEC_SIZE;
+		memcpy(current_temperature + offset, &(timestamp.tv_nsec), TV_NSEC_SIZE);
+		offset += TV_NSEC_SIZE;
+
+		new_temp_send = 1;
+	pthread_rwlock_unlock( &temperatures_rw_lock );
+
+}
+
+int enableTemperatureSensors(){
+	current_temperature = malloc(TEMP_FILE_SIZE);
+	//Enable LSM303 sensor - Magnetometer/Accelerometer + Temperature 4
+	enableLSM303();
+	//Enable DS1621 sensor - Temperature 1
+	ds1621_setup();
+	//Enable TC74 sensor - Temperature 2
+	//TC74_setup(); /** @todo Code TC74 enable and reading functions
+	//Enable CPU temperature sensor - Temperature 3
+	enable_CPUtemperature();
+
+	return EXIT_SUCCESS;
+}
+
+int disableTemperatureSensors(){
+	free(current_temperature);
+
+	return EXIT_SUCCESS;
 }

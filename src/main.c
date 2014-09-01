@@ -212,14 +212,7 @@ void* control_LS303DLHC_and_temp(void* useless){
 
 	int success;
 
-	//Enable LSM303 sensor - Magnetometer/Accelerometer + Temperature 4
-	enableLSM303();
-	//Enable DS1621 sensor - Temperature 1
-	int DS1621_fd = ds1621_setup();
-	//Enable TC74 sensor - Temperature 2
-	//TC74_setup(); /** @todo Code TC74 enable and reading functions
-	//Enable CPU temperature sensor - Temperature 3
-	enable_CPUtemperature();
+	enableTemperatureSensors();
 
 	pthread_rwlock_wrlock( &accelerometer_rw_lock );
 		FILE* file_acc = fopen(acc_file_name, "w");
@@ -242,18 +235,17 @@ void* control_LS303DLHC_and_temp(void* useless){
 	enum LED_ID LSM303_led = LED_WHT;
 	while(keep_running){
 		usleep(500000);
+		readAndStoreTemperatures(file_temperatures);
 
 		if(readAndStoreAccelerometer(file_acc) && readAndStoreMagnetometer(file_mag))
-			/**
-			* @todo Handle write errors
-			*/
+			/** @todo Handle write errors */
 			write(LED_FD, &LSM303_led, sizeof(LSM303_led));
-
-		readAndStoreTemperatures(file_temperatures, DS1621_fd);
 	}
 
 	fclose(file_acc);
 	fclose(file_mag);
+
+	disableTemperatureSensors();
 
 	return NULL;
 }
@@ -444,6 +436,7 @@ void* control_connection(void* useless){
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
 				//Send magnetometer and accelerometer packet
 				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
+				sendTemperatures(SOCKET_SMALL);
 
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
@@ -575,6 +568,7 @@ int main(int argc, char** argv){
 
 	//Semaphores for reading/writing frames and for changing algorithms parameters
 	pthread_rwlock_init( &camera_rw_lock, NULL );
+	pthread_rwlock_init( &temperatures_rw_lock, NULL );
 	pthread_rwlock_init( &magnetometer_rw_lock, NULL );
 	pthread_rwlock_init( &accelerometer_rw_lock, NULL );
 	pthread_mutex_init( &mutex_star_tracker, NULL );
@@ -631,6 +625,7 @@ int main(int argc, char** argv){
     // ********  DESTROY SEMS  *******
     // *******************************	
 	pthread_rwlock_destroy( &camera_rw_lock );
+	pthread_rwlock_destroy( &temperatures_rw_lock );
 	pthread_rwlock_destroy( &magnetometer_rw_lock );
 	pthread_rwlock_destroy( &accelerometer_rw_lock );
 	pthread_mutex_destroy( &mutex_star_tracker );

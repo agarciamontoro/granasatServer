@@ -28,6 +28,10 @@
 #include "DMK41BU02.h"				// Camera management library
 #include "sync_control.h"		// Timestamp management and synchronisation control
 
+#define TEMP_FILE_SIZE ( sizeof(signed char)+sizeof(unsigned char)+sizeof(int)+sizeof(uint8_t)*2+TIMESTAMP_SIZE )
+
+extern void* current_temperature;
+
 void readAndSendMagnetometer(int socket);
 
 void readAndSendAccelerometer(int socket);
@@ -42,6 +46,10 @@ void enable_CPUtemperature();
 
 int read_CPUtemperature();
 
-int readAndStoreTemperatures(FILE* file, int DS1621_fd);
+int readAndStoreTemperatures(FILE* file);
+
+int enableTemperatureSensors();
+
+int disableTemperatureSensors();
 
 #endif /* SENSORS_H_ */
