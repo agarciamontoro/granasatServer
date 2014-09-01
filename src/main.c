@@ -121,7 +121,7 @@ void intHandler(int dummy){
         pthread_cancel(capture_thread);
         pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
-        //pthread_cancel(processing_thread);
+        pthread_cancel(processing_thread);
         //pthread_cancel(horizon_thread);
         printMsg(stderr, MAIN, "All threads CANCELLED\n", SIGTERM, LED_CONTROL_PID);
 }

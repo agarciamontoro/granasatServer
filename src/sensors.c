@@ -183,22 +183,22 @@ void enable_CPUtemperature(){
 	CPU_temp_file = fopen ("/sys/class/thermal/thermal_zone0/temp", "rt");  /* open the file for reading */
 }
 
-int readCPUtemperature(){
+double readCPUtemperature(){
 	int temperature;
 	char line[80];
 
-	while(fgets(line, 80, CPU_temp_file) != NULL)
-	{
-		/* get a line, up to 80 chars from fr.  done if NULL */
-		sscanf (line, "%d", &temperature);
-	}
-	return temperature;
+	double T;
+	fscanf (CPU_temp_file, "%lf", &T);
+	fseek(CPU_temp_file, 0, SEEK_SET);
+	T /= 1000;
+
+	return T;
 }
 
 int readAndStoreTemperatures(FILE* file){
 	signed char DS1621_high;
 	unsigned char DS1621_low;
-	int CPU_temp;
+	double CPU_temp;
 	uint8_t LSM303_temp[2];
 
 	struct timespec timestamp;
@@ -211,6 +211,14 @@ int readAndStoreTemperatures(FILE* file){
 	//readTC74sensor();
 	CPU_temp = readCPUtemperature();
 	readTMP(LSM303_temp, &timestamp);
+
+	int temp_raw = (int16_t)(LSM303_temp[1] | LSM303_temp[0] << 8) >> 4;
+	float temp_LSM = (float) temp_raw/T_GAIN;
+
+	printMsg(stderr, MAIN, "Temperatures:\n"
+								"\tDS1621:\t	%.1f"
+								"\tCPU TEMP:\t	%6.3f"
+								"\tLSM303:\t	%.3f\n", DS1621==128?(float)DS1621_high+0.5:(float)DS1621_high, CPU_temp, temp_LSM);
 
 	/*******************************************************
 	*****************    Writing to file   *****************

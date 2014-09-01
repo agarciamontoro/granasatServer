@@ -44,7 +44,7 @@ int setGPIOValue(int GPIO_number, bool on);
 
 void enable_CPUtemperature();
 
-int read_CPUtemperature();
+double read_CPUtemperature();
 
 int readAndStoreTemperatures(FILE* file);
 
