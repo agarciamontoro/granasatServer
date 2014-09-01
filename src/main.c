@@ -121,7 +121,7 @@ void intHandler(int dummy){
         pthread_cancel(capture_thread);
         pthread_cancel(LS303DLHC_thread);
         pthread_cancel(connection_thread);
-        pthread_cancel(processing_thread);
+        //pthread_cancel(processing_thread);
         //pthread_cancel(horizon_thread);
         printMsg(stderr, MAIN, "All threads CANCELLED\n", SIGTERM, LED_CONTROL_PID);
 }
@@ -134,7 +134,7 @@ void* capture_images(void* useless){
 	struct timespec old, current, difference;
 	int time_passed = 0;
 
-	int camera_connected = 0;
+	int camera_connected;
 	int err_number;
 
 	image_data = malloc(sizeof(*image_data) * 1280*960);
@@ -147,24 +147,30 @@ void* capture_images(void* useless){
 	params.gain_ = 260;
 	params.exp_mode_ = 1;
 	params.exp_value_ = 200;
-	
-	if( enable_DMK41BU02(&params) != EXIT_SUCCESS ){
-		printMsg(stderr, DMK41BU02, "%sFATAL ERROR: Camera could not be enabled. ABORTING!", KRED);
-		exit(EXIT_FAILURE);
-	}
+
+	struct stat st;
+	char error_string[75];
 
 	enum LED_ID camera_led = LED_RED;
 
 	while(keep_running){
 
-		if( enable_DMK41BU02(&params) != EXIT_SUCCESS ){
-			printMsg(stderr, DMK41BU02, "%sFATAL ERROR: Camera could not be enabled.", KRED);
-			camera_connected = 0;
-			sleep(2); //Waits for the camera to be reconnected.
+		camera_connected = 0;
+
+		if (-1 == stat(dev_name, &st)) {
+			strerror_r(errno, error_string, 75);
+			printMsg(stderr, DMK41BU02, "Cannot identify '%s': %d, %s\n", dev_name, errno, error_string);
+			sleep(2);
 		}
 		else{
-			camera_connected = 1;
-			clock_gettime(CLOCK_MONOTONIC, &old);
+			if( enable_DMK41BU02(&params) != EXIT_SUCCESS ){
+				printMsg(stderr, DMK41BU02, "%sFATAL ERROR: Camera could not be enabled.", KRED);
+				sleep(2); //Waits for the camera to be reconnected.
+			}
+			else{
+				camera_connected = 1;
+				clock_gettime(CLOCK_MONOTONIC, &old);
+			}
 		}
 
 		while(camera_connected){
@@ -191,11 +197,10 @@ void* capture_images(void* useless){
 
 		}//END OF camera_connected WHILE
 
-		/**@todo Test if disable_DMK41BU02 can be achieved after a failed enable_DMK41BU02*/
-		disable_DMK41BU02();
-
 	} //END OF KEEP_RUNNING WHILE
 
+	/**@todo Test if disable_DMK41BU02 can be achieved after a failed enable_DMK41BU02*/
+	disable_DMK41BU02();
 	free(image_data);
 
 	return NULL;
@@ -297,8 +302,11 @@ void* control_connection(void* useless){
 
 		//ACCEPT CONNECTIONS
 		SOCKET_COMMANDS = connectToSocket(LISTEN_COMMANDS);
+		printMsg(stderr, CONNECTION, "1\n");
 		SOCKET_BIG = connectToSocket(LISTEN_BIG);
+		printMsg(stderr, CONNECTION, "2\n");
 		SOCKET_SMALL = connectToSocket(LISTEN_SMALL);
+		printMsg(stderr, CONNECTION, "3\n");
 
 		if(SOCKET_COMMANDS && SOCKET_BIG && SOCKET_SMALL){
 			CONNECTED = 1;
@@ -331,6 +339,7 @@ void* control_connection(void* useless){
 					case MSG_END:
 						CONNECTED = 0;
 						keep_running = 0;
+						intHandler(0);
 						printMsg(stderr, CONNECTION, "FINISHING PROGRAM.\n");
 						break;
 
@@ -435,7 +444,7 @@ void* control_connection(void* useless){
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
 				//Send magnetometer and accelerometer packet
 				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
-				
+
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
 				timeout.tv_usec = 500000;
@@ -449,9 +458,10 @@ void* control_connection(void* useless){
 				printMsg(stderr, CONNECTION, "Sending image\n");
 				//sendImage(SOCKET_BIG);
 			}
-			printMsg(stderr, MAIN, "BLUBLU\n");
+
 		} //END while ( connected )
-			printMsg(stderr, MAIN, "CLosing sockets\n");
+		
+		printMsg(stderr, MAIN, "Closing sockets\n");
 		close(SOCKET_BIG);
 		close(SOCKET_SMALL);
 		close(SOCKET_COMMANDS);
@@ -597,7 +607,7 @@ int main(int argc, char** argv){
     // *******************************
 
 	pthread_create( &capture_thread, NULL, capture_images, NULL );
-	pthread_create( &processing_thread, NULL, process_images, NULL );
+	//pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
 	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC_and_temp, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
@@ -608,7 +618,7 @@ int main(int argc, char** argv){
     // *******************************	
 	pthread_join( capture_thread, NULL );
 	//pthread_join( horizon_thread, NULL );
-	pthread_join( processing_thread, NULL );
+	//pthread_join( processing_thread, NULL );
 	pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
 

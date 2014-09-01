@@ -233,12 +233,12 @@ int LED_blink(struct LED_st* led){
 	    	led->LED_child_pid = childpid;
 	    	printMsg(stderr, MAIN, "%d: The LED %d has childpid = %ld\n", getpid(), led->LED_id, led->LED_child_pid);
 			if(led->LED_id != LED_GRN)
-				timer_start(&(led->LED_timer), 20, 0);
+				timer_start(&(led->LED_timer), 3, 0);
 	    }
 	}
 	else{
 		if(led->LED_id != LED_GRN)
-			timer_start(&(led->LED_timer), 20, 0);
+			timer_start(&(led->LED_timer), 3, 0);
 	}
 
 	return childpid;

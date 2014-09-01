@@ -47,6 +47,7 @@
 #define PARAM_ST_SIZE	( PARAM_SIZE * 5)
 #define	IMG_FILE_SIZE	( IMG_DATA_SIZE + TIMESTAMP_SIZE + PARAM_ST_SIZE )
 
+extern const char *dev_name;
 extern int LAST_IMG_SAVED;
 extern uint8_t* current_frame;
 

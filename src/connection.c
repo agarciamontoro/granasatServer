@@ -357,6 +357,12 @@ int getData(int sockfd, void* ptr, int n_bytes){
 			break;
 		}
 		else{
+			if(n == 0 && bytes_sent == 0){
+				CONNECTED = 0;
+				printMsg(stderr, CONNECTION, "%sDISCONNECTING.%s\n", KRED, KRES);
+				break;
+			};
+
 			bytes_sent += n;
 		}
 	}

@@ -15,7 +15,9 @@
 
 #include "DMK41BU02.h"
 
-static char             *dev_name;
+//Device name created using udev rule. See /etc/udev/rules.d/99-DMK41BU02
+//The 99-DMK41BU02 file was created after read the following tutorial: http://www.mythtv.org/wiki/Device_Filenames_and_udev
+const char *dev_name = "/dev/DMK41BU02";
 static enum io_method   io = IO_METHOD_MMAP;
 static int              fd = -1;
 struct buffer           *buffers = NULL;
@@ -414,7 +416,7 @@ int capture_frame(uint8_t* image_data, int* err_number)
 		if ( (read_frame(image_data)))
 			break;
 		else{
-			if (errno == EBADF){
+			if (errno == EBADF || errno == ENODEV){
 				printMsg(stderr, DMK41BU02, "ERROR: BAD FILE DESCRIPTOR");
 				*err_number = EBADF;
 				return EXIT_FAILURE;
@@ -817,7 +819,6 @@ int enable_DMK41BU02(struct v4l2_parameters* params)
 {
 	int success;
 
-	dev_name = "/dev/video0";
 	io = IO_METHOD_MMAP;
 	out_buf++;
 	force_format = 2;
