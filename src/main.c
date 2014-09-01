@@ -92,6 +92,7 @@ UGR space projects.
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, horizon_thread;
 const char* acc_file_name = "accelerometer_measurements.data";
 const char* mag_file_name = "magnetometer_measurements.data";
+const char* temp_file_name = "temperature_measurements.data";
 
 void intHandler(int dummy){
 		/** @todo Nice-to-have: Calling printf() from a signal handler is not
@@ -205,11 +206,15 @@ void* control_LS303DLHC_and_temp(void* useless){
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	int success;
-	
-	//Enable LSM303 sensor - Magnetometer/Accelerometer
+
+	//Enable LSM303 sensor - Magnetometer/Accelerometer + Temperature 4
 	enableLSM303();
 	//Enable DS1621 sensor - Temperature 1
-	ds1621_setup();
+	int DS1621_fd = ds1621_setup();
+	//Enable TC74 sensor - Temperature 2
+	//TC74_setup(); /** @todo Code TC74 enable and reading functions
+	//Enable CPU temperature sensor - Temperature 3
+	enable_CPUtemperature();
 
 	pthread_rwlock_wrlock( &accelerometer_rw_lock );
 		FILE* file_acc = fopen(acc_file_name, "w");
@@ -218,6 +223,8 @@ void* control_LS303DLHC_and_temp(void* useless){
 	pthread_rwlock_wrlock( &magnetometer_rw_lock );
 		FILE* file_mag = fopen(mag_file_name, "w");
 	pthread_rwlock_unlock( &magnetometer_rw_lock );
+
+	FILE* file_temperatures = fopen(temp_file_name, "w");
 
 
 	if(file_acc == NULL || file_mag == NULL){
@@ -236,6 +243,8 @@ void* control_LS303DLHC_and_temp(void* useless){
 			* @todo Handle write errors
 			*/
 			write(LED_FD, &LSM303_led, sizeof(LSM303_led));
+
+		readAndStoreTemperatures(file_temperatures, DS1621_fd);
 	}
 
 	fclose(file_acc);

@@ -43,7 +43,7 @@ int ds1621_setup(){
 
 }
 
-int readTempSensor(int fd, signed char* highByte, unsigned char* lowByte)
+int readDS1621Sensor(int fd, signed char* highByte, unsigned char* lowByte)
 {
 	//int fd;
 	unsigned char buf[10];

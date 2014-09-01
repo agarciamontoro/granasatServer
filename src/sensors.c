@@ -8,35 +8,7 @@
 #include "sensors.h"
 
 pid_t LED_PID = -1;
-
-void readAndSendTemperature(int socket, int fd){
-	signed char highByte = -10;
-	unsigned char lowByte = 5;
-	int n, bytes_sent, total_bytes;
-	bytes_sent = 0;
-	total_bytes = sizeof(signed char);
-
-	readTempSensor(fd, &highByte, &lowByte);
-
-	printMsg(stderr, SENSORS, "Processing temperature\n");
-
-	while (bytes_sent < total_bytes) {
-		if ((n = write(socket, &highByte, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket", 0);
-		else
-			bytes_sent += n;
-	}
-
-	total_bytes = sizeof(unsigned char);
-	bytes_sent = 0;
-
-	while (bytes_sent < total_bytes) {
-		if ((n = write(socket, &lowByte, total_bytes - bytes_sent)) < 0)
-			error("ERROR writing to socket", 0);
-		else
-			bytes_sent += n;
-	}
-}
+FILE* CPU_temp_file = NULL;
 
 void readAndSendMagnetometer(int socket){
 	uint8_t magnetometer[6];
@@ -205,23 +177,43 @@ int setGPIOValue(int GPIO_number, bool on){
 	return 0;
 }
 
+void enable_CPUtemperature(){
+	CPU_temp_file = fopen ("/sys/class/thermal/thermal_zone0/temp", "rt");  /* open the file for reading */
+}
+
 int readCPUtemperature(){
-	FILE *fr;            /* declare the file pointer */
 	int temperature;
 	char line[80];
 
-	fr = fopen ("/sys/class/thermal/thermal_zone0/temp", "rt");  /* open the file for reading */
-
-	while(fgets(line, 80, fr) != NULL)
+	while(fgets(line, 80, CPU_temp_file) != NULL)
 	{
 		/* get a line, up to 80 chars from fr.  done if NULL */
 		sscanf (line, "%d", &temperature);
 	}
-	fclose(fr);  /* close the file prior to exiting the routine */
 	return temperature;
 }
 
-void readAndSendCPUTemperature(int newsockfd){
+int readAndStoreTemperatures(FILE* file, int DS1621_fd){
+	struct timespec timestamp;
+
+	signed char DS1621_high;
+	unsigned char DS1621_low;
+	uint8_t LSM303_temp[2];
+
+	readDS1621Sensor(DS1621_fd, &DS1621_high, &DS1621_low);
+	//readTC74sensor();
 	int CPU_temp = readCPUtemperature();
-	sendData(newsockfd, &CPU_temp, sizeof(CPU_temp));
+	readTMP(LSM303_temp, &timestamp);
+
+	//Write temperatures
+	fwrite(&DS1621_high, 1, sizeof(DS1621_high), file);
+	fwrite(&DS1621_low, 1, sizeof(DS1621_low), file);
+	//////fwrite(&TC74, 1, sizeof(TC74), file);
+	fwrite(&CPU_temp, 1, sizeof(CPU_temp), file);
+	fwrite(&LSM303_temp, 1, sizeof(*LSM303_temp)*2, file);
+
+	//Write timestamp
+	fwrite(&(timestamp.tv_sec), 1, TV_SEC_SIZE, file);
+	fwrite(&(timestamp.tv_nsec), 1, TV_NSEC_SIZE, file);
+
 }
