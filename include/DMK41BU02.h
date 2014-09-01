@@ -42,7 +42,7 @@
 
 #define IMG_WIDTH		1280
 #define IMG_HEIGHT		960
-#define IMG_DATA_SIZE	( sizeof(uint8_t) * IMG_WIDTH + IMG_HEIGHT )
+#define IMG_DATA_SIZE	( sizeof(uint8_t) * IMG_WIDTH * IMG_HEIGHT )
 #define PARAM_SIZE		( sizeof(int) )
 #define PARAM_ST_SIZE	( PARAM_SIZE * 5)
 #define	IMG_FILE_SIZE	( IMG_DATA_SIZE + TIMESTAMP_SIZE + PARAM_ST_SIZE )
