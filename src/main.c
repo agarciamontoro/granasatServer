@@ -88,6 +88,7 @@ UGR space projects.
 #include "sync_control.h"			// Timestamp management and synchronisation control
 #include "HorizonSensor.h"
 #include "LED_control.h"
+#include "temperature_control.h"
 
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, horizon_thread;
 const char* acc_file_name = "accelerometer_measurements.data";
@@ -212,7 +213,8 @@ void* control_LS303DLHC_and_temp(void* useless){
 
 	int success;
 
-	enableTemperatureSensors();
+	enableLSM303();
+	enableTempSensors();
 
 	pthread_rwlock_wrlock( &accelerometer_rw_lock );
 		FILE* file_acc = fopen(acc_file_name, "w");

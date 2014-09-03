@@ -9,38 +9,7 @@
 
 int fd  = -1;
 
-int ds1621_setup(){												// File descrition
-	char *fileName = "/dev/i2c-1";								// Name of the port we will be using
-	int  address = 0x48;										// Address of the SRF02 shifted right one bit
-	unsigned char buf[10];										// Buffer for data being read/ written on the i2c bus
 
-	if ((fd = open(fileName, O_RDWR)) < 0) {					// Open port for reading and writing
-		printMsg(stderr, DS1621, "Failed to open i2c port\n");
-		return EXIT_FAILURE;
-	}
-
-	if (ioctl(fd, I2C_SLAVE, address) < 0) {					// Set the port options and set the address of the device we wish to speak to
-		printMsg(stderr, DS1621, "Unable to get bus access to talk to slave\n");
-		return EXIT_FAILURE;
-	}
-
-
-	buf[0]= 0xee; // start convert
-	if ((write(fd, buf, 1)) != 1) {
-		printMsg(stderr, DS1621, "Unable to write\n");
-		return EXIT_FAILURE;
-	}
-	buf[0]= 0xac; // Access config
-	buf[1]= 0x00;
-
-	if ((write(fd, buf, 2)) != 2) {
-		printMsg(stderr, DS1621, "Unable to wrie\n");
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
-
-}
 
 int readDS1621Sensor(signed char* highByte, unsigned char* lowByte)
 {

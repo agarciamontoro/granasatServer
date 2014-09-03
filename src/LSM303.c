@@ -1,9 +1,9 @@
 #include "LSM303.h"
 
-int file;
+int LSM303_fd = -1;
 
 int  readBlock(uint8_t command, uint8_t size, uint8_t *data){
-    int result = i2c_smbus_read_i2c_block_data(file, command, size, data);
+    int result = i2c_smbus_read_i2c_block_data(LSM303_fd, command, size, data);
 
     if (result != size) {
         printMsg(stderr, LSM303, "Failed to read block from I2C.");
@@ -13,8 +13,8 @@ int  readBlock(uint8_t command, uint8_t size, uint8_t *data){
     return result;
 }
 
-void selectDevice(int file, int addr){
-     if (ioctl(file, I2C_SLAVE, addr) < 0) {
+void selectDevice(int LSM303_fd, int addr){
+     if (ioctl(LSM303_fd, I2C_SLAVE, addr) < 0) {
           printMsg(stderr, LSM303, "Error: Could not select device LSM303: %s\n", strerror(errno));
      }
 }
@@ -22,7 +22,7 @@ void selectDevice(int file, int addr){
 int readACC(uint8_t* a, struct timespec* timestamp){
     int success = 0;
     struct timespec init, end;
-    selectDevice(file,ACC_ADDRESS);
+    selectDevice(LSM303_fd,ACC_ADDRESS);
     //Read a 6bit-block. Start at address LSM303_OUT_X_L_A (0x28) and end at address OUT_Z_H_A(0x2D)
     //Read p28 of datasheet for further information.
     clock_gettime(CLOCK_MONOTONIC, &init);
@@ -39,7 +39,7 @@ int readACC(uint8_t* a, struct timespec* timestamp){
 int readMAG(uint8_t* m, struct timespec* timestamp){
     int success = 0;
     struct timespec init, end;
-    selectDevice(file,MAG_ADDRESS);
+    selectDevice(LSM303_fd,MAG_ADDRESS);
 
     clock_gettime(CLOCK_MONOTONIC, &init);
         success = ( readBlock(0x80 | LSM303_OUT_X_H_M, 6, m) == 6 );  //Read p28 of datasheet for further information
@@ -56,7 +56,7 @@ int readTMP(uint8_t* t, struct timespec* timestamp){
     int success = 0;
     struct timespec init, end;
     //uint8_t block[2];
-    selectDevice(file,MAG_ADDRESS);
+    selectDevice(LSM303_fd,MAG_ADDRESS);
     //Read p39 of datasheet for further information
     clock_gettime(CLOCK_MONOTONIC, &init);
         success = ( readBlock(0x80 | LSM303_TEMP_OUT_H_M, 2, t) == 2 );
@@ -71,8 +71,8 @@ int readTMP(uint8_t* t, struct timespec* timestamp){
     return success;
 }
 void writeAccReg(uint8_t reg, uint8_t value){
-    selectDevice(file,ACC_ADDRESS);
-    int result = i2c_smbus_write_byte_data(file, reg, value);
+    selectDevice(LSM303_fd,ACC_ADDRESS);
+    int result = i2c_smbus_write_byte_data(LSM303_fd, reg, value);
     if (result == -1){
         printMsg(stderr, LSM303, "Failed to write byte to I2C Acc.\n");
         exit(1);
@@ -80,8 +80,8 @@ void writeAccReg(uint8_t reg, uint8_t value){
 }
 
 void writeMagReg(uint8_t reg, uint8_t value){
-     selectDevice(file,MAG_ADDRESS);
-     int result = i2c_smbus_write_byte_data(file, reg, value);
+     selectDevice(LSM303_fd,MAG_ADDRESS);
+     int result = i2c_smbus_write_byte_data(LSM303_fd, reg, value);
      if (result == -1){
           printMsg(stderr, LSM303, "Failed to write byte to I2C Mag.\n");
           exit(1);
@@ -90,8 +90,8 @@ void writeMagReg(uint8_t reg, uint8_t value){
 
 void writeTmpReg(uint8_t reg, uint8_t value){
      //Temperature lectures provided by magnetometer
-     selectDevice(file, MAG_ADDRESS);
-     int result = i2c_smbus_write_byte_data(file, reg, value);
+     selectDevice(LSM303_fd, MAG_ADDRESS);
+     int result = i2c_smbus_write_byte_data(LSM303_fd, reg, value);
      if (result == -1){
           printMsg(stderr, LSM303, "Failed to write byte to I2C Temp.\n");
           exit(1);
@@ -103,10 +103,10 @@ void enableLSM303(){
 
      //int res, bus,  size;
 
-     char filename[20];
-     sprintf(filename, "/dev/i2c-%d", 1);
-     file = open(filename, O_RDWR);
-     if (file<0){
+     char LSM303_fdname[20];
+     sprintf(LSM303_fdname, "/dev/i2c-%d", 1);
+     LSM303_fd = open(LSM303_fdname, O_RDWR);
+     if (LSM303_fd<0){
           printMsg(stderr, LSM303, "Unable to open I2C bus!\n");
           //exit(1);
      }
@@ -118,8 +118,4 @@ void enableLSM303(){
      // Enable magnetometer
      writeMagReg(LSM303_MR_REG_M, 0x00);		// P.37 datasheet. Enable magnometer
      writeMagReg(LSM303_CRB_REG_M, 0b00100000);	//P.37 datasheet. Flag GN=001XXXXX. +-1.3 Gauss, Gain xy 1100LSB/Gauss and Gain z 980LSB/Gauss.
-
-     // Enable termometer
-     //P.36 datasheet Enable termometer, minimun data output rate 15Hz
-     writeTmpReg(LSM303_CRA_REG_M, 0b10010000);
 }

@@ -98,6 +98,8 @@
 #define ACC_MM_SIZE	( sizeof(uint8_t) * 6 )
 #define	ACC_FM_SIZE	( ACC_MM_SIZE + TIMESTAMP_SIZE )
 
+extern int LSM303_fd;
+
 int  readBlock(uint8_t command, uint8_t size, uint8_t *data);
 
 void selectDevice(int file, int addr);

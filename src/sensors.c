@@ -208,7 +208,7 @@ int readAndStoreTemperatures(FILE* file){
 	********************************************************/
 
 	readDS1621Sensor(&DS1621_high, &DS1621_low);
-	//readTC74sensor();
+	//readDS18B20Sensor();
 	CPU_temp = readCPUtemperature();
 	readTMP(LSM303_temp, &timestamp);
 
@@ -272,7 +272,7 @@ int enableTemperatureSensors(){
 	//Enable LSM303 sensor - Magnetometer/Accelerometer + Temperature 4
 	enableLSM303();
 	//Enable DS1621 sensor - Temperature 1
-	ds1621_setup();
+	//ds1621_setup();
 	//Enable TC74 sensor - Temperature 2
 	//TC74_setup(); /** @todo Code TC74 enable and reading functions
 	//Enable CPU temperature sensor - Temperature 3

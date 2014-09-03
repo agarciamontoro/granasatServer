@@ -457,7 +457,7 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 				int err_num = errno;
 
 				strerror_r(err_num, error_string, 75);
-				printMsg(stderr, CONNECTION, "%sERROR writing to socket: %s.%s\n", KRED, error_string, KRES);
+				//printMsg(stderr, CONNECTION, "%sERROR writing to socket: %s.%s\n", KRED, error_string, KRES);
 
 				//ERROR HANDLING: Socket not connected.
 				//SOLUTION: Disconnect, return failure and try to reconnect.
