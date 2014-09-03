@@ -215,10 +215,6 @@ int readAndStoreTemperatures(FILE* file){
 	int temp_raw = (int16_t)(LSM303_temp[1] | LSM303_temp[0] << 8) >> 4;
 	float temp_LSM = (float) temp_raw/T_GAIN;
 
-	printMsg(stderr, MAIN, "Temperatures:\n"
-								"\tDS1621:\t	%.1f"
-								"\tCPU TEMP:\t	%6.3f"
-								"\tLSM303:\t	%.3f\n", DS1621==128?(float)DS1621_high+0.5:(float)DS1621_high, CPU_temp, temp_LSM);
 
 	/*******************************************************
 	*****************    Writing to file   *****************

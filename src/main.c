@@ -436,7 +436,7 @@ void* control_connection(void* useless){
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
 				//Send magnetometer and accelerometer packet
 				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
-				sendTemperatures(SOCKET_SMALL);
+				//sendTemperatures(SOCKET_SMALL);
 
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
@@ -449,7 +449,7 @@ void* control_connection(void* useless){
 			if(count >= 3){
 				count = 0;
 				printMsg(stderr, CONNECTION, "Sending image\n");
-				//sendImage(SOCKET_BIG);
+				sendImage(SOCKET_BIG);
 			}
 
 		} //END while ( connected )
@@ -578,7 +578,7 @@ int main(int argc, char** argv){
 	//Initilise clock
 	clock_gettime(CLOCK_MONOTONIC, &T_ZERO);
 
-
+		printMsg(stderr, MAIN, "%d - %d\n", TV_SEC_SIZE, TV_NSEC_SIZE);
 
 	// *******************************
     // ******** LED CHILD FORK *******

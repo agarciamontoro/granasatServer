@@ -124,6 +124,10 @@ int prepareSocket(int portno){
 	 error( "ERROR opening socket", 0 );
 	}
 	else{
+		int on = 1;
+		if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
+			printMsg(stderr, CONNECTION, "ERROR setting SO_REUSEADDR option\n");
+
 		bzero((char *) &serv_addr, sizeof(serv_addr));
 
 		serv_addr.sin_family = AF_INET;
@@ -669,6 +673,7 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	printMsg(stderr, CONNECTION, "Sending magnetometer: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
 	printMsg(stderr, CONNECTION, "Sending accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
 
+
 	/**
 	*	@details
 	*	-# The buffer in which both measurements were stored is sent to @p sockfd using sendData() function.
@@ -701,19 +706,19 @@ int sendTemperatures(int sockfd){
 
 	/**
 	*	@details
-	*	-# The function blocks until it can access the camera buffer, where the latest image
-	*	taken is stored. This is done using the camera lock: ::camera_rw_lock.
+	*	-# The function blocks until it can access the temperatures buffer, where the latest temperature measurements
+	*	taken are stored. This is done using the temperature lock: ::temperatures_rw_lock.
 	*/
 	pthread_rwlock_rdlock( &temperatures_rw_lock );
 
 		/**
 		*	@details
-		*	-# The function checks whether the image stored in the buffer has been sent before.
-		*	This is done checking global variable ::new_frame_send, only changed from here and
-		*	from DMK41BU02.c process_image() function.
-		*		-# If there is no new image to be sent, the function does nothing and returns a failure.
-		*		-# If there is a new image to be sent, the function does the following:
-		*			-# It allocates 1280*960 bytes of memory.
+		*	-# The function checks whether the temperatures stored in the buffer have been sent before.
+		*	This is done checking global variable ::new_temp_send, only changed from here and
+		*	from sensors.c readAndStoreTemperatures() function.
+		*		-# If there are no new temperatures to be sent, the function does nothing and returns a failure.
+		*		-# If there are new temperatures to be sent, the function does the following:
+		*			-# It allocates TEMP_ bytes of memory.
 		*			-# It copies the shared buffer into the memory allocated.
 		*			-# It sets ::new_frame_send to zero, to avoid future calls of sendImage() to send the same image.
 

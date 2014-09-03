@@ -67,8 +67,8 @@
 #define NANO_FACTOR 1000000000
 #define MICRO_FACTOR 1000000
 
-#define TV_SEC_SIZE		( sizeof(time_t) )
-#define TV_NSEC_SIZE	( sizeof(long) )
+#define TV_SEC_SIZE		( sizeof(uint32_t) )
+#define TV_NSEC_SIZE	( sizeof(uint32_t) )
 #define TIMESTAMP_SIZE	( TV_SEC_SIZE + TV_NSEC_SIZE )
 
 /////////////////////////////////////////////////////////////////////////////////////
