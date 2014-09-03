@@ -13,6 +13,8 @@
 #include "LSM303.h"					// Magnetomere-accelerometer library
 #include <inttypes.h>
 
+#define TEMP_FM_SIZE	( sizeof(int16_t)*4 + TIMESTAMP_SIZE)
+
 enum TEMP_SENSOR_ID{
 	TEMP_SENSOR_CAM,
 	TEMP_SENSOR_GEN,

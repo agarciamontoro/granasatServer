@@ -237,7 +237,8 @@ void* control_LS303DLHC_and_temp(void* useless){
 	enum LED_ID LSM303_led = LED_WHT;
 	while(keep_running){
 		usleep(500000);
-		readAndStoreTemperatures(file_temperatures);
+
+		//readAndStoreTemperatures(file_temperatures);
 
 		if(readAndStoreAccelerometer(file_acc) && readAndStoreMagnetometer(file_mag))
 			/** @todo Handle write errors */
@@ -265,8 +266,6 @@ void* control_connection(void* useless){
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 500000;
 	//END OF SELECT SETUP
-
-	//sleep(5);
 
 
 	//MAG AND ACC FILE OPENING
@@ -346,6 +345,12 @@ void* control_connection(void* useless){
 						value = 0;
 						sendData(SOCKET_COMMANDS, &value, sizeof(value));
 						printMsg(stderr, CONNECTION, "MSG_PING received\n\n");
+						break;
+
+					case MSG_SET_BANDWITH:
+						/** @todo Handle bandwith limit */
+						getData(SOCKET_COMMANDS, &value, sizeof(value));
+						printMsg(stderr, CONNECTION, "Bandwith limited to %d Kib/s\n", value);
 						break;
 
 					//CAMERA PARAMETERS
@@ -436,8 +441,9 @@ void* control_connection(void* useless){
 
 			} //END OF SELECT IF
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
-				//Send magnetometer and accelerometer packet
-				sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
+				//Send magnetometer/accelerometer and temperatures packet
+				sendPacket(read_mag, read_acc, SOCKET_SMALL);
+				//sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
 				//sendTemperatures(SOCKET_SMALL);
 
 				//Restart timeout because its content is undefined after select return.
@@ -492,7 +498,6 @@ void* process_images(void* useless){
 	srand(time(NULL));
 
 	struct timespec before, after, elapsed;
-
 
 	enableStarTracker(150, 21, 21, 10, 6, 0.02, 4);
 
@@ -579,8 +584,6 @@ int main(int argc, char** argv){
 
 	//Initilise clock
 	clock_gettime(CLOCK_MONOTONIC, &T_ZERO);
-
-		printMsg(stderr, MAIN, "%d - %d\n", TV_SEC_SIZE, TV_NSEC_SIZE);
 
 	// *******************************
     // ******** LED CHILD FORK *******

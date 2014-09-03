@@ -196,75 +196,17 @@ double readCPUtemperature(){
 }
 
 int readAndStoreTemperatures(FILE* file){
-	signed char DS1621_high;
-	unsigned char DS1621_low;
-	double CPU_temp;
-	uint8_t LSM303_temp[2];
+	int16_t temperatures[4];
 
-	struct timespec timestamp;
+	readTempSensor(TEMP_SENSOR_CAM, temperatures+sizeof(int16_t)*0);
+	readTempSensor(TEMP_SENSOR_GEN, temperatures+sizeof(int16_t)*1);
+	readTempSensor(TEMP_SENSOR_MAG, temperatures+sizeof(int16_t)*2);
+	readTempSensor(TEMP_SENSOR_CPU, temperatures+sizeof(int16_t)*3);
 
-	/*******************************************************
-	***************** Reading temperatures *****************
-	********************************************************/
+	printMsg(stderr, MAIN, "Temperatures: %d - %d - %d - %d\n",
+			 temperatures[0], temperatures[1], temperatures[2], temperatures[3]);
 
-	readDS1621Sensor(&DS1621_high, &DS1621_low);
-	//readDS18B20Sensor();
-	CPU_temp = readCPUtemperature();
-	readTMP(LSM303_temp, &timestamp);
-
-	int temp_raw = (int16_t)(LSM303_temp[1] | LSM303_temp[0] << 8) >> 4;
-	float temp_LSM = (float) temp_raw/T_GAIN;
-
-
-	/*******************************************************
-	*****************    Writing to file   *****************
-	********************************************************/
-
-	//Write temperatures
-	fwrite(&DS1621_high, 1, sizeof(DS1621_high), file);
-	fwrite(&DS1621_low, 1, sizeof(DS1621_low), file);
-	//////fwrite(&TC74, 1, sizeof(TC74), file);
-	fwrite(&CPU_temp, 1, sizeof(CPU_temp), file);
-	fwrite(&LSM303_temp, 1, sizeof(*LSM303_temp)*2, file);
-
-	//Write timestamp
-	fwrite(&(timestamp.tv_sec), 1, TV_SEC_SIZE, file);
-	fwrite(&(timestamp.tv_nsec), 1, TV_NSEC_SIZE, file);
-
-	/*******************************************************
-	*****************   Updating  buffer   *****************
-	********************************************************/
-	int offset = 0;
-
-	pthread_rwlock_wrlock( &temperatures_rw_lock );
-		//Actual DS1621 temperature to shared buffer
-		memcpy(current_temperature + offset, &DS1621_high, sizeof(DS1621_high));
-		offset += sizeof(DS1621_high);
-		memcpy(current_temperature + offset, &DS1621_low, sizeof(DS1621_low));
-		offset += sizeof(DS1621_low);
-
-		//Actual TC74 temperature to shared buffer
-		//memcpy(current_temperature + offset, &TC74, sizeof(TC74));
-		//offset += sizeof(TC74);
-
-		//Actual CPU temperature to shared buffer
-		memcpy(current_temperature + offset, &CPU_temp, sizeof(CPU_temp));
-		offset += sizeof(CPU_temp);
-
-		//Actual LSM303 temperature to shared buffer
-		memcpy(current_temperature + offset, &LSM303_temp, sizeof(*LSM303_temp)*2);
-		offset += sizeof(*LSM303_temp)*2;
-
-
-		//Actual timestamp to shared buffer
-		memcpy(current_temperature + offset, &(timestamp.tv_sec), TV_SEC_SIZE);
-		offset += TV_SEC_SIZE;
-		memcpy(current_temperature + offset, &(timestamp.tv_nsec), TV_NSEC_SIZE);
-		offset += TV_NSEC_SIZE;
-
-		new_temp_send = 1;
-	pthread_rwlock_unlock( &temperatures_rw_lock );
-
+	return EXIT_SUCCESS;
 }
 
 int enableTemperatureSensors(){

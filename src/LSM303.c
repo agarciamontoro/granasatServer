@@ -6,14 +6,14 @@ int  readBlock(uint8_t command, uint8_t size, uint8_t *data){
     int result = i2c_smbus_read_i2c_block_data(LSM303_fd, command, size, data);
 
     if (result != size) {
-        printMsg(stderr, LSM303, "Failed to read block from I2C.");
+        printMsg(stderr, LSM303, "Failed to read block from I2C. %d\n", LSM303_fd);
           exit(1);
     }
 
     return result;
 }
 
-void selectDevice(int LSM303_fd, int addr){
+void selectDevice(int fd, int addr){
      if (ioctl(LSM303_fd, I2C_SLAVE, addr) < 0) {
           printMsg(stderr, LSM303, "Error: Could not select device LSM303: %s\n", strerror(errno));
      }

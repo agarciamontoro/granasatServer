@@ -457,7 +457,7 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 				int err_num = errno;
 
 				strerror_r(err_num, error_string, 75);
-				//printMsg(stderr, CONNECTION, "%sERROR writing to socket: %s.%s\n", KRED, error_string, KRES);
+				printMsg(stderr, CONNECTION, "%sERROR writing to socket: %s.%s\n", KRED, error_string, KRES);
 
 				//ERROR HANDLING: Socket not connected.
 				//SOLUTION: Disconnect, return failure and try to reconnect.
@@ -479,6 +479,8 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 				//SOLUTION: Continue the loop until all bytes have been sent <==> Do nothing.
 			}
 			else{
+				if(n == 0)
+					printMsg(stderr, CONNECTION, "%s0 bytes sent%s\n", KRED, KRES);
 				bytes_sent += n;
 				printMsg(stderr, CONNECTION, "%d of %d bytes sent.\n", bytes_sent, n_bytes);
 			}
@@ -612,7 +614,7 @@ int sendImage(int sockfd){
  */
 int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 
-	uint8_t buffer[MAG_FM_SIZE + ACC_FM_SIZE];
+	uint8_t buffer[MAG_FM_SIZE + ACC_FM_SIZE + TEMP_FM_SIZE];
 	int success = 0;
 
 	/**
@@ -678,7 +680,7 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	*	@details
 	*	-# The buffer in which both measurements were stored is sent to @p sockfd using sendData() function.
 	*/
-	success = sendData(sockfd, buffer, MAG_FM_SIZE + ACC_FM_SIZE);
+	success = sendData(sockfd, buffer, MAG_FM_SIZE + ACC_FM_SIZE + TEMP_FM_SIZE);
 	
 	/**
 	*	@details
@@ -761,4 +763,12 @@ int sendTemperatures(int sockfd){
 	*	-# Returns the return value of sendData() or 0 if no image was sent.
 	*/
 	return success;	
+}
+
+int sendPacket(FILE* mag, FILE* acc, int sockfd){
+	//uint8_t temp[TEMP_FM_SIZE];
+
+
+	sendAccAndMag(mag, acc, sockfd);
+	//sendData(sockfd, temp, TEMP_FM_SIZE);
 }

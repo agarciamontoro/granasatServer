@@ -82,7 +82,8 @@ int enableTempSensors(){
     /** @todo Enable LSM303 in any other way. This way makes enableTempSensors() dependant
      * of enable_LSM303();
      */
-    if(LSM303_fd = -1){
+    if(LSM303_fd == -1){
+    	printMsg(stderr, MAIN, "LSM303_fd es 1\n");
     	return EXIT_FAILURE;
     }
     else{
@@ -131,7 +132,7 @@ int readTempSensor(enum TEMP_SENSOR_ID sensor, int16_t* ptr){
 				return EXIT_FAILURE;
 			}
 			else {
-				*ptr = buf[1] == 128 ? buf[0]*1000 : buf[1]*1000+500;
+				*ptr = buf[1] == 128 ? buf[0]*1000 : buf[0]*1000+500;
 			}
 			break;
 
