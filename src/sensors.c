@@ -189,10 +189,25 @@ int readAndStoreTemperatures(FILE* file){
 	int32_t temperatures[4];
 	struct timespec timestamp;
 
-	readTempSensor(TEMP_SENSOR_CAM, &temperatures[0], NULL); //G
-	readTempSensor(TEMP_SENSOR_GEN, &temperatures[1], NULL); //G
-	readTempSensor(TEMP_SENSOR_MAG, &temperatures[2], &timestamp); //G
-	readTempSensor(TEMP_SENSOR_CPU, &temperatures[3], NULL); //W
+	if(readTempSensor(TEMP_SENSOR_CAM, &temperatures[0], NULL) == EXIT_FAILURE){
+		printMsg(stderr, MAIN, "%sERROR reading from CAM temp sensor%s\n", KRED, KRES);
+		temperatures[0] = -999999;
+	}
+
+	if(readTempSensor(TEMP_SENSOR_GEN, &temperatures[1], NULL) == EXIT_FAILURE){
+		printMsg(stderr, MAIN, "%sERROR reading from GEN temp sensor%s\n", KRED, KRES);
+		return EXIT_FAILURE;
+	}
+
+	if(readTempSensor(TEMP_SENSOR_MAG, &temperatures[2], &timestamp) == EXIT_FAILURE){
+		printMsg(stderr, MAIN, "%sERROR reading from MAG temp sensor%s\n", KRED, KRES);
+		return EXIT_FAILURE;
+	}
+
+	if(readTempSensor(TEMP_SENSOR_CPU, &temperatures[3], NULL) == EXIT_FAILURE){
+		printMsg(stderr, MAIN, "%sERROR reading from CPU temp sensor%s\n", KRED, KRES);
+		return EXIT_FAILURE;
+	}
 
 	pthread_rwlock_wrlock( &temperatures_rw_lock );
 		int offset = 0;

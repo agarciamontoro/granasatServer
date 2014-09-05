@@ -243,7 +243,7 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 
 	sprintf(base_file_name, "%s/OUTPUT/IMGs/IMG_%05d_B%d-Gm%d-Gn%d-M%d-E%d",
 				BASE_PATH,
-				LAST_IMG_SAVED%10,
+				LAST_IMG_SAVED,
 				param.brightness_,
 				param.gamma_,
 				param.gain_,

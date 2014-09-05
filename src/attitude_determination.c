@@ -1,6 +1,6 @@
 #include "attitude_determination.h"
 
-enum attitudemode ATTITUDE_MODE = MODE_ST;
+enum attitudemode ATTITUDE_MODE = MODE_AUTO;
 
 void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err){
 	pthread_mutex_lock ( &mutex_star_tracker );
@@ -73,20 +73,33 @@ void disableStarTracker(){
 }
 
 void ADS_obtainAttitude(uint8_t* image_data){
-	uint8_t histogram[256];
+	int histogram[256] = {0};
 
 	int i,j;
+	int px;
 
 	for (i = 0; i < 960; ++i){
 		for (j = 0; j < 1280; ++j){
-			histogram[ image_data[i*1280 + j] ]++;
+			px = image_data[i*1280 + j];
+			histogram[px]++;
 		}
 	}
 
-	if( isHistogramDark(histogram) )
+	for (i = 0; i < 256; ++i)
+	{
+		printf("%d, %d\n", i, histogram[i]);
+	}
+
+	printf("\n");
+
+	if( isHistogramDark(histogram) ){
+		printMsg(stderr, MAIN, "Using STARTRACKER to obtain attitude.\n");
 		ST_obtainAttitude(image_data);
-	else
+	}
+	else{
+		printMsg(stderr, MAIN, "Using HORIZONSENSOR to obtain attitude.\n");
 		HS_obtainAttitude(image_data);
+	}
 }
 
 void ST_obtainAttitude(uint8_t* image_data){
@@ -142,8 +155,9 @@ void ST_obtainAttitude(uint8_t* image_data){
 
 }
 
-int isHistogramDark(uint8_t* histogram){
-	int one_third, sum_dark, sum_bright;
+int isHistogramDark(int* histogram){
+	int one_third;
+	long int sum_dark, sum_bright;
 
 	one_third = 85;
 	sum_dark = sum_bright = 0;
@@ -153,9 +167,15 @@ int isHistogramDark(uint8_t* histogram){
 		sum_dark += histogram[i];
 	}
 
+	printMsg(stderr, MAIN, "%s0 - 85: %d\n%s", KRED, sum_dark, KRES);
+
 	for (i = one_third; i < 256; ++i){
 		sum_bright += histogram[i];
 	}
+
+	printMsg(stderr, MAIN, "%s85 - 255: %d\n%s", KRED, sum_bright, KRES);
+
+	printMsg(stderr, MAIN, "%sThe function will return %d%s\n", KRED, sum_dark > sum_bright, KRES);
 
 	return sum_dark > sum_bright;
 }

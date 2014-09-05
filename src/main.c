@@ -3,7 +3,6 @@
 /**
  * @todo Change all functions retunring "boolean" to return EXIT_SUCCESS or EXIT_FAILURE.
  * It will suppose some more code, but more readable.
- * @todo Turn all file path into absolute path.
  */
 
 /**
@@ -246,11 +245,12 @@ void* control_LS303DLHC_and_temp(void* useless){
 		usleep(500000);
 
 		if(TEMP_connected)
-			TEMP_connected = (readAndStoreTemperatures(file_temperatures) == EXIT_SUCCESS);
+			TEMP_connected = readAndStoreTemperatures(file_temperatures) == EXIT_SUCCESS;
 		else{
 			printMsg(stderr, LSM303, "%sTemperature sensors communication LOST. Reconnecting...%s\n", KRED, KRES);
 			disableTempSensors();
 			TEMP_connected = enableTempSensors() == EXIT_SUCCESS;
+			sleep(1);
 		}
 
 		if(LSM303_connected){
@@ -264,7 +264,7 @@ void* control_LS303DLHC_and_temp(void* useless){
 			printMsg(stderr, LSM303, "%sMagnetometer/accelerometer communication LOST. Reconnecting...%s\n", KRED, KRES);
 			disableLSM303();
 			LSM303_connected = (enableLSM303() == EXIT_SUCCESS);
-			sleep(2);
+			sleep(1);
 		}
 	}
 
@@ -548,18 +548,21 @@ void* process_images(void* useless){
 			switch(ATTITUDE_MODE){
 				case MODE_AUTO:
 					clock_gettime(CLOCK_MONOTONIC, &before);
+						printMsg(stderr, MAIN, "In AUTO mode to process images.\n");
 						ADS_obtainAttitude(image);
 					clock_gettime(CLOCK_MONOTONIC, &after);
 					break;
 
 				case MODE_ST:
 					clock_gettime(CLOCK_MONOTONIC, &before);
+						printMsg(stderr, MAIN, "In ST mode to process images.\n");
 						ST_obtainAttitude(image);
 					clock_gettime(CLOCK_MONOTONIC, &after);
 					break;
 
 				case MODE_HS:
 					clock_gettime(CLOCK_MONOTONIC, &before);
+						printMsg(stderr, MAIN, "In HS mode to process images.\n");
 						HS_obtainAttitude(image);
 					clock_gettime(CLOCK_MONOTONIC, &after);
 					break;

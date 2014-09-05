@@ -47,6 +47,6 @@ void disableTempSensors();
  * @param  addy address of a TC74 sensor
  * @return      temperature in Celsius
  */
-int readTempInmC(int bus, TC74_t addy);
+int readTempInmC(int bus, TC74_t addy, int32_t* ptr);
 
 #endif
