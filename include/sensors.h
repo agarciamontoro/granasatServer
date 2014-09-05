@@ -38,8 +38,6 @@ int readAndStoreAccelerometer(FILE* file);
 
 int readAndStoreMagnetometer(FILE* file);
 
-int setGPIOValue(int GPIO_number, bool on);
-
 void enable_CPUtemperature();
 
 double read_CPUtemperature();

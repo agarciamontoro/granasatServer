@@ -30,15 +30,18 @@ void enableStarTracker(int __threshold, int __threshold2,int __ROI, int __thresh
 }
 
 void changeCatalogs(int magnitude){
-	char catalog_string[50];
-	char k_vector_string[50];
-	char stars_string[50];
+	char catalog_string[256];
+	char k_vector_string[256];
+	char stars_string[256];
 
 	printMsg(stderr, STARTRACKER, "Magnitude: %d\n", magnitude);
 
-	sprintf(catalog_string, "./catalogs/catalogo_mag_%d.txt", magnitude);
-	sprintf(k_vector_string, "./catalogs/k_vector_mag_%d.txt", magnitude);
-	sprintf(stars_string, "./catalogs/stars_mag_%d.txt", magnitude);
+    char base_cat_path[128];
+    sprintf(base_cat_path, "%s/INPUT/StarTracker", BASE_PATH);
+
+	sprintf(catalog_string, "%s/catalogo_mag_%d.txt", base_cat_path, magnitude);
+	sprintf(k_vector_string, "%s/k_vector_mag_%d.txt", base_cat_path, magnitude);
+	sprintf(stars_string, "%s/stars_mag_%d.txt", base_cat_path, magnitude);
 
 	pthread_mutex_lock ( &mutex_star_tracker );
 

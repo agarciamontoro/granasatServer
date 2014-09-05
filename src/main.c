@@ -3,6 +3,7 @@
 /**
  * @todo Change all functions retunring "boolean" to return EXIT_SUCCESS or EXIT_FAILURE.
  * It will suppose some more code, but more readable.
+ * @todo Turn all file path into absolute path.
  */
 
 /**
@@ -93,9 +94,9 @@ UGR space projects.
 #include "temperature_control.h"
 
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, horizon_thread;
-const char* acc_file_name = "accelerometer_measurements.data";
-const char* mag_file_name = "magnetometer_measurements.data";
-const char* temp_file_name = "temperature_measurements.data";
+#define acc_file_name	BASE_PATH"/OUTPUT/LSM303/accelerometer_measurements.data"
+#define mag_file_name	BASE_PATH"/OUTPUT/LSM303/magnetometer_measurements.data"
+#define temp_file_name	BASE_PATH"/OUTPUT/TEMPs/temperature_measurements.data"
 
 void intHandler(int dummy){
 		/** @todo Nice-to-have: Calling printf() from a signal handler is not
@@ -245,14 +246,14 @@ void* control_LS303DLHC_and_temp(void* useless){
 		usleep(500000);
 
 		if(TEMP_connected)
-			TEMP_connected = readAndStoreTemperatures(file_temperatures) == EXIT_SUCCESS;
+			TEMP_connected = (readAndStoreTemperatures(file_temperatures) == EXIT_SUCCESS);
 		else{
+			printMsg(stderr, LSM303, "%sTemperature sensors communication LOST. Reconnecting...%s\n", KRED, KRES);
 			disableTempSensors();
 			TEMP_connected = enableTempSensors() == EXIT_SUCCESS;
 		}
 
 		if(LSM303_connected){
-			printMsg(stderr, LSM303, "Connected\n");
 			LSM303_connected = (readAndStoreAccelerometer(file_acc) == EXIT_SUCCESS
 								&&
 							    readAndStoreMagnetometer(file_mag) == EXIT_SUCCESS);
@@ -260,7 +261,7 @@ void* control_LS303DLHC_and_temp(void* useless){
 			write(LED_FD, &LSM303_led, sizeof(LSM303_led));
 		}
 		else{
-			printMsg(stderr, LSM303, "Disconnected\n");
+			printMsg(stderr, LSM303, "%sMagnetometer/accelerometer communication LOST. Reconnecting...%s\n", KRED, KRES);
 			disableLSM303();
 			LSM303_connected = (enableLSM303() == EXIT_SUCCESS);
 			sleep(2);

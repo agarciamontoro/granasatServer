@@ -98,7 +98,7 @@ int readAndStoreAccelerometer(FILE* file){
 	pthread_rwlock_unlock( &accelerometer_rw_lock );
 	/////////////////////////////////////////////////////////////////////////////////////
 
-	int16_t a_raw[6];
+	/*int16_t a_raw[6];
 	*a_raw = (int16_t)(accelerometer[0] | accelerometer[1] << 8) >> 4;
      *(a_raw+1) = (int16_t)(accelerometer[2] | accelerometer[3] << 8) >> 4;
      *(a_raw+2) = (int16_t)(accelerometer[4] | accelerometer[5] << 8) >> 4;
@@ -108,7 +108,7 @@ int readAndStoreAccelerometer(FILE* file){
 	*(accF+1) = (float) *(a_raw+1)*A_GAIN;
 	*(accF+2) = (float) *(a_raw+2)*A_GAIN;
 
-	printMsg(stderr, LSM303, "ACC:\t%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);	
+	printMsg(stderr, LSM303, "ACC:\t%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);*/
     if(success)
         return EXIT_SUCCESS;
     else
@@ -151,7 +151,7 @@ int readAndStoreMagnetometer(FILE* file){
 	pthread_rwlock_unlock( &magnetometer_rw_lock );
 	/////////////////////////////////////////////////////////////////////////////////////
 
-	int16_t m[3];
+	/*int16_t m[3];
 	*m = (int16_t)(magnetometer[1] | magnetometer[0] << 8);
     *(m+1) = (int16_t)(magnetometer[5] | magnetometer[4] << 8) ;
     *(m+2) = (int16_t)(magnetometer[3] | magnetometer[2] << 8) ;
@@ -161,30 +161,12 @@ int readAndStoreMagnetometer(FILE* file){
 	*(MAG+1) = (float) *(m+1)/M_XY_GAIN;
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
-	printMsg(stderr, LSM303, "MAG: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
+	printMsg(stderr, LSM303, "MAG: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);*/
 
     if(success)
         return EXIT_SUCCESS;
     else
         return EXIT_FAILURE;
-}
-
-int setGPIOValue(int GPIO_number, bool on){
-	if(on){
-		LED_PID = fork();
-
-		if (LED_PID == 0){
-			execl("/home/pi/development/PJ_RPI/Examples/Blink/Source/Build/Blink", "Blink", (char*) NULL);
-			return 0;
-		}
-		else
-			printMsg(stderr, SENSORS, "Fork with PID: %d\n",LED_PID);
-
-	}
-	else
-		kill(LED_PID, SIGTERM);
-
-	return 0;
 }
 
 void enable_CPUtemperature(){
