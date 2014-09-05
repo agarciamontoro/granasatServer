@@ -28,9 +28,7 @@
 #include "DMK41BU02.h"				// Camera management library
 #include "sync_control.h"		// Timestamp management and synchronisation control
 #include "temperature_control.h"
-#define TEMP_FILE_SIZE ( sizeof(signed char)+sizeof(unsigned char)+sizeof(int)+sizeof(uint8_t)*2+TIMESTAMP_SIZE )
 
-extern void* current_temperature;
 
 void readAndSendMagnetometer(int socket);
 

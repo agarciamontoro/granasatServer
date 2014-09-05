@@ -10,8 +10,6 @@
 pid_t LED_PID = -1;
 FILE* CPU_temp_file = NULL;
 
-void* current_temperature = NULL;
-
 void readAndSendMagnetometer(int socket){
 	uint8_t magnetometer[6];
 	int n, bytes_sent, total_bytes;
@@ -72,7 +70,7 @@ int readAndStoreAccelerometer(FILE* file){
 	/////////////////////////////////////////////////////////////////////////////////////
 	pthread_rwlock_wrlock( &accelerometer_rw_lock );
 		
-		if(readACC(accelerometer, &timestamp)){
+		if(readACC(accelerometer, &timestamp) == EXIT_SUCCESS){
 			success = ( ( fwrite(accelerometer, sizeof(*accelerometer), 6, file) == 6 )
 						&&
 						( fwrite(&(timestamp.tv_sec), 1, TV_SEC_SIZE, file) == TV_SEC_SIZE )
@@ -110,8 +108,11 @@ int readAndStoreAccelerometer(FILE* file){
 	*(accF+1) = (float) *(a_raw+1)*A_GAIN;
 	*(accF+2) = (float) *(a_raw+2)*A_GAIN;
 
-	//printMsg(stderr, LSM303, "ACC:\t%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);	
-	return success;
+	printMsg(stderr, LSM303, "ACC:\t%4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);	
+    if(success)
+        return EXIT_SUCCESS;
+    else
+        return EXIT_FAILURE;
 }
 
 int readAndStoreMagnetometer(FILE* file){
@@ -121,7 +122,7 @@ int readAndStoreMagnetometer(FILE* file){
 	struct timespec timestamp;
 	/////////////////////////////////////////////////////////////////////////////////////
 	pthread_rwlock_wrlock( &magnetometer_rw_lock );
-		if(readMAG(magnetometer, &timestamp)){
+		if(readMAG(magnetometer, &timestamp) == EXIT_SUCCESS){
 			success = ( ( fwrite(magnetometer, sizeof(*magnetometer), 6, file) == 6 )
 						&&
 						( fwrite(&(timestamp.tv_sec), 1, TV_SEC_SIZE, file) == TV_SEC_SIZE )
@@ -144,6 +145,9 @@ int readAndStoreMagnetometer(FILE* file){
 			*/
 			fseek(file, 0, SEEK_CUR);
 		}
+		else{
+			return EXIT_FAILURE;
+		}
 	pthread_rwlock_unlock( &magnetometer_rw_lock );
 	/////////////////////////////////////////////////////////////////////////////////////
 
@@ -157,8 +161,12 @@ int readAndStoreMagnetometer(FILE* file){
 	*(MAG+1) = (float) *(m+1)/M_XY_GAIN;
 	*(MAG+2) = (float) *(m+2)/M_Z_GAIN;
 
-	//printMsg(stderr, LSM303, "MAG: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
-	return success;
+	printMsg(stderr, LSM303, "MAG: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
+
+    if(success)
+        return EXIT_SUCCESS;
+    else
+        return EXIT_FAILURE;
 }
 
 int setGPIOValue(int GPIO_number, bool on){
@@ -196,12 +204,32 @@ double readCPUtemperature(){
 }
 
 int readAndStoreTemperatures(FILE* file){
-	int16_t temperatures[4];
+	int32_t temperatures[4];
+	struct timespec timestamp;
 
-	readTempSensor(TEMP_SENSOR_CAM, temperatures+sizeof(int16_t)*0);
-	readTempSensor(TEMP_SENSOR_GEN, temperatures+sizeof(int16_t)*1);
-	readTempSensor(TEMP_SENSOR_MAG, temperatures+sizeof(int16_t)*2);
-	readTempSensor(TEMP_SENSOR_CPU, temperatures+sizeof(int16_t)*3);
+	readTempSensor(TEMP_SENSOR_CAM, &temperatures[0], NULL); //G
+	readTempSensor(TEMP_SENSOR_GEN, &temperatures[1], NULL); //G
+	readTempSensor(TEMP_SENSOR_MAG, &temperatures[2], &timestamp); //G
+	readTempSensor(TEMP_SENSOR_CPU, &temperatures[3], NULL); //W
+
+	pthread_rwlock_wrlock( &temperatures_rw_lock );
+		int offset = 0;
+		memcpy(current_temperature + offset, temperatures, 4*sizeof(int32_t));
+		offset += sizeof(int32_t)*4;
+		//Actual timestamp to shared buffer
+		memcpy(current_temperature + offset, &(timestamp.tv_sec), TV_SEC_SIZE);
+		offset += TV_SEC_SIZE;
+		memcpy(current_temperature + offset, &(timestamp.tv_nsec), TV_NSEC_SIZE);
+		offset += TV_NSEC_SIZE;
+	pthread_rwlock_unlock( &temperatures_rw_lock );
+
+
+	offset = 0;
+	int i;
+	for (i = 0; i < 4; ++i){
+		temperatures[i] = (int32_t)(current_temperature[offset+0] | current_temperature[offset+1] << 8 | current_temperature[offset+2] << 16 | current_temperature[offset+3] << 24);
+		offset += 4;
+	}
 
 	printMsg(stderr, MAIN, "Temperatures: %d - %d - %d - %d\n",
 			 temperatures[0], temperatures[1], temperatures[2], temperatures[3]);
@@ -210,7 +238,6 @@ int readAndStoreTemperatures(FILE* file){
 }
 
 int enableTemperatureSensors(){
-	current_temperature = malloc(TEMP_FILE_SIZE);
 	//Enable LSM303 sensor - Magnetometer/Accelerometer + Temperature 4
 	enableLSM303();
 	//Enable DS1621 sensor - Temperature 1

@@ -5,6 +5,7 @@ obj/*
 doc/*
 *.log
 *.data
+*.raw
 
 #Except these files
 !doc/format

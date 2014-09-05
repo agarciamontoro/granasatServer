@@ -675,6 +675,8 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	printMsg(stderr, CONNECTION, "Sending magnetometer: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
 	printMsg(stderr, CONNECTION, "Sending accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
 
+	memcpy(buffer+MAG_FM_SIZE+ACC_FM_SIZE, current_temperature, TEMP_FM_SIZE);
+
 
 	/**
 	*	@details
@@ -726,9 +728,9 @@ int sendTemperatures(int sockfd){
 
 		*/
 		if(new_temp_send){
-			temp_stream = malloc(TEMP_FILE_SIZE);
+			temp_stream = malloc(TEMP_FM_SIZE);
 
-			memcpy(temp_stream, current_temperature, TEMP_FILE_SIZE);
+			memcpy(temp_stream, current_temperature, TEMP_FM_SIZE);
 
 			new_temp_send = 0;
 			send_new_temp = 1;
@@ -748,7 +750,7 @@ int sendTemperatures(int sockfd){
 	*	return value to return to the caller of sendImage().
 	*/
 	if(send_new_temp){
-		success = sendData(sockfd, temp_stream, TEMP_FILE_SIZE);
+		success = sendData(sockfd, temp_stream, TEMP_FM_SIZE);
 	}
 
 	/**

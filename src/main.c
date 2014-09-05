@@ -1,3 +1,5 @@
+//"La niebla es como el cielo pero que no te deja ver", Alejandro Roldán, 2014.
+
 /**
  * @todo Change all functions retunring "boolean" to return EXIT_SUCCESS or EXIT_FAILURE.
  * It will suppose some more code, but more readable.
@@ -211,10 +213,9 @@ void* control_LS303DLHC_and_temp(void* useless){
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	int success;
+	int LSM303_connected = 0;
+	int TEMP_connected = 0;
 
-	enableLSM303();
-	enableTempSensors();
 
 	pthread_rwlock_wrlock( &accelerometer_rw_lock );
 		FILE* file_acc = fopen(acc_file_name, "w");
@@ -227,22 +228,43 @@ void* control_LS303DLHC_and_temp(void* useless){
 	FILE* file_temperatures = fopen(temp_file_name, "w");
 
 
-	if(file_acc == NULL || file_mag == NULL){
-		printMsg(stderr, LSM303, "ERROR opening LSM303 files\n");
+	if(file_acc == NULL || file_mag == NULL || file_temperatures == NULL){
+		printMsg(stderr, LSM303, "ERROR opening LSM303 and/or temperature files\n");
 		/**
 		* @todo Handle file opening error
 		*/
 	}
 
+
+	LSM303_connected = enableLSM303() == EXIT_SUCCESS;
+	TEMP_connected = enableTempSensors() == EXIT_SUCCESS;
+
+
 	enum LED_ID LSM303_led = LED_WHT;
 	while(keep_running){
 		usleep(500000);
 
-		//readAndStoreTemperatures(file_temperatures);
+		if(TEMP_connected)
+			TEMP_connected = readAndStoreTemperatures(file_temperatures) == EXIT_SUCCESS;
+		else{
+			disableTempSensors();
+			TEMP_connected = enableTempSensors() == EXIT_SUCCESS;
+		}
 
-		if(readAndStoreAccelerometer(file_acc) && readAndStoreMagnetometer(file_mag))
-			/** @todo Handle write errors */
+		if(LSM303_connected){
+			printMsg(stderr, LSM303, "Connected\n");
+			LSM303_connected = (readAndStoreAccelerometer(file_acc) == EXIT_SUCCESS
+								&&
+							    readAndStoreMagnetometer(file_mag) == EXIT_SUCCESS);
+				/** @todo Handle write errors */
 			write(LED_FD, &LSM303_led, sizeof(LSM303_led));
+		}
+		else{
+			printMsg(stderr, LSM303, "Disconnected\n");
+			disableLSM303();
+			LSM303_connected = (enableLSM303() == EXIT_SUCCESS);
+			sleep(2);
+		}
 	}
 
 	fclose(file_acc);
@@ -606,7 +628,7 @@ int main(int argc, char** argv){
     // *******************************
 
 	pthread_create( &capture_thread, NULL, capture_images, NULL );
-	//pthread_create( &processing_thread, NULL, process_images, NULL );
+	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
 	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC_and_temp, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
@@ -617,7 +639,7 @@ int main(int argc, char** argv){
     // *******************************	
 	pthread_join( capture_thread, NULL );
 	//pthread_join( horizon_thread, NULL );
-	//pthread_join( processing_thread, NULL );
+	pthread_join( processing_thread, NULL );
 	pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
 

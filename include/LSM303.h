@@ -109,14 +109,17 @@ int readACC(uint8_t *a, struct timespec* timestamp);
 int readMAG(uint8_t *m, struct timespec* timestamp);
 
 int readTMP(uint8_t *t, struct timespec* timestamp);
+int readTEMP_2(int *t, struct timespec* timestamp);
 
-void writeAccReg(uint8_t reg, uint8_t value);
+int writeAccReg(uint8_t reg, uint8_t value);
 
-void writeMagReg(uint8_t reg, uint8_t value);
+int writeMagReg(uint8_t reg, uint8_t value);
 
-void writeTmpReg(uint8_t reg, uint8_t value);
+int writeTmpReg(uint8_t reg, uint8_t value);
 
-void enableLSM303();
+int enableLSM303();
+
+void disableLSM303();
 /////////////////////////////////////////////////////////////////////////////////////
 
 #endif
