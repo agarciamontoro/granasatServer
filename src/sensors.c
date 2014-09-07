@@ -186,31 +186,31 @@ double readCPUtemperature(){
 }
 
 int readAndStoreTemperatures(FILE* file){
-	int32_t temperatures[4];
+	static int32_t temperatures[4];
 	struct timespec timestamp;
 
 	if(readTempSensor(TEMP_SENSOR_CAM, &temperatures[0], NULL) == EXIT_FAILURE){
-		printMsg(stderr, SENSORS, "%sERROR reading from CAM temp sensor%s\n", KRED, KRES);
-		temperatures[0] = -999999;
-		return EXIT_FAILURE;
+		printMsg(stderr, SENSORS, "%sERROR reading from CAM temp sensor\n", KRED);
+		//temperatures[0] = -999999;
+		//return EXIT_FAILURE;
 	}
 
 	if(readTempSensor(TEMP_SENSOR_GEN, &temperatures[1], NULL) == EXIT_FAILURE){
-		printMsg(stderr, SENSORS, "%sERROR reading from GEN temp sensor%s\n", KRED, KRES);
-		temperatures[1] = -999999;
-		return EXIT_FAILURE;
+		printMsg(stderr, SENSORS, "%sERROR reading from GEN temp sensor\n", KRED);
+		//temperatures[1] = -999999;
+		//return EXIT_FAILURE;
 	}
 
 	if(readTempSensor(TEMP_SENSOR_MAG, &temperatures[2], &timestamp) == EXIT_FAILURE){
-		printMsg(stderr, SENSORS, "%sERROR reading from MAG temp sensor%s\n", KRED, KRES);
-		temperatures[2] = -999999;
-		return EXIT_FAILURE;
+		printMsg(stderr, SENSORS, "%sERROR reading from MAG temp sensor\n", KRED);
+		//temperatures[2] = -999999;
+		//return EXIT_FAILURE;
 	}
 
 	if(readTempSensor(TEMP_SENSOR_CPU, &temperatures[3], NULL) == EXIT_FAILURE){
-		printMsg(stderr, SENSORS, "%sERROR reading from CPU temp sensor%s\n", KRED, KRES);
-		temperatures[3] = -999999;
-		return EXIT_FAILURE;
+		printMsg(stderr, SENSORS, "%sERROR reading from CPU temp sensor\n", KRED);
+		//temperatures[3] = -999999;
+		//return EXIT_FAILURE;
 	}
 
 	pthread_rwlock_wrlock( &temperatures_rw_lock );

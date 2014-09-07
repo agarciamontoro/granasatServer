@@ -188,6 +188,7 @@ void* capture_images(void* useless){
 					if(err_number == EBADF)
 						camera_connected = 0;
 					/**@todo Handle other errors*/
+					printMsg(stderr, DMK41BU02, "%sERROR while capturing the image\n", KRED);
 				}
 				else{
 					clock_gettime(CLOCK_MONOTONIC, &old);

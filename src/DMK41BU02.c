@@ -559,7 +559,7 @@ void init_mmap(void)
 
 	CLEAR(req);
 
-	req.count = 4; //AQUÍ PONÍA 4 E IBA CON 4 FRAMES DE RETRASO (perdón por el retraso), ASÍ QUE HEMOS PUESTO 1.
+	req.count = 1; //AQUÍ PONÍA 4 E IBA CON 4 FRAMES DE RETRASO (perdón por el retraso), ASÍ QUE HEMOS PUESTO 1.
 	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	req.memory = V4L2_MEMORY_MMAP;
 
@@ -573,10 +573,10 @@ void init_mmap(void)
 	}
 
 	//BEFORE, THIS WERE COMMENTED
-	if (req.count < 2) {
+	/*if (req.count < 2) {
                 printMsg(stderr, DMK41BU02, "Insufficient buffer memory on %s\n", dev_name);
                 exit(EXIT_FAILURE);
-        }
+        }*/
 
 	buffers = calloc(req.count, sizeof(*buffers));
 
