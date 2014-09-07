@@ -253,6 +253,8 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 
 	sprintf(full_file_name, "%s.raw", base_file_name);
 
+	printMsg(stderr, DMK41BU02, "Storing image %s\n", full_file_name);
+
 	/*******************************************************
 	*****************     Opening file     *****************
 	********************************************************/

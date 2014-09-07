@@ -161,14 +161,25 @@ float tempToFloat(int16_t* ptr){
 }
 
 void disableTempSensors(){
-	if(DS1621_fd != -1)
+	if(DS1621_fd != -1){
 		close(DS1621_fd);
-	if(DS18B20_fd != -1)
-		close(DS18B20_fd);
-	if(BCM2835_fd != NULL)
-		fclose(BCM2835_fd);
+		DS1621_fd = -1;
+	}
 
-	free(current_temperature);
+	if(TC74_fd != -1){
+		close(TC74_fd);
+		TC74_fd = -1;
+	}
+
+	if(BCM2835_fd != NULL){
+		fclose(BCM2835_fd);
+		BCM2835_fd = NULL;
+	}
+
+	if(current_temperature != NULL){
+		free(current_temperature);
+		current_temperature = NULL;
+	}
 }
 
 // Private functions

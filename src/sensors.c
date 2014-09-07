@@ -190,22 +190,26 @@ int readAndStoreTemperatures(FILE* file){
 	struct timespec timestamp;
 
 	if(readTempSensor(TEMP_SENSOR_CAM, &temperatures[0], NULL) == EXIT_FAILURE){
-		printMsg(stderr, MAIN, "%sERROR reading from CAM temp sensor%s\n", KRED, KRES);
+		printMsg(stderr, SENSORS, "%sERROR reading from CAM temp sensor%s\n", KRED, KRES);
 		temperatures[0] = -999999;
+		return EXIT_FAILURE;
 	}
 
 	if(readTempSensor(TEMP_SENSOR_GEN, &temperatures[1], NULL) == EXIT_FAILURE){
-		printMsg(stderr, MAIN, "%sERROR reading from GEN temp sensor%s\n", KRED, KRES);
+		printMsg(stderr, SENSORS, "%sERROR reading from GEN temp sensor%s\n", KRED, KRES);
+		temperatures[1] = -999999;
 		return EXIT_FAILURE;
 	}
 
 	if(readTempSensor(TEMP_SENSOR_MAG, &temperatures[2], &timestamp) == EXIT_FAILURE){
-		printMsg(stderr, MAIN, "%sERROR reading from MAG temp sensor%s\n", KRED, KRES);
+		printMsg(stderr, SENSORS, "%sERROR reading from MAG temp sensor%s\n", KRED, KRES);
+		temperatures[2] = -999999;
 		return EXIT_FAILURE;
 	}
 
 	if(readTempSensor(TEMP_SENSOR_CPU, &temperatures[3], NULL) == EXIT_FAILURE){
-		printMsg(stderr, MAIN, "%sERROR reading from CPU temp sensor%s\n", KRED, KRES);
+		printMsg(stderr, SENSORS, "%sERROR reading from CPU temp sensor%s\n", KRED, KRES);
+		temperatures[3] = -999999;
 		return EXIT_FAILURE;
 	}
 
@@ -228,7 +232,7 @@ int readAndStoreTemperatures(FILE* file){
 		offset += 4;
 	}
 
-	printMsg(stderr, MAIN, "Temperatures: %d - %d - %d - %d\n",
+	printMsg(stderr, SENSORS, "Temperatures: %d - %d - %d - %d\n",
 			 temperatures[0], temperatures[1], temperatures[2], temperatures[3]);
 
 	return EXIT_SUCCESS;
@@ -248,7 +252,8 @@ int enableTemperatureSensors(){
 }
 
 int disableTemperatureSensors(){
-	free(current_temperature);
+	if(current_temperature != NULL)
+		free(current_temperature);
 
 	return EXIT_SUCCESS;
 }

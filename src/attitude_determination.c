@@ -85,13 +85,6 @@ void ADS_obtainAttitude(uint8_t* image_data){
 		}
 	}
 
-	for (i = 0; i < 256; ++i)
-	{
-		printf("%d, %d\n", i, histogram[i]);
-	}
-
-	printf("\n");
-
 	if( isHistogramDark(histogram) ){
 		printMsg(stderr, MAIN, "Using STARTRACKER to obtain attitude.\n");
 		ST_obtainAttitude(image_data);
@@ -167,15 +160,9 @@ int isHistogramDark(int* histogram){
 		sum_dark += histogram[i];
 	}
 
-	printMsg(stderr, MAIN, "%s0 - 85: %d\n%s", KRED, sum_dark, KRES);
-
 	for (i = one_third; i < 256; ++i){
 		sum_bright += histogram[i];
 	}
-
-	printMsg(stderr, MAIN, "%s85 - 255: %d\n%s", KRED, sum_bright, KRES);
-
-	printMsg(stderr, MAIN, "%sThe function will return %d%s\n", KRED, sum_dark > sum_bright, KRES);
 
 	return sum_dark > sum_bright;
 }

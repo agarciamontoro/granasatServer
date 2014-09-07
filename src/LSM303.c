@@ -151,6 +151,8 @@ int enableLSM303(){
 }
 
 void disableLSM303(){
-    if(LSM303_fd != -1)
+    if(LSM303_fd != -1){
         close(LSM303_fd);
+        LSM303_fd = -1;
+    }
 }
