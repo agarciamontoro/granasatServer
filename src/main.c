@@ -319,11 +319,8 @@ void* control_connection(void* useless){
 
 		//ACCEPT CONNECTIONS
 		SOCKET_COMMANDS = connectToSocket(LISTEN_COMMANDS);
-		printMsg(stderr, CONNECTION, "1\n");
 		SOCKET_BIG = connectToSocket(LISTEN_BIG);
-		printMsg(stderr, CONNECTION, "2\n");
 		SOCKET_SMALL = connectToSocket(LISTEN_SMALL);
-		printMsg(stderr, CONNECTION, "3\n");
 
 		if(SOCKET_COMMANDS && SOCKET_BIG && SOCKET_SMALL){
 			CONNECTED = 1;

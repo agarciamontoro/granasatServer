@@ -1,4 +1,3 @@
-
 /**
  * @file sync_control.c
  * @author Alejandro García Montoro
