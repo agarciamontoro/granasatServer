@@ -243,7 +243,7 @@ void* control_LS303DLHC_and_temp(void* useless){
 
 	enum LED_ID LSM303_led = LED_WHT;
 	while(keep_running){
-		usleep(500000);
+		usleep(2000000);
 
 		if(TEMP_connected)
 			TEMP_connected = readAndStoreTemperatures(file_temperatures) == EXIT_SUCCESS;
@@ -371,7 +371,7 @@ void* control_connection(void* useless){
 					case MSG_SET_BANDWITH:
 						/** @todo Handle bandwith limit */
 						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						printMsg(stderr, CONNECTION, "Bandwith limited to %d Kib/s\n", value);
+						limitBandwith(value);
 						break;
 
 					//CAMERA PARAMETERS
@@ -588,7 +588,8 @@ int main(int argc, char** argv){
     // ***** SYNC  INITIALISATION ****
     // *******************************
 
-
+	//Connection limit
+	limitBandwith(500);
 
 	//Initialise signal
 	signal(SIGINT, intHandler);

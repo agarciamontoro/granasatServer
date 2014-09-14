@@ -107,7 +107,7 @@ int readTempSensor(enum TEMP_SENSOR_ID sensor, int32_t* ptr, struct timespec* ti
 		
 			if (read(TC74_fd, buf, 1) != 1) {								// Read back data into buf[]
 				printf("Unable to read from slave\n");
-				*ptr = -999999;
+				//*ptr = -999999;
 				return EXIT_FAILURE;
 			}
 			
@@ -145,7 +145,7 @@ int readTempSensor(enum TEMP_SENSOR_ID sensor, int32_t* ptr, struct timespec* ti
 		case TEMP_SENSOR_CPU:
 			temperatureFile = fopen ("/sys/class/thermal/thermal_zone0/temp", "r");
 			if (temperatureFile == NULL){
-				*ptr = -999999;
+				//*ptr = -999999;
 			 	return EXIT_FAILURE;
 			}
 			fscanf (temperatureFile, "%d", ptr);

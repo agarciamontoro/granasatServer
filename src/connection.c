@@ -457,11 +457,11 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 				int err_num = errno;
 
 				strerror_r(err_num, error_string, 75);
-				printMsg(stderr, CONNECTION, "%sERROR writing to socket: %s.%s\n", KRED, error_string, KRES);
 
 				//ERROR HANDLING: Socket not connected.
 				//SOLUTION: Disconnect, return failure and try to reconnect.
 				if(err_num != EAGAIN){
+					printMsg(stderr, CONNECTION, "%sERROR writing to socket: %s.%s\n", KRED, error_string, KRES);
 					printMsg(stderr, CONNECTION, "%sDISCONNECTING%s\n", KRED, KRES);
 					CONNECTED = 0;
 					success = 0;
@@ -773,4 +773,29 @@ int sendPacket(FILE* mag, FILE* acc, int sockfd){
 
 	sendAccAndMag(mag, acc, sockfd);
 	//sendData(sockfd, temp, TEMP_FM_SIZE);
+}
+
+int limitBandwith(int limit){
+    // Forks to create a new process to run tc script
+    char buffer[100];
+    int status = EXIT_SUCCESS;
+    pid_t pid;
+
+	pid = fork ();
+	if (pid == 0)
+	{
+		/* This is the child process.  Execute the shell command. */
+		sprintf(buffer, "%s/BIN/tc.sh %dkbit", BASE_PATH, limit);
+		execl ("/bin/sh", "sh", buffer, (char *) NULL);
+		_exit (EXIT_FAILURE);
+	}
+	else if (pid < 0)
+		/* The fork failed.  Report failure.  */
+		status = EXIT_FAILURE;
+	else
+		/* This is the parent process.  Wait for the child to complete.  */
+		if (waitpid (pid, &status, 0) != pid)
+			status = EXIT_FAILURE;
+  
+    return status;
 }
