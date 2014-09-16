@@ -15,6 +15,8 @@
 
 #include "DMK41BU02.h"
 
+#define TEST_IMGS_MODE	1
+
 //Device name created using udev rule. See /etc/udev/rules.d/99-DMK41BU02
 //The 99-DMK41BU02 file was created after read the following tutorial: http://www.mythtv.org/wiki/Device_Filenames_and_udev
 const char *dev_name = "/dev/DMK41BU02";
@@ -222,7 +224,11 @@ int change_all_parameters(struct v4l2_parameters* params){
 
 void process_image(const void *p, int size, struct timespec timestamp, uint8_t* image_data)
 {
+	static int img_id = 0;
+	img_id %= 101;
+	img_id++;
 	//Save raw image
+	char string[100];
 	char base_file_name[50];
 	char full_file_name[50];
 	char error_string[75];
@@ -289,7 +295,8 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 
 	//ATTITUDE DATA
 	//Attitude mode
-	//num_bytes += fwrite(&ATTITUDE_MODE, 1, sizeof(uint8_t), raw_img);
+	num_bytes += fwrite(&ATTITUDE_MODE, 1, sizeof(uint8_t), raw_img);
+
 
 	if(ferror(raw_img)){
 		strerror_r(errno, error_string, 75);
@@ -308,8 +315,18 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 	int offset = 0;
 
 	pthread_rwlock_wrlock( &camera_rw_lock );
-		//Actual image to shared buffer
-		memcpy(current_frame + offset, p, IMG_DATA_SIZE);
+		if(TEST_IMGS_MODE){
+			sprintf(string, "%s/INPUT/IMGs/test_image%d.bmp", BASE_PATH, img_id++%20);
+			IplImage * prueba = cvLoadImage(string,0);
+			printMsg(stderr, STARTRACKER, "Reading image and processing image %s\n", string);
+			//Actual image to shared buffer
+			memcpy(current_frame + offset, (uint8_t*)prueba->imageData, IMG_DATA_SIZE);
+		}
+		else{
+			//Actual image to shared buffer
+			memcpy(current_frame + offset, p, IMG_DATA_SIZE);
+		}
+
 		offset += IMG_DATA_SIZE;
 
 		//Actual timestamp to shared buffer
@@ -330,6 +347,9 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 		memcpy(current_frame + offset, &(param.exp_value_), PARAM_SIZE);
 		offset += PARAM_SIZE;
 
+		memcpy(current_frame + offset, &ATTITUDE_MODE, ATT_MODE_SIZE);
+		offset += ATT_MODE_SIZE;
+		
 		new_frame_proc = new_frame_send = 1;
 	pthread_rwlock_unlock( &camera_rw_lock );
 

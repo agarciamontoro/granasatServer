@@ -445,7 +445,7 @@ void* control_connection(void* useless){
 
 					case MSG_SET_ERROR:
 						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
+						//changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
 						break;
 
 
@@ -537,7 +537,7 @@ void* process_images(void* useless){
 
 	struct timespec before, after, elapsed;
 
-	enableStarTracker(150, 21, 21, 10, 6, 0.02, 4);
+	enableStarTracker(100, 9, 9, 4, 10, 0.001, 4);
 
 	int first = 1;
 

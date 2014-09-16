@@ -5,15 +5,23 @@
 #include <stdint.h>			//Standard int data-types: uint8_t
 #include <stdio.h>			//Input-output. printf, fprintf...
 #include <stdlib.h>			//General functions: atoi, rand, malloc, free...
+#include <unistd.h>
 #include <math.h>			//Mathematical functions needed
 
 // Program libraries
 #include "sync_control.h"	//Timestamp management and synchronisation control
+#include "DMK41BU02.h"				// Camera management library
 
 #define WIDTH 1280
 #define HEIGHT 960
 
+#define FOCAL_LENGTH	0.012
+
 #define ATT_SIGNAL	SIGRTMIN+1
+
+#define ATT_MODE_SIZE	sizeof(uint8_t)
+#define ATT_DATA_SIZE	10*sizeof(uint32_t)
+#define ATT_FILE_SIZE	ATT_MODE_SIZE + ATT_DATA_SIZE
 
 enum attitudemode{
 	MODE_AUTO = 0,
@@ -27,6 +35,7 @@ extern timer_t ATT_timer;
 float* catalog;
 float* k_vector;
 float* stars;
+float* real_vector;
 
 struct CentroidVector centroids; //structure CentroidVector to store the detected centroids by the algorithm
 struct Vector_UnitaryVector unitaries; //structure Vector_UniratyVector to store the unitary vector of centroids
@@ -38,6 +47,7 @@ int ROI; // Region Of Interest
 int threshold3; // Minimum number of pixels to compute a centroid
 int stars_used; // Number of stars that the star tracker algorithm will try to find
 float err;
+
 
 //Structure to store the centroid info
 //Every centroid has a x,y coordinates in the image
@@ -133,6 +143,11 @@ void ST_obtainAttitude(uint8_t* image_data);
 int isHistogramDark(int* histogram);
 
 /////////////////////////// load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+struct Vector_UnitaryVector loadUnitaries(char * filename,char * opentype);
+
+float * loadRealVectors( char* filename,char* opentype);
 
 unsigned char * loadImage(char * filename, char * opentype);
 
@@ -318,7 +333,7 @@ void sort_centroids(struct CentroidVector * vector);
 	center struct */
 
 struct Centroid createCentroid(float my_x, float my_y, float my_brightness);
-struct UnitaryVector createUnitaryVector(float my_x,float my_y);
+struct UnitaryVector createUnitaryVector(float my_x,float my_y,float f);
 struct center createCenter(float center,float * pair,int num);
 
 /*function	ComputeUnitaryVectors		*/
@@ -338,7 +353,7 @@ struct center createCenter(float center,float * pair,int num);
 */
 
 
-struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector);
+struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector,float f);
 
 /////////////////////////  End create functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
@@ -634,9 +649,17 @@ void create_centers(struct centerVector * vector,int num,int rows,int z,int veri
 
 
 */
+void voting_method(struct Vector_UnitaryVector * vector,int numUnitaries,float umb,float *catalog,float *k_vector,float * stars,float * real_vectors);
+void quicksort(float * list,long elements);
+void qs(float * list, long left_limit, long right_limit);
+struct centerVector createTrios(struct Vector_UnitaryVector * unitaries,int numUnitaries,float umb,float * catalog,float * k_vector,float * stars,float * real_vectors);
+
+void build_trios(struct centerVector * trios,struct centerVector * centers,struct Vector_UnitaryVector * unitaries,float umb,float * stars,float * real_vectors);
+
+struct centerVector addStar(struct Vector_UnitaryVector* unitaries,struct UnitaryVector v,struct centerVector* centers,float umb,float* catalog,float* k_vector,float* stars,float* real_vectors,int number_of_possible_star);
 
 
-struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector, int numUnitaries,float umb,float *catalog,float *k_vector,float * stars );
+struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector, int numUnitaries,float umb,float *catalog,float *k_vector,float * stars,float * real_vectors );
 
 /*function	compare_centers		*/
 

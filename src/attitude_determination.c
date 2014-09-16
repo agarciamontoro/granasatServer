@@ -29,6 +29,7 @@ void enableStarTracker(int __threshold, int __threshold2,int __ROI, int __thresh
 	catalog = NULL;
 	k_vector = NULL;
 	stars = NULL;
+	real_vector = NULL;
 
 	changeCatalogs(__mag);
 	changeParameters(__threshold, __threshold2, __ROI, __threshold3, __stars_used, __err);
@@ -39,6 +40,7 @@ void changeCatalogs(int magnitude){
 	char catalog_string[256];
 	char k_vector_string[256];
 	char stars_string[256];
+	char real_vector_string[256];
 
 	printMsg(stderr, STARTRACKER, "Magnitude: %d\n", magnitude);
 
@@ -48,6 +50,7 @@ void changeCatalogs(int magnitude){
 	sprintf(catalog_string, "%s/catalogo_mag_%d.txt", base_cat_path, magnitude);
 	sprintf(k_vector_string, "%s/k_vector_mag_%d.txt", base_cat_path, magnitude);
 	sprintf(stars_string, "%s/stars_mag_%d.txt", base_cat_path, magnitude);
+	sprintf(real_vector_string, "%s/reales_mag_%d.txt", base_cat_path, magnitude);
 
 	pthread_mutex_lock ( &mutex_star_tracker );
 
@@ -59,6 +62,9 @@ void changeCatalogs(int magnitude){
 
 		free(stars);
 		stars=loadStars(stars_string,"r");
+
+		free(real_vector);
+		real_vector = loadRealVectors(real_vector_string, "r");
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
 
@@ -130,23 +136,24 @@ void ADS_obtainAttitude(uint8_t* image_data){
 
 void ST_obtainAttitude(uint8_t* image_data){
 	pthread_mutex_lock ( &mutex_star_tracker );
-		int j, k;
+		int j, k, offset;
+		uint32_t star_id;
+
+		offset = IMG_DATA_SIZE + TIMESTAMP_SIZE + PARAM_ST_SIZE + ATT_MODE_SIZE;
 
 		//First step . Find centroids
-
 		centroids = centroiding(threshold,threshold2,threshold3,ROI,image_data);
 
 		//Second step. Sorting centroids according with their brightness
 
-		if(centroids.elem_used != 0){  //If there is at least one centroid...
-
+		if(centroids.elem_used > 2){  //If there is at least three centroids...
 			sort_centroids(&centroids); // ...we sort them
-					
+
 			//Third step. Compute unitary vectors
-			unitaries = ComputeUnitaryVectors(&centroids);
+			unitaries = ComputeUnitaryVectors(&centroids, FOCAL_LENGTH);
 
 			//Four step. Find the star pattern.		
-			vector = find_star_pattern(&unitaries,stars_used,err,catalog,k_vector,stars);
+			vector = find_star_pattern(&unitaries,stars_used,err,catalog,k_vector,stars,real_vector);
 
 					
 			if(vector.elem_used !=0 ){
@@ -154,6 +161,13 @@ void ST_obtainAttitude(uint8_t* image_data){
 
 				for(j=0;j<vector.elem_used;j++){
 					printMsg(stderr, STARTRACKER, "\tCenter %f Pairs\t\n",vector.ptr[j].center);
+
+					/** @todo Clean attitude storing code*/
+					if(j<10){
+						star_id = (uint32_t)vector.ptr[j].center;
+						memcpy(current_frame + offset, &star_id, sizeof(uint32_t));
+						offset += sizeof(uint32_t);
+					}
 			
 					for(k=0;k<vector.ptr[j].numPairs;k++){
 
@@ -216,7 +230,7 @@ unsigned char * loadImage(char * filename, char * opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
-		printMsg(stderr, STARTRACKER, "File error\n");
+		fputs("File error",stderr);
 		exit(1);
 	}else{
 
@@ -276,7 +290,7 @@ struct Vector_UnitaryVector loadUnitaries(char * filename,char * opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
-		printMsg(stderr, STARTRACKER, "File error\n");
+		fputs("File error",stderr);
 		exit(1);
 	}else{
 
@@ -284,7 +298,6 @@ struct Vector_UnitaryVector loadUnitaries(char * filename,char * opentype){
 		while(fgets(string,100,fp)!=NULL ){
 
 			sscanf(string,"%d\t%f\t%f\t%f\n",&starID,&x,&y,&z); // We obtain the catalog entry
-			printMsg(stderr, STARTRACKER, "%s", string);
 			v.x=x;
 			v.y=y;
 			v.z=z;
@@ -315,7 +328,7 @@ float* loadCatalog( char* filename,char* opentype){
 	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
 
 	if(fp==NULL){
-		printMsg(stderr, STARTRACKER, "File error\n",stderr);
+		fputs("File error",stderr);
 		exit(1);
 	}else{
 
@@ -335,6 +348,46 @@ float* loadCatalog( char* filename,char* opentype){
 
 	fclose(fp); // close the .txt file
 	return catalog; // return the catalog. REMEMBER THAT NEEDS TO BE FREED.
+
+}
+
+float * loadRealVectors( char* filename,char* opentype){
+
+	//variable declaration
+	float * real = malloc(sizeof(float)*3*909); //43477 represents the rows of the generated catalog . 3 represents the colums 
+	float x,y,z;
+	int i;
+	char string[100];
+
+	FILE *fp;
+	fp=fopen(filename,opentype); //open the .txt file that contais the generated catalog
+
+	if(fp==NULL){
+		fputs("File error",stderr);
+		exit(1);
+	}else{
+
+		i=0;
+		while(fgets(string,100,fp)!=NULL ){
+
+			sscanf(string,"%f\t%f\t%f\t\n",&x,&y,&z); // We obtain the catalog entry
+			// Store the generated catalog entry
+			real[i*3 ] =x;
+			real[i*3 + 1]=y;			
+			real[i*3 + 2]=z;
+			i++;
+		}
+
+
+	}
+
+	fclose(fp); // close the .txt file
+	return real; // return the catalog. REMEMBER THAT NEEDS TO BE FREED.
+
+
+
+
+
 
 }
 
@@ -370,7 +423,7 @@ float* loadKVector(char* filename,char* opentype){
 	fp=fopen(filename,opentype); // Open file
 
 	if(fp==NULL){ // error checking
-		printMsg(stderr, STARTRACKER, "File error\n",stderr);
+		fputs("File error",stderr);
 		exit(1);
 	}else{
 
@@ -391,6 +444,8 @@ float* loadKVector(char* filename,char* opentype){
 
 
 }
+
+
 
 /*	funcion loadStars 	*/
 /*
@@ -424,7 +479,7 @@ float * loadStars(char *filename,char*opentype){
 	fp=fopen(filename,opentype);
 
 	if(fp==NULL){ // error checking
-		printMsg(stderr, STARTRACKER, "File error\n",stderr);
+		fputs("File error",stderr);
 		exit(1);
 	}else{
 
@@ -627,11 +682,12 @@ struct CentroidVector SimplifyVectorOfCentroids(struct CentroidVector* vector_of
 	struct Centroid cent;
 	//first of all we intialise the simplified vector of centroids
 	if(!initialiseVector(&symplified_vector_of_centroids, 100)){ //we dont expect to have more than 100 stars or objects in the image taken
-		printMsg(stderr, STARTRACKER, "ERROR allocating symplified vector of centroids.\n");
+		printf("ERROR allocating symplified vector of centroids.\n");
 	}
 	float new_xcm,new_ycm,new_B;
 	
-	int pixels,i=0,j,suma_x,suma_y,suma_B;
+	int pixels,i=0,j;
+	float suma_x,suma_y,suma_B;
 
 		
 
@@ -675,13 +731,13 @@ struct CentroidVector SimplifyVectorOfCentroids(struct CentroidVector* vector_of
 			vector_of_centroids->ptr[i].x=2000; //dummy value for centroids processed
 			vector_of_centroids->ptr[i].y=2000;
 				
-				///if(pixels > thress2){ //if a centroroid has enough pixels...
-					
-					cent=createCentroid(suma_x/pixels,suma_y/pixels,suma_B);
+				if(pixels > thress2){ //if a centroroid has enough pixels...
+					//printf("suma_x: %f pixels %d thress2: %d\n",suma_x,pixels,thress2);
+					cent=createCentroid(suma_x/pixels,suma_y/pixels,suma_B/pixels);
 					if(!addElementToVector(&symplified_vector_of_centroids, cent)){
-						printMsg(stderr, STARTRACKER, "ERROR reallocating new_centroid.\n");
+					printf("ERROR reallocating new_centroid.\n");
 					}
-				//}
+				}
 					
 			
 		}//end if
@@ -737,7 +793,7 @@ struct CentroidVector centroiding(int thresh,int thresh2,int thresh3,int ROI,uns
 	//First of all, we initialise the vector_of_centroids
 
 	if(!initialiseVector(&vector_of_centroids, 1024)){
-		printMsg(stderr, STARTRACKER, "ERROR allocating the vector of centroids.\n");
+		printf("ERROR allocating the vector of centroids.\n");
 	}
 	
 
@@ -765,7 +821,7 @@ struct CentroidVector centroiding(int thresh,int thresh2,int thresh3,int ROI,uns
 				free(coordinates); //free coodinates. See compute_xcm_ycm_B function
 			//Adding the centroid to the vector of centroids	
 				if(!addElementToVector(&vector_of_centroids, new_centroid)){
-					printMsg(stderr, STARTRACKER, "ERROR reallocating new_centroid.\n");
+				printf("ERROR reallocating new_centroid.\n");
 				}		
 			}// end if 
 		}//end j
@@ -854,17 +910,17 @@ struct Centroid createCentroid(float my_x, float my_y, float my_brightness){
 	return centroid;
 }
 
-struct UnitaryVector createUnitaryVector(float my_x,float my_y){
+struct UnitaryVector createUnitaryVector(float my_x,float my_y,float f){
 
 	struct UnitaryVector unitaryVector;
-	float x,y,f=0.011; // this is the focal length of the camera used
+	float x,y,_f=f; // this is the focal length of the camera used
 
 	x=(my_x-640)*0.00000465; // 0.00000465 is the length in m of a pixel in the image plane
 	y=(my_y-480)*0.00000465;
 	
-	float x_u= cos( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/f,2)+pow(y/f,2) ) ) );
-	float y_u= sin( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/f,2)+pow(y/f,2) ) ) );
-	float z_u=sin(3.14159265/2 - atan( sqrt( pow(x/f,2)+pow(y/f,2) ) ) );
+	float x_u= cos( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/_f,2)+pow(y/_f,2) ) ) );
+	float y_u= sin( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/_f,2)+pow(y/_f,2) ) ) );
+	float z_u=sin(3.14159265/2 - atan( sqrt( pow(x/_f,2)+pow(y/_f,2) ) ) );
 	unitaryVector.x= x_u;
 	unitaryVector.y= y_u;
 	unitaryVector.z= z_u;
@@ -1159,7 +1215,7 @@ int addElementToCenterVector(struct centerVector * vector,struct center c){
 
 
 
-struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector){
+struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector,float f){
 
 
 	int length = vector->elem_used;
@@ -1167,16 +1223,16 @@ struct Vector_UnitaryVector ComputeUnitaryVectors(struct CentroidVector* vector)
 	struct UnitaryVector unitaryVector;
 
 	if(!initialiseVectorUnitary(&vector_unitary, length)){
-		printMsg(stderr, STARTRACKER, "ERROR allocating the vector of Unitary Vectors.\n");
+		printf("ERROR allocating the vector of Unitary Vectors.\n");
 		//return 1;
 	}
 
 		int i;
 		for(i=0;i<length;i++){
 		
-			unitaryVector=createUnitaryVector(vector->ptr[i].x,vector->ptr[i].y);
+			unitaryVector=createUnitaryVector(vector->ptr[i].x,vector->ptr[i].y,f);
 			if(!addElementToVectorUnitary(&vector_unitary, unitaryVector)){
-				printMsg(stderr, STARTRACKER, "ERROR reallocating new unitary_vector.\n");
+				printf("ERROR reallocating new unitary_vector.\n");
 				//return 1;
 			}
 				
@@ -1300,7 +1356,7 @@ long search_elements;
 float angle,min,max;
 float * pairs_in_catalog;
 
-		for(i=0;i<num;i++){
+		for(i=0;i<num-1;i++){
 			
 			//Compute angle
 			angle=(acos(((vector->ptr[0].x*vector->ptr[i+1].x)+(vector->ptr[0].y*vector->ptr[i+1].y)+(vector->ptr[0].z*vector->ptr[i+1].z)))/3.1416)*180;
@@ -1311,7 +1367,7 @@ float * pairs_in_catalog;
 			min=angle-angle*umb;
 			max=angle+angle*umb;
 			
-			printMsg(stderr, STARTRACKER, "min: %f  angle: %f max: %f\n",min,angle,max);
+			//printf("min: %f max: %f\n",min,max);
 			
 			pairs_in_catalog=k_vector_search(min,max,catalog,k_vector,&search_elements);
 			//Adding the pairs to the verification matrix
@@ -1340,7 +1396,6 @@ float * pairs_in_catalog;
 	The result has to be freed.
 
 */
-
 
 float* k_vector_search(float min,float max,float* catalog,float* k_vector,long * elem){
 	
@@ -1446,18 +1501,7 @@ float* k_vector_search(float min,float max,float* catalog,float* k_vector,long *
 
 	}
 	
-	/*
-	printf("Buscando entre %f y %f\n",min,max);
-
-		int i;
-		for(i=0;i<elements;i++){
-
-			printf("i:%d %f %f %f\n",i,search[i*3],search[i*3+1],search[i*3+2]);
-		
-
-
-		}
-	*/	
+	
 	
 	return search; //Remember to free this search
 
@@ -1548,20 +1592,11 @@ void add_search_to_verification_matrix(float * search,long search_elements,int r
 	int row1,row2;
 	float num_stars_present[909];
 
-	for(i=0;i<909;i++){
-
-		num_stars_present[i]=verification_matrix[i][0];
-		
-
-	}
-
-
-
 	for(i=0;i<search_elements;i++){
 		row1=search_star_position(search[i*3],0,908,stars); //extract the position of a star in the stars vector.
 		row2=search_star_position(search[i*3+1],0,908,stars);
 
-		if(verification_matrix[row1][0] != -1){
+
 			for(w=0;w<verification_matrix[row1][0];w++){ // check if we have a repeated star pair
 			
 				if(verification_matrix[row1][w+1]==stars[row2]){
@@ -1579,13 +1614,13 @@ void add_search_to_verification_matrix(float * search,long search_elements,int r
 			posicion=verification_matrix[row1][0];
 			verification_matrix[row1][posicion]=stars[row2];
 			}
-		}
+		
 		
 
 		k=0;
 
 		//repeat for the second star
-		if(verification_matrix[row2][0] != -1){
+		
 			for(w=0;w<verification_matrix[row1][0];w++){
 		
 				if(verification_matrix[row2][w+1]==stars[row1]){
@@ -1600,31 +1635,14 @@ void add_search_to_verification_matrix(float * search,long search_elements,int r
 			posicion=verification_matrix[row2][0];
 			verification_matrix[row2][posicion]=stars[row1];
 			}
-		}
+		
 		k=0;
 
 	}//end for i
 
 
-	//check if we have added any star in a row
-	
-	for(i=0;i<909;i++){
-
-
-		if(num_stars_present[i]==verification_matrix[i][0]){ //if this is true,we have not added a star in this search
-		
-			verification_matrix[i][0]=-1;
-
-		}
-
-
-	}
-
-
-
 
 }
-
 
 /*	function  create_centers	*/
 
@@ -1663,9 +1681,10 @@ void create_centers(struct centerVector * vector ,int num,int rows,int z,int ver
 				numPairs++;
 			
 			}
-
+			
 			c=createCenter(stars[row],pairs,numPairs);
 			addElementToCenterVector(vector,c);
+
 			
 		}//end if
 	}//end for
@@ -1693,198 +1712,56 @@ void create_centers(struct centerVector * vector ,int num,int rows,int z,int ver
 		
 
 
-*/
+*/	
 
 
 
-
-struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector,int numUnitaries,float umb,float *catalog,float *k_vector,float * stars ){
-
-	//Variable declaration
-	int i,j,k,stars_cosider;
-	float pairs[100];
-	struct center c;
-	struct centerVector center_vector={},center_vector2={},center_vector3={};
-
-		
-		//argument checking
-
-		if(vector->elem_used<3){printMsg(stderr, STARTRACKER, "Unable to find centers\n");return center_vector;}
-		if(numUnitaries>=3 && vector->elem_used<3){printMsg(stderr, STARTRACKER, "Unable to find centers\n"); return center_vector;}
-		if(numUnitaries >=3 && vector->elem_used>=numUnitaries){stars_cosider=numUnitaries-1;}
-		if(numUnitaries >=3 && vector->elem_used<=numUnitaries){stars_cosider=vector->elem_used-1;}
+void qs(float * list, long left_limit, long right_limit){
 
 
-		int verification_matrix[909][100]; //This matrix is used to find the star pattern
+	long left,right,position;
+	float pivot,tmp1,tmp2;
 
-		
-		//finding centers			
-		for(i=0;i<stars_cosider;i++){
 
-		printMsg(stderr, STARTRACKER, "Step: %d\n",i);
-		initialiseCenterVector(&center_vector,1); //initialise center_vector
+	left=left_limit;
+	right=right_limit;
 	
-		
-		interchange_unitary_vectors(vector,0,i); // interchange the position of unitary vectors	
-		initialise_verification_matrix(909,100,verification_matrix); //initialise verification matrix
-		fill_verification_matrix(vector,stars_cosider,909,100,verification_matrix,umb,catalog,k_vector,stars); // fill the verification matrix
-		create_centers(&center_vector ,stars_cosider,909,100,verification_matrix,stars);//create the center vector through verification matrix
-		printMsg(stderr, STARTRACKER, "Possible centers: %d\n",center_vector.elem_used);
-					/*
-					for(j=0;j<center_vector.elem_used;j++){
+	position=(left+right)/2;
 
-						printf("Center %f Pairs\t",center_vector.ptr[j].center);
-				
-						for(k=0;k<center_vector.ptr[j].numPairs;k++){
+	pivot=list[position*2+1];
 
-						printf("%f\t",center_vector.ptr[j].pairs[k]);
-						
+	//printf("left %d right %d position %d\n",left,right,position);
 
-						}
-		
-						printf("\n");
-					}
-					*/					
-			if(i==0){ //the first time we create center_vector 2 through center vector 
-
-
-				initialiseCenterVector(&center_vector2,1);
-
-				for(j=0;j<center_vector.elem_used;j++){
-
-						
-
-						for(k=0;k<center_vector.ptr[j].numPairs;k++){
-						
-							pairs[k]=center_vector.ptr[j].pairs[k];	
-				
-						}
-					
-						c=createCenter(center_vector.ptr[j].center,pairs,center_vector.ptr[j].numPairs);
-						addElementToCenterVector(&center_vector2,c);			
-
-				}				
-
-				free(center_vector.ptr); //free memory
-
-
-			}else{
-
-				initialiseCenterVector(&center_vector3,1); //initialise center vector 3
-
-				for(j=0;j<center_vector.elem_used;j++){
-
-					for(k=0;k<center_vector2.elem_used;k++){
-
-
-						if(compare_centers(&center_vector.ptr[j],&center_vector2.ptr[k],stars_cosider)){//Compare centers in order to look for those which are 	repeated
-
-							c=createCenter(center_vector2.ptr[k].center,center_vector2.ptr[k].pairs,center_vector2.ptr[k].numPairs);
-							
-							addElementToCenterVector(&center_vector3,c);
-							
-
-						}
-
-
-					}
-
-				
-				}
-				// free memory
-				free(center_vector.ptr);
-				free(center_vector2.ptr);
-
-				center_vector2=center_vector3; //reasign center vector 2
-					/*
-					for(j=0;j<center_vector2.elem_used;j++){
-
-						printf("Center %f Pairs\t",center_vector2.ptr[j].center);
-				
-						for(k=0;k<center_vector2.ptr[j].numPairs;k++){
-
-						printf("%f\t",center_vector2.ptr[j].pairs[k]);
-						
-
-						}
-		
-						printf("\n");
-					}
-					*/
-
-
-
-			}
-
-		
-		
-		}//end for i
-
-					/*
-					for(j=0;j<center_vector2.elem_used;j++){
-
-						printf("Center %f Pairs\t",center_vector2.ptr[j].center);
-				
-						for(k=0;k<center_vector2.ptr[j].numPairs;k++){
-
-						printf("%f\t",center_vector2.ptr[j].pairs[k]);
-						
-
-						}
-		
-						printf("\n");
-					}
-					*/
-
-
-
-		
-		//Symplify centers before return
-		struct centerVector final;
-		int changes=0;
-		initialiseCenterVector(&final,1); //initialise center_vector
-
-		if(center_vector2.elem_used !=0){
-			
-			for (i=0;i<center_vector2.elem_used-1;i++){
-				
-				for(j=i+1;j<center_vector2.elem_used;j++){
-				
-					if(center_vector2.ptr[i].center !=0 && center_vector2.ptr[j].center !=0){
-
-						if(compare_centers(&center_vector2.ptr[i],&center_vector2.ptr[j],stars_cosider)){//Compare centers in order to look for those which are repeated					
-							center_vector2.ptr[j].center=0;
-
-						}
-					}
-					
-
-				}//end for j
-				
-
-			}//end for i
 	
-		}//end if center_vector2 !=0
-
-		for(i=0;i<center_vector2.elem_used;i++){
+	do{
+	
+		while(list[left*2+1] < pivot && left<right_limit) left++;
+		while(pivot<list[right*2+1] &&  right>left_limit) right--;
+		if(left <= right){
+			tmp1 = list[left*2];
+			tmp2 = list[left*2 + 1];		
+				
+			list[left*2]=list[right*2];
+			list[left*2 + 1]=list[right*2 + 1];
 			
-			if(center_vector2.ptr[i].center != 0){
-			
-				c=createCenter(center_vector2.ptr[i].center,center_vector2.ptr[i].pairs,center_vector2.ptr[i].numPairs);
-				addElementToCenterVector(&final,c);	
-										
+			list[right*2]=tmp1;
+			list[right*2+1]=tmp2;
 
-			}
-
+			left++;
+			right--;
 
 		}
 
 
+	}while(left<=right);
+	if(left_limit<right){qs(list,left_limit,right);}
+	if(right_limit>left){qs(list,left,right_limit);}
 
-		free(center_vector2.ptr);
+}
 
-	return final; // return the solution
+void quicksort(float * list,long elements){
 
+	qs(list,0,elements-1);
 
 
 }
@@ -1892,6 +1769,559 @@ struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector,int n
 
 
 
+
+void voting_method(struct Vector_UnitaryVector * vector,int numUnitaries,float umb,float *catalog,float *k_vector,float * stars,float * real_vectors){
+
+	int i,j,k,l,ID1,ID2;
+	float angle,min,max,r_angle;
+	float * pairs_in_catalog;
+	long search_elements;
+	
+	
+
+
+	if(numUnitaries > vector->elem_used  ){
+			
+		numUnitaries=vector->elem_used;			
+
+	}
+
+	//create a list of lists
+	float ** list = malloc(sizeof(float *)*numUnitaries);
+	for(i=0;i<numUnitaries;i++){
+	
+		list[i]=malloc(sizeof(float)*(909*2));
+	}
+	//initialise lists
+	for(i=0;i<numUnitaries;i++){
+		for(j=0;j<909;j++){
+		*(list[i]+(j*2))=j;//star position
+		*(list[i]+(j*2)+1)=0;//intial votes
+		}
+	}
+
+
+	for(i=0;i<numUnitaries;i++){
+		for(j=0;j<numUnitaries;j++){
+
+			if(i!=j){
+			//compute distance
+			angle=acos( (vector->ptr[i].x*vector->ptr[j].x)+(vector->ptr[i].y*vector->ptr[j].y)+(vector->ptr[i].z*vector->ptr[j].z) )*(180/3.141593);
+			printf("%d %d angle:%f\n",i,j,angle);
+			min=angle-angle*umb;
+			max=angle+angle*umb;
+			pairs_in_catalog=k_vector_search(min,max,catalog,k_vector,&search_elements);
+			//for all entries...	
+				for(k=0;k<search_elements;k++){
+			
+					ID1=search_star_position(pairs_in_catalog[k*3],0,908,stars);
+					ID2=search_star_position(pairs_in_catalog[k*3 +1],0,908,stars);
+					
+					*(list[i]+(ID1*2)+1)=(*(list[i]+(ID1*2)+1))+1;
+					*(list[i]+(ID2*2)+1)=(*(list[i]+(ID2*2)+1))+1;
+					*(list[j]+(ID1*2)+1)=(*(list[j]+(ID1*2)+1))+1;
+					*(list[j]+(ID2*2)+1)=(*(list[j]+(ID2*2)+1))+1;
+					
+				}		
+			free(pairs_in_catalog);
+
+			}
+		}
+	}
+
+	for(i=0;i<numUnitaries;i++){
+		quicksort(list[i],(long)(909));//sort the voting lists
+	}
+
+	int votes[numUnitaries][909];
+	//initialization
+	for(i=0;i<numUnitaries;i++){
+		for(j=0;j<908;j++){
+			votes[i][j]=0;
+		}
+	}
+	
+	for(i=0;i<numUnitaries;i++){
+		for(j=0;j<numUnitaries;j++){
+			if(j != i){	
+			for(k=908;k>=0;k--){
+				for(l=908;l>=0;l--){
+					if(*(list[i]+(k*2)+1)>=3 && *(list[j]+(l*2)+1)>=3){
+														
+						ID1=*(list[i]+(k*2));
+						ID2=*(list[j]+(l*2));
+							
+						r_angle=real_vectors[ID1*3]*real_vectors[ID2*3]+real_vectors[ID1*3+1]*real_vectors[ID2*3+1]+real_vectors[ID1*3+2]*real_vectors[ID2*3+2];
+						r_angle=acos(r_angle)*(180/3.141593);
+						
+						angle=acos( (vector->ptr[i].x*vector->ptr[j].x)+(vector->ptr[i].y*vector->ptr[j].y)+(vector->ptr[i].z*vector->ptr[j].z) )*(180/3.141593);
+							
+						if(abs(r_angle-angle)/r_angle < umb){
+				
+							votes[i][ID1]=votes[i][ID1]+1;
+							votes[j][ID1]=votes[j][ID1]+1;
+							votes[i][ID2]=votes[i][ID2]+1;
+							votes[j][ID2]=votes[j][ID2]+1;		
+
+						}
+						
+					}
+				}
+			}			
+			}
+
+		}
+	}	
+		
+	for(i=0;i<numUnitaries;i++){
+		
+		printf("list %d \t",i);
+		for(j=0;j<908;j++){
+			if(votes[i][j]>0){
+				printf("e:%d v:%d\t",(int)stars[j],votes[i][j]);
+			
+			}
+		}
+		printf("\n");
+	}
+
+
+	
+	for(i=0;i<numUnitaries;i++){
+
+		free(list[i]);
+
+
+	}
+
+	free(list);
+
+
+}
+
+
+struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector,int numUnitaries,float umb,float *catalog,float *k_vector,float * stars,float * real_vectors ){
+
+
+	//Variable declaration
+	int i,j,k,w,l,verification_matrix[909][100],success=0;	
+	float m_angle,r_angle;
+	struct centerVector trios={},centers={},final={};
+	struct UnitaryVector v;
+	struct center c;
+	struct Vector_UnitaryVector unitaries;
+	
+	initialiseVectorUnitary(&unitaries,3); 
+	
+	//First step.
+		
+
+	for(i=0;i<3;i++){
+		
+		v.x=vector->ptr[i].x;
+		v.y=vector->ptr[i].y;
+		v.z=vector->ptr[i].z;
+		addElementToVectorUnitary(&unitaries,v);		
+	}
+
+	
+	trios=createTrios(vector ,3,umb,catalog,k_vector,stars,real_vectors);
+
+	if(trios.elem_used !=0  && vector->elem_used >=3){
+
+		if(numUnitaries > vector->elem_used){ //protection again non-existing elements
+			
+				numUnitaries=vector->elem_used;
+				
+		}
+
+
+		for(i=3;i<numUnitaries;i++){
+
+			v.x=vector->ptr[i].x;
+			v.y=vector->ptr[i].y;
+			v.z=vector->ptr[i].z;
+
+			
+			final=addStar(&unitaries,v,&trios,umb,catalog,k_vector,stars,real_vectors,unitaries.elem_used+1);
+
+
+			if(final.elem_used != 0){
+
+			
+				free(trios.ptr);
+				initialiseCenterVector(&trios,1);
+				for(j=0;j<final.elem_used;j++){
+				c=createCenter(final.ptr[j].center,final.ptr[j].pairs,final.ptr[j].numPairs);
+				addElementToCenterVector(&trios,c);
+				}
+				free(final.ptr);				
+
+			}else{printf("False star detected at %d position\n",i);}
+
+			
+
+		}
+
+	}else{
+				
+		return final;
+
+
+	}
+
+
+	/*printf("Unitarios:\n");
+	for(i=0;i<unitaries.elem_used;i++){
+	
+		printf("i: %d %f %f %f\n",i,unitaries.ptr[i].x,unitaries.ptr[i].y,unitaries.ptr[i].z);	
+
+	}*/
+
+	return trios; // return the solution
+
+
+
+
+}
+
+void build_trios(struct centerVector * trios,struct centerVector * centers,struct Vector_UnitaryVector * unitaries,float umb,float * stars,float * real_vectors){
+
+	//variable declararion
+	int i, j, k,l,row0,row1,row2;
+	float pairs[100], m_angle,r_angle;
+	struct center c;
+
+		for(i=0;i<centers->elem_used;i++){
+			//Check if the center appears in the trios vector
+
+			for(j=0;j<centers->ptr[i].numPairs;j++){
+
+				for(k=j+1;k<centers->ptr[i].numPairs;k++){
+
+				m_angle=acos(unitaries->ptr[1].x*unitaries->ptr[2].x +unitaries->ptr[1].y*unitaries->ptr[2].y + unitaries->ptr[1].z*unitaries->ptr[2].z)*(180/3.141593);
+
+				row1=search_star_position(centers->ptr[i].pairs[j],0,908,stars);	
+				row2=search_star_position(centers->ptr[i].pairs[k],0,908,stars);
+
+				r_angle=real_vectors[row1*3]*real_vectors[row2*3] + real_vectors[row1*3+1]*real_vectors[row2*3+1] + real_vectors[row1*3+2]*real_vectors[row2*3+2];
+
+				r_angle=acos(r_angle)*(180/3.141593);
+
+					if( abs(r_angle-m_angle)/r_angle < umb){
+
+						row0=search_star_position(centers->ptr[i].center,0,908,stars);
+						m_angle=acos(unitaries->ptr[0].x*unitaries->ptr[2].x + unitaries->ptr[0].y*unitaries->ptr[2].y + unitaries->ptr[0].z*unitaries->ptr[2].z)*(180/3.141593);
+						r_angle=real_vectors[row0*3]*real_vectors[row2*3] + real_vectors[row0*3+1]*real_vectors[row2*3+1] + real_vectors[row0*3+2]*real_vectors[row2*3+2];
+						r_angle=acos(r_angle)*(180/3.141593);
+
+						if( abs(r_angle-m_angle)/r_angle < umb){
+							pairs[0]=stars[row1];
+							pairs[1]=stars[row2];
+							c=createCenter(centers->ptr[i].center,pairs,2);
+							addElementToCenterVector(trios,c);						
+
+						}
+				
+					}				
+
+
+				}
+			}
+
+		}
+
+}
+
+struct centerVector createTrios(struct Vector_UnitaryVector * vector,int numUnitaries,float umb,float * catalog,float * k_vector,float * stars,float * real_vectors){
+
+
+	int i,j,k,verification_matrix[909][100]; //This matrix is used to find the star pattern;
+	
+	struct centerVector center_vector,trios1,trios2,trios3,final,aux_final;
+	struct center c;
+	
+	initialiseCenterVector(&trios1,1);
+	initialiseCenterVector(&trios2,1);
+	initialiseCenterVector(&trios3,1);
+
+
+	
+
+
+
+		for(i=0;i<3;i++){
+
+		initialiseCenterVector(&center_vector,1); //initialise center_vector
+				
+		interchange_unitary_vectors(vector,0,i); // interchange the position of unitary vectors	
+		initialise_verification_matrix(909,100,verification_matrix); //initialise verification matrix
+		fill_verification_matrix(vector,numUnitaries,909,100,verification_matrix,umb,catalog,k_vector,stars); // fill the verification matrix
+		create_centers(&center_vector ,2,909,100,verification_matrix,stars);//create the center vector through verification matrix
+
+			switch(i){
+
+				case 0:
+					
+					initialiseCenterVector(&trios1,1); //initialise center_vector
+					build_trios(&trios1,&center_vector,vector,umb,stars,real_vectors);
+					free(center_vector.ptr);
+					break;
+
+				case 1: 
+					
+					initialiseCenterVector(&trios2,1); //initialise center_vector
+					build_trios(&trios2,&center_vector,vector,umb,stars,real_vectors);
+					free(center_vector.ptr);
+					break;
+				
+				case 2:
+
+					initialiseCenterVector(&trios3,1); //initialise center_vector
+					build_trios(&trios3,&center_vector,vector,umb,stars,real_vectors);
+					free(center_vector.ptr);
+					break;			
+
+
+			}
+
+		
+		}//end for i
+
+					
+
+		// Create the final triad
+
+		if(trios1.elem_used != 0 && trios2.elem_used !=0 && trios3.elem_used != 0){
+
+			initialiseCenterVector(&aux_final,1);
+
+			initialiseCenterVector(&final,1);
+
+
+			/*printf("Trios 1\n");
+			for(i=0;i<trios1.elem_used;i++){
+
+				printf("Center %d\t",(int)trios1.ptr[i].center);
+				for(j=0;j<trios1.ptr[i].numPairs;j++){
+
+					printf("%d\t",(int)trios1.ptr[i].pairs[j]);
+
+				}
+
+				printf("\n");
+			}
+
+			printf("trios 2\n");
+			for(i=0;i<trios2.elem_used;i++){
+
+				printf("Center %d\t",(int)trios2.ptr[i].center);
+				for(j=0;j<trios2.ptr[i].numPairs;j++){
+
+					printf("%d\t",(int)trios2.ptr[i].pairs[j]);
+
+				}
+
+				printf("\n");
+			}
+			*/
+		
+
+
+			for(i=0;i<trios1.elem_used;i++){
+				for(j=0;j<trios2.elem_used;j++){
+
+				 	if(compare_centers(&trios1.ptr[i],&trios2.ptr[j],3) && trios1.ptr[i].center != trios2.ptr[j].center){
+
+						c=createCenter(trios1.ptr[i].center,trios1.ptr[i].pairs,trios1.ptr[i].numPairs);
+						addElementToCenterVector(&aux_final,c);
+
+
+					}
+	
+
+
+				}
+			}
+			
+			/*for(i=0;i<aux_final.elem_used;i++){
+
+				printf("Center %d\t",(int)aux_final.ptr[i].center);
+				for(j=0;j<aux_final.ptr[i].numPairs;j++){
+
+					printf("%d\t",(int)aux_final.ptr[i].pairs[j]);
+
+				}
+
+				printf("\n");
+			}*/
+
+			
+
+			if(aux_final.elem_used != 0){
+				for(i=0;i<aux_final.elem_used;i++){
+					for(j=0;j<trios3.elem_used;j++){
+					
+					 	if(compare_centers(&aux_final.ptr[i],&trios3.ptr[j],3) && aux_final.ptr[i].center != trios3.ptr[j].center){
+
+							c=createCenter(aux_final.ptr[i].center,aux_final.ptr[i].pairs,aux_final.ptr[i].numPairs);
+							addElementToCenterVector(&final,c);
+
+						}
+	
+
+
+					}
+				}
+			}
+		
+		}
+
+		//MANU TIENE QUE REVISAR QUÉ PASA SI NO SE ENTRA ENEL ANTERIOR IF
+
+
+	free(trios1.ptr);
+	free(trios2.ptr);
+	free(trios3.ptr);
+	free(aux_final.ptr);
+
+	return final;
+}
+
+
+struct centerVector addStar(struct Vector_UnitaryVector* unitaries,struct UnitaryVector v,struct centerVector* centers,float umb,float* catalog,float* k_vector,float* stars,float * real_vectors,int number_of_possible_star){
+
+	//printf("NUMBER OF POSSIBLE STAR %d\n",number_of_possible_star);
+
+	int verification_matrix[909][100],num_m=0,num_r,i,j,k,w,l,added,hits,number_of_new=0,repeated=0,star1,star2,elem_added=0;;
+	struct centerVector new_centers={},final={};
+	struct center c;
+	float m_angles_vector[100],r_angles_vector[100],new_stars[100],pairs[100],r_angle;
+	
+
+	addElementToVectorUnitary(unitaries,v);	//add the possibe unitary vector
+
+	//computing measured angles
+
+	for(i=0;i<unitaries->elem_used-1;i++){
+		m_angles_vector[i]=acos( unitaries->ptr[i].x*unitaries->ptr[unitaries->elem_used-1].x + unitaries->ptr[i].y*unitaries->ptr[unitaries->elem_used-1].y + unitaries->ptr[i].z*unitaries->ptr[unitaries->elem_used-1].z)*(180/3.141593);
+		num_m++;
+
+	} 
+
+
+	initialiseCenterVector(&new_centers,1);
+	initialiseCenterVector(&final,1);
+	initialise_verification_matrix(909,100,verification_matrix); //initialise verification matrix
+	fill_verification_matrix(unitaries,number_of_possible_star,909,100,verification_matrix,umb,catalog,k_vector,stars); // fill the verification matrix
+	create_centers(&new_centers ,number_of_possible_star-1,909,100,verification_matrix,stars);//create the center vector through verification matrix
+
+
+	if(new_centers.elem_used != 0){
+
+		for(i=0;i<centers->elem_used;i++){
+		  for(j=0;j<new_centers.elem_used;j++){
+					
+		    if( centers->ptr[i].center == new_centers.ptr[j].center && compare_centers(&centers->ptr[i],&new_centers.ptr[j],number_of_possible_star-1) && centers->ptr[i].numPairs < new_centers.ptr[j].numPairs ){
+				
+				//extract the new stars
+				number_of_new=0;
+
+				for(k=0;k<new_centers.ptr[j].numPairs;k++){
+					repeated=0;
+					for(w=0;w<centers->ptr[i].numPairs;w++){
+
+						if(new_centers.ptr[j].pairs[k]==centers->ptr[i].pairs[w]){repeated++;}
+
+					}
+
+					if(repeated==0){
+						//new_stars[number_of_new]=new_centers.ptr[j].pairs[k];number_of_new++;
+						//check if the new star hasnt been previously added
+						added=0;	
+						for(l=0;l<number_of_new;l++){
+
+							if(new_centers.ptr[j].pairs[k]==new_stars[l]){added++;}
+					
+						}
+						if(added==0){new_stars[number_of_new]=new_centers.ptr[j].pairs[k];number_of_new++;}
+						
+					}	
+
+
+				}
+				//for every new star, check the possibility of a real star
+			
+				for(k=0;k<number_of_new;k++){
+									
+								
+				star1=search_star_position(new_stars[k],0,908,stars);
+				star2=search_star_position(centers->ptr[i].center,0,908,stars);
+				r_angle=real_vectors[star1*3]*real_vectors[star2*3] + real_vectors[star1*3+1]*real_vectors[star2*3+1] + real_vectors[star1*3+2]*real_vectors[star2*3+2];
+				r_angle=acos(r_angle)*(180/3.141593);
+
+				r_angles_vector[0]=r_angle;
+				num_r=1;					
+					for(w=0;w<centers->ptr[i].numPairs;w++){
+						star2=search_star_position(centers->ptr[i].pairs[w],0,908,stars);
+
+						r_angle=real_vectors[star1*3]*real_vectors[star2*3] + real_vectors[star1*3+1]*real_vectors[star2*3+1] + real_vectors[star1*3+2]*real_vectors[star2*3+2];
+						r_angle=acos(r_angle)*(180/3.141593);
+
+						r_angles_vector[num_r]=r_angle;
+						num_r++;
+				
+					}
+				
+					hits=0;														
+					for(w=0;w<num_m;w++){
+				
+						//printf("Medido %f Real %f ERR %f\n",m_angles_vector[w],r_angles_vector[w],abs(r_angles_vector[w]-m_angles_vector[w])/r_angles_vector[w]);
+						
+						if(abs(r_angles_vector[w]-m_angles_vector[w])/r_angles_vector[w] < (umb)){hits++;}//printf("Hits %d\n",hits);}
+
+
+					}
+							
+					
+					if(hits==number_of_possible_star-1){
+
+						c=createCenter(centers->ptr[i].center,centers->ptr[i].pairs,centers->ptr[i].numPairs+1);
+						c.pairs[c.numPairs-1]=stars[star1];						
+						addElementToCenterVector(&final,c);
+						elem_added++;
+
+						
+					}//end if hits
+				
+
+				}//end for k new stars
+
+
+		    }//end center comparation
+		
+                 }//end for j
+		
+	       }//end for i
+
+	       if(elem_added==0){unitaries->elem_used=unitaries->elem_used-1;}	
+		
+
+	      free(new_centers.ptr);
+	
+	}else{
+
+
+		unitaries->elem_used=unitaries->elem_used-1; // update this struct
+
+		free(new_centers.ptr);//free memory	
+	}	
+	
+	
+	return final;
+
+			
+}
 
 
 /*function	compare_centers		*/
@@ -1913,6 +2343,7 @@ struct centerVector find_star_pattern(struct Vector_UnitaryVector * vector,int n
 */
 
 
+
 int compare_centers(struct center *c1,struct center *c2,int minimumHits){
 
 	//Variable declaration
@@ -1923,6 +2354,7 @@ int compare_centers(struct center *c1,struct center *c2,int minimumHits){
 	
 	
 		//Extract stars in c1
+
 
 		stars1[0]=c1->center;
 		for(i=0;i<c1->numPairs;i++){
@@ -1957,7 +2389,9 @@ int compare_centers(struct center *c1,struct center *c2,int minimumHits){
 			}
 		}
 	
+
 	
+
 	if(hits>=minimumHits){success=1;}
 	
 	return success;
