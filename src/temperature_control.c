@@ -102,11 +102,11 @@ int readTempSensor(enum TEMP_SENSOR_ID sensor, int32_t* ptr, struct timespec* ti
 		case TEMP_SENSOR_CAM:
 			buf[0] = 0x00; //Command to read
 			if((write(TC74_fd, buf, 1)) != 1){
-				printf("Error writing to i2c slave\n");
+				//printf("Error writing to i2c slave\n");
 			}
 		
 			if (read(TC74_fd, buf, 1) != 1) {								// Read back data into buf[]
-				printf("Unable to read from slave\n");
+				//printf("Unable to read from slave\n");
 				//*ptr = -999999;
 				return EXIT_FAILURE;
 			}

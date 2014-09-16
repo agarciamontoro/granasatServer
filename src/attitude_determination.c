@@ -214,7 +214,6 @@ void ST_obtainAttitude2(uint8_t* image_data){
 		
 		if(centroids.elem_used>=3){
 			sort_centroids(&centroids); // ...we sort them
-			printf("%d centroids used\n", centroids.elem_used);
 			//Third step. Compute unitary vectors
 				unitaries=ComputeUnitaryVectors(&centroids,FOCAL_LENGTH);
 			//Find the star pattern.
