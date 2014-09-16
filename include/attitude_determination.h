@@ -13,6 +13,8 @@
 #define WIDTH 1280
 #define HEIGHT 960
 
+#define ATT_SIGNAL	SIGRTMIN+1
+
 enum attitudemode{
 	MODE_AUTO,
 	MODE_ST,
@@ -20,6 +22,7 @@ enum attitudemode{
 };
 
 extern enum attitudemode ATTITUDE_MODE;
+extern timer_t ATT_timer;
 
 float* catalog;
 float* k_vector;
@@ -119,6 +122,7 @@ struct centerVector{
 
 
 /////////////////////////// configuration functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+static void backToAUTO(int sig, siginfo_t *si, void *uc);
 void ADS_changeMode(enum attitudemode mode);
 void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err);
 void changeCatalogs(int magnitude);

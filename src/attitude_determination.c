@@ -1,6 +1,12 @@
 #include "attitude_determination.h"
 
 enum attitudemode ATTITUDE_MODE = MODE_AUTO;
+timer_t ATT_timer;
+
+void backToAUTO(int sig, siginfo_t *si, void *uc){
+	ADS_changeMode(MODE_AUTO);
+	printMsg(stderr, MAIN, "\n\nTimeout. Turning back to AUTO mode\n\n");
+}
 
 void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err){
 	pthread_mutex_lock ( &mutex_star_tracker );
@@ -56,11 +62,36 @@ void changeCatalogs(int magnitude){
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
 
+	/**************************************************************
+ 	ESTABLIHSING HANLDER FOR TIMER SIGNAL
+	***************************************************************/
+
+	struct sigaction sa;
+
+	/*The flag SA_SIGINFO  lets the handler to obtain data via the si_value field of the siginfo_t structure passed as the second argument to the handler.
+	Furthermore, the si_pid and	si_uid fields of this structure can be used to obtain the PID and real user ID of the process sending the signal.*/
+	sa.sa_flags = SA_SIGINFO;
+	sa.sa_sigaction = backToAUTO;
+
+	if (sigaction(ATT_SIGNAL, &sa, NULL) == -1){
+		printMsg(stderr, MAIN, "%d:ERROR setting handler: %s\n", getpid(), strerror(errno));
+		return;
+	}
+
+	timer_init(&ATT_timer, ATT_SIGNAL);
+	timer_start(&ATT_timer, 5, 0);
+
 	printMsg(stderr, STARTRACKER, "New catalog magnitude: %d\n", magnitude);
 }
 
 void ADS_changeMode(enum attitudemode mode){
 	ATTITUDE_MODE = mode;
+	
+	if(mode == MODE_AUTO)
+		timer_start(&ATT_timer, 0, 0);
+	else
+		timer_start(&ATT_timer, 5, 0);
+
 	printMsg(stderr, MAIN, "Changing flight mode to %d\n", mode);
 }
 

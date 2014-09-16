@@ -64,7 +64,7 @@ extern struct LED_st LEDs[NUM_LEDS];
 extern pid_t LED_CONTROL_PID;
 
 
-int timer_init(timer_t* TIMERID);
+int timer_init(timer_t* TIMERID, int signal_num);
 
 int timer_start(timer_t* TIMERID, int sec, long long nsec);
 

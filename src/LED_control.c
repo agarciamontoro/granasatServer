@@ -6,7 +6,7 @@ pid_t LED_CONTROL_PID = -1;
 
 int LED_ON = 1;
 
-int timer_init(timer_t* TIMERID){
+int timer_init(timer_t* TIMERID, int signal_num){
 	int success = 0;
 
 	/**************************************************************
@@ -19,7 +19,7 @@ int timer_init(timer_t* TIMERID){
 	evp.sigev_notify = SIGEV_SIGNAL;
 
 	//This field scpecifies the signal to be delivered. Set to a real-time signal (the first available is SIGRTMIN, the others are used by the SO)
-	evp.sigev_signo = LED_SIGNAL;
+	evp.sigev_signo = signal_num;
 
 	//This field is used to pass data with the signal notification. Set to the TIMERID to distinguish between several of them.
 	evp.sigev_value.sival_ptr = TIMERID;
@@ -186,7 +186,7 @@ void LED_init(enum LED_ID led){
 	}
 
 	if(timer_on)
-		timer_init(&(LEDs[led].LED_timer));
+		timer_init(&(LEDs[led].LED_timer), LED_SIGNAL);
 }
 
 int LED_blink(struct LED_st* led){
@@ -272,7 +272,7 @@ static void LED_control_handler(int sig, siginfo_t *si, void *uc){
 		LEDs[pos].LED_status = 0;
 		LEDs[pos].LED_child_pid = -1;
 		timer_start(timer_ptr, 0, 0);
-		timer_init(&(LEDs[pos].LED_timer));
+		timer_init(&(LEDs[pos].LED_timer), LED_SIGNAL);
 		printMsg(stderr, MAIN, "%d: LED child KILLED\n", getpid());
 	}
 }
