@@ -129,7 +129,14 @@ int readTempSensor(enum TEMP_SENSOR_ID sensor, int32_t* ptr, struct timespec* ti
 				return EXIT_FAILURE;
 			}
 			else {
-				*ptr = buf[1] == 128 ? (int32_t) buf[0]*1000 : (int32_t) buf[0]*1000+500;
+				*ptr = (buf[1]>>7) * 500;     // +500 mC if bit7=1
+		 
+		        if (buf[0] >= 0x80) {          // negative? -> make two's complement
+		            *ptr += (int32_t)( ((~buf[0])+1)*-1000 );
+		        } else {
+		            *ptr += (int32_t)( buf[0]*1000 );
+		        }
+				//*ptr = buf[1] != 128 ? (int32_t) buf[0]*1000 : (int32_t) buf[0]*1000+500;
 			}
 			break;
 
