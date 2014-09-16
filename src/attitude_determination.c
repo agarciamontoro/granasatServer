@@ -5,7 +5,7 @@ timer_t ATT_timer;
 
 void backToAUTO(int sig, siginfo_t *si, void *uc){
 	ADS_changeMode(MODE_AUTO);
-	printMsg(stderr, MAIN, "\n\nTimeout. Turning back to AUTO mode\n\n");
+	printMsg(stderr, MAIN, "Timeout. Turning back to AUTO mode\n");
 }
 
 void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_minpx, int __stars_used, float __err){
@@ -85,7 +85,7 @@ void changeCatalogs(int magnitude){
 	}
 
 	timer_init(&ATT_timer, ATT_SIGNAL);
-	timer_start(&ATT_timer, 5, 0);
+	timer_start(&ATT_timer, 900, 0);
 
 	printMsg(stderr, STARTRACKER, "New catalog magnitude: %d\n", magnitude);
 }
@@ -98,7 +98,7 @@ void ADS_changeMode(enum attitudemode mode){
 		timer_init(&ATT_timer, ATT_SIGNAL);
 	}
 	else
-		timer_start(&ATT_timer, 5, 0);
+		timer_start(&ATT_timer, 900, 0);
 
 	printMsg(stderr, MAIN, "Changing flight mode to %d\n", mode);
 }
@@ -126,7 +126,7 @@ void ADS_obtainAttitude(uint8_t* image_data){
 
 	if( isHistogramDark(histogram) ){
 		printMsg(stderr, MAIN, "Using STARTRACKER to obtain attitude.\n");
-		ST_obtainAttitude(image_data);
+		ST_obtainAttitude2(image_data);
 	}
 	else{
 		printMsg(stderr, MAIN, "Using HORIZONSENSOR to obtain attitude.\n");
@@ -163,7 +163,7 @@ void ST_obtainAttitude(uint8_t* image_data){
 					printMsg(stderr, STARTRACKER, "\tCenter %f Pairs\t\n",vector.ptr[j].center);
 
 					/** @todo Clean attitude storing code*/
-					if(j<10){
+					if(j == 0){
 						star_id = (uint32_t)vector.ptr[j].center;
 						memcpy(current_frame + offset, &star_id, sizeof(uint32_t));
 						offset += sizeof(uint32_t);
@@ -171,7 +171,13 @@ void ST_obtainAttitude(uint8_t* image_data){
 			
 					for(k=0;k<vector.ptr[j].numPairs;k++){
 
-						printMsg(stderr, STARTRACKER, "\t%f\t\n",vector.ptr[j].pairs[k]);
+						if(j == 0){
+							printf("\n\nJ: %d K: %d\n\n", j, k);
+							star_id = (uint32_t)vector.ptr[j].pairs[k];
+							memcpy(current_frame + offset, &star_id, sizeof(uint32_t));
+							offset += sizeof(uint32_t);
+						}
+						printMsg(stderr, STARTRACKER, "J=%d K=%d\t%f\t\n",j,k,vector.ptr[j].pairs[k]);
 
 					}
 
@@ -190,6 +196,78 @@ void ST_obtainAttitude(uint8_t* image_data){
 			printMsg(stderr, STARTRACKER, "No detected centroids\n");
 		}
 
+
+	pthread_mutex_unlock ( &mutex_star_tracker );
+
+}
+
+void ST_obtainAttitude2(uint8_t* image_data){
+	int j, k, offset;
+	uint32_t star_id;
+
+	offset = IMG_DATA_SIZE + TIMESTAMP_SIZE + PARAM_ST_SIZE + ATT_MODE_SIZE;
+
+	pthread_mutex_lock ( &mutex_star_tracker );
+		centroids = centroiding(threshold,threshold2,threshold3,ROI,image_data);
+
+		//printf("Number of centroids found \n",centroids.elem_used);
+		
+		if(centroids.elem_used>=3){
+			sort_centroids(&centroids); // ...we sort them
+			printf("%d centroids used\n", centroids.elem_used);
+			//Third step. Compute unitary vectors
+				unitaries=ComputeUnitaryVectors(&centroids,FOCAL_LENGTH);
+			//Find the star pattern.
+
+			//voting_method(&unitaries,stars_used,err,catalog,k_vector,stars,reales);
+			
+			vector = find_star_pattern(&unitaries,stars_used,err,catalog,k_vector,stars,real_vector);
+
+			if(vector.elem_used !=0 ){
+				printMsg(stderr, STARTRACKER, "Solution found : \n");
+
+				for(j=0;j<vector.elem_used;j++){
+					printMsg(stderr, STARTRACKER, "\tCenter %f Pairs\t\n",vector.ptr[j].center);
+
+					/** @todo Clean attitude storing code*/
+					if(j==0){
+						pthread_rwlock_wrlock( &camera_rw_lock );
+						
+							star_id = (uint32_t)vector.ptr[j].center;
+							memcpy(current_frame + offset, &star_id, sizeof(uint32_t));
+							offset += sizeof(uint32_t);
+						pthread_rwlock_unlock( &camera_rw_lock );
+					}
+
+					for(k=0;k<vector.ptr[j].numPairs;k++){
+						/** @todo Clean attitude storing code*/
+						if(j==0){
+							pthread_rwlock_wrlock( &camera_rw_lock );
+							
+								star_id = (uint32_t)vector.ptr[j].pairs[k];
+								memcpy(current_frame + offset, &star_id, sizeof(uint32_t));
+								offset += sizeof(uint32_t);
+							pthread_rwlock_unlock( &camera_rw_lock );
+						}
+						printMsg(stderr, STARTRACKER, "\t%f\t\n",vector.ptr[j].pairs[k]);
+					}
+
+					printf("\n");
+				}
+
+			}
+			else{
+				printMsg(stderr, STARTRACKER, "No star pattern found\n");
+			}
+
+			free(vector.ptr); // free memory
+			free(centroids.ptr);
+			free(unitaries.ptr);
+		}
+		else{
+			printf("Not enough centroids\n");
+			free(centroids.ptr);
+		}
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
 

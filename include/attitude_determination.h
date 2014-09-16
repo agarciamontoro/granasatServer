@@ -140,6 +140,7 @@ void enableStarTracker(int __threshold, int __threshold2,int __ROI, int __thresh
 void disableStarTracker();
 void ADS_obtainAttitude(uint8_t* image_data);
 void ST_obtainAttitude(uint8_t* image_data);
+void ST_obtainAttitude2(uint8_t* image_data);
 int isHistogramDark(int* histogram);
 
 /////////////////////////// load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

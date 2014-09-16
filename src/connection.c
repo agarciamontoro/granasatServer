@@ -778,25 +778,30 @@ int sendPacket(FILE* mag, FILE* acc, int sockfd){
 
 int limitBandwith(int limit){
     // Forks to create a new process to run tc script
-    char buffer[100];
+    char command[100];
+    char value[100];
     int status = EXIT_SUCCESS;
+
     pid_t pid;
 
 	pid = fork ();
-	if (pid == 0)
-	{
-		/* This is the child process.  Execute the shell command. */
-		sprintf(buffer, "%s/BIN/tc.sh %dkbit", BASE_PATH, limit);
-		execl ("/bin/sh", "sh", buffer, (char *) NULL);
+	if (pid == 0){
+		// This is the child process.  Execute the shell command. /
+		sprintf(command, "%s/BIN/tc.sh", BASE_PATH);
+		sprintf(value, "%dkbit", 4096+limit);
+		//execl ("/bin/sh", "sh", buffer, (char *) NULL);
+		execl(command, "tc.sh", "restart", value, (char *) NULL);
 		_exit (EXIT_FAILURE);
 	}
 	else if (pid < 0)
-		/* The fork failed.  Report failure.  */
+		// The fork failed.  Report failure.  /
 		status = EXIT_FAILURE;
-	else
-		/* This is the parent process.  Wait for the child to complete.  */
+	else{
+		// This is the parent process.  Wait for the child to complete.  /
+		printMsg(stderr, MAIN, "Changing data bandwidth to %d kbps\n", limit);
 		if (waitpid (pid, &status, 0) != pid)
 			status = EXIT_FAILURE;
+	}
   
     return status;
 }

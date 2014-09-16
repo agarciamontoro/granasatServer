@@ -293,6 +293,7 @@ void* control_connection(void* useless){
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	
 	int command, value, count;
+	float fvalue;
 
 	//SELECT SETUP
 	fd_set desc_set;
@@ -383,7 +384,7 @@ void* control_connection(void* useless){
 					case MSG_SET_BANDWITH:
 						/** @todo Handle bandwith limit */
 						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						//limitBandwith(value);
+						limitBandwith(value);
 						break;
 
 					case MSG_START_EXP:
@@ -444,8 +445,8 @@ void* control_connection(void* useless){
 						break;
 
 					case MSG_SET_ERROR:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						//changeParameters(threshold, threshold2, ROI, threshold3, stars_used, value);
+						getData(SOCKET_COMMANDS, &fvalue, sizeof(fvalue));
+						changeParameters(threshold, threshold2, ROI, threshold3, stars_used, fvalue);
 						break;
 
 
@@ -576,7 +577,7 @@ void* process_images(void* useless){
 				case MODE_ST:
 					clock_gettime(CLOCK_MONOTONIC, &before);
 						printMsg(stderr, MAIN, "In ST mode to process images.\n");
-						ST_obtainAttitude(image);
+						ST_obtainAttitude2(image);
 					clock_gettime(CLOCK_MONOTONIC, &after);
 					break;
 
@@ -611,7 +612,7 @@ int main(int argc, char** argv){
     // *******************************
 
 	//Connection limit
-	limitBandwith(500);
+	limitBandwith(5120);
 
 	//Initialise signal
 	signal(SIGINT, intHandler);

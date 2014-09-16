@@ -225,7 +225,7 @@ int change_all_parameters(struct v4l2_parameters* params){
 void process_image(const void *p, int size, struct timespec timestamp, uint8_t* image_data)
 {
 	static int img_id = 0;
-	img_id %= 101;
+	img_id %= 14;
 	img_id++;
 	//Save raw image
 	char string[100];
@@ -316,7 +316,7 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 
 	pthread_rwlock_wrlock( &camera_rw_lock );
 		if(TEST_IMGS_MODE){
-			sprintf(string, "%s/INPUT/IMGs/test_image%d.bmp", BASE_PATH, img_id++%20);
+			sprintf(string, "%s/INPUT/IMGs/test_image%d.bmp", BASE_PATH, img_id);
 			IplImage * prueba = cvLoadImage(string,0);
 			printMsg(stderr, STARTRACKER, "Reading image and processing image %s\n", string);
 			//Actual image to shared buffer
