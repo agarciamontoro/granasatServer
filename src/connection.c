@@ -672,9 +672,10 @@ int sendAccAndMag(FILE* mag_file, FILE* acc_file, int sockfd){
 	*(accF+1) = (float) *(a+1)*A_GAIN;
 	*(accF+2) = (float) *(a+2)*A_GAIN;
 
-	printMsg(stderr, CONNECTION, "Sending magnetometer: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
-	printMsg(stderr, CONNECTION, "Sending accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
+	printMsg(stderr, LSM303, "Sending magnetometer: %4.3f %4.3f %4.3f\n", MAG[0],MAG[1],MAG[2]);
+	printMsg(stderr, LSM303, "Sending accelerometer: %4.3f %4.3f %4.3f\n", accF[0],accF[1],accF[2]);
 
+	/**@todo Temperature semaphore? */
 	memcpy(buffer+MAG_FM_SIZE+ACC_FM_SIZE, current_temperature, TEMP_FM_SIZE);
 
 

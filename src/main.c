@@ -156,6 +156,11 @@ void* capture_images(void* useless){
 
 	enum LED_ID camera_led = LED_RED;
 
+
+	while(keep_waiting){
+		usleep(100000);
+	}
+
 	while(keep_running){
 
 		camera_connected = 0;
@@ -242,6 +247,12 @@ void* control_LS303DLHC_and_temp(void* useless){
 
 
 	enum LED_ID LSM303_led = LED_WHT;
+
+
+	while(keep_waiting){
+		usleep(100000);
+	}
+
 	while(keep_running){
 		usleep(2000000);
 
@@ -372,7 +383,7 @@ void* control_connection(void* useless){
 					case MSG_SET_BANDWITH:
 						/** @todo Handle bandwith limit */
 						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						limitBandwith(value);
+						//limitBandwith(value);
 						break;
 
 					case MSG_START_EXP:
@@ -469,9 +480,8 @@ void* control_connection(void* useless){
 			} //END OF SELECT IF
 			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
 				//Send magnetometer/accelerometer and temperatures packet
-				sendPacket(read_mag, read_acc, SOCKET_SMALL);
-				//sendAccAndMag(read_mag, read_acc, SOCKET_SMALL);
-				//sendTemperatures(SOCKET_SMALL);
+				if(!keep_waiting)
+					sendPacket(read_mag, read_acc, SOCKET_SMALL);
 
 				//Restart timeout because its content is undefined after select return.
 				timeout.tv_sec = 0;
@@ -484,7 +494,8 @@ void* control_connection(void* useless){
 			if(count >= 3){
 				count = 0;
 				printMsg(stderr, CONNECTION, "Sending image\n");
-				sendImage(SOCKET_BIG);
+				if(!keep_waiting)
+					sendImage(SOCKET_BIG);
 			}
 
 		} //END while ( connected )
@@ -531,6 +542,11 @@ void* process_images(void* useless){
 	int first = 1;
 
 	enum LED_ID processing_led = LED_ORN;
+
+
+	while(keep_waiting){
+		usleep(100000);
+	}
 	while(keep_running){
 		pthread_rwlock_rdlock( &camera_rw_lock );
 
@@ -636,14 +652,11 @@ int main(int argc, char** argv){
     // ******** START  THREADS *******
     // *******************************
 
-	pthread_create( &connection_thread, NULL, control_connection, NULL );
-	//while(keep_waiting){
-	//	usleep(500000);
-	//}
 	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
 	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC_and_temp, NULL );
+	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 
 	// *******************************

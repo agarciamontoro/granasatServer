@@ -16,9 +16,9 @@
 #define ATT_SIGNAL	SIGRTMIN+1
 
 enum attitudemode{
-	MODE_AUTO,
-	MODE_ST,
-	MODE_HS
+	MODE_AUTO = 0,
+	MODE_ST = 1,
+	MODE_HS = 2
 };
 
 extern enum attitudemode ATTITUDE_MODE;
