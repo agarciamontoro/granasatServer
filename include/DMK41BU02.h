@@ -35,6 +35,7 @@
 #include <highgui.h>			// Graphical User Interface and others
 
 // Program libraries
+#include "attitude_determination.h"	// Attitude determination library
 #include "sync_control.h"		// Timestamp management and synchronisation control
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))

@@ -24,6 +24,7 @@
 #define MSG_SET_MODE_STAR	5	//	5.	Set mode to STAR TRACKER
 #define MSG_SET_MODE_HORI	6	//	6.	Set mode to HORIZON SENSOR
 #define MSG_SET_BANDWITH	7	//	7.	Set bandwith limit			(+ int)
+#define MSG_START_EXP		8	//	8.	Start measuring dataline
 
 	//Camera
 #define MSG_SET_BRIGHTNESS	10	//	10.	Sets brightness				(+ int)

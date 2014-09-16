@@ -19,6 +19,7 @@ int new_frame_proc = 0;
 int new_frame_send = 0;
 int new_temp_send = 0;
 int keep_running = 1;
+int keep_waiting = 1;
 
 /**
  * @details

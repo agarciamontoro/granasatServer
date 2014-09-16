@@ -87,8 +87,10 @@ void changeCatalogs(int magnitude){
 void ADS_changeMode(enum attitudemode mode){
 	ATTITUDE_MODE = mode;
 	
-	if(mode == MODE_AUTO)
+	if(mode == MODE_AUTO){
 		timer_start(&ATT_timer, 0, 0);
+		timer_init(&ATT_timer, ATT_SIGNAL);
+	}
 	else
 		timer_start(&ATT_timer, 5, 0);
 

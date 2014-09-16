@@ -287,6 +287,10 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 	num_bytes += fwrite(&(param.exp_mode_), 1, PARAM_SIZE, raw_img);
 	num_bytes += fwrite(&(param.exp_value_), 1, PARAM_SIZE, raw_img);
 
+	//ATTITUDE DATA
+	//Attitude mode
+	//num_bytes += fwrite(&ATTITUDE_MODE, 1, sizeof(uint8_t), raw_img);
+
 	if(ferror(raw_img)){
 		strerror_r(errno, error_string, 75);
 		printMsg(stderr, DMK41BU02, "Error writing file %s: %s. %d bytes written out of %d\n", full_file_name, error_string, num_bytes, IMG_FILE_SIZE);

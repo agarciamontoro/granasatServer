@@ -342,6 +342,7 @@ void* control_connection(void* useless){
 			FD_ZERO(&desc_set); //SELECT SETUP
 			FD_SET(SOCKET_COMMANDS, &desc_set); //SELECT SETUP
 
+
 			if( select(SOCKET_COMMANDS + 1, &desc_set, NULL, NULL, &timeout) != 0 ){
 				command = getCommand(SOCKET_COMMANDS);
 
@@ -354,12 +355,12 @@ void* control_connection(void* useless){
 						CONNECTED = 0;
 						keep_running = 0;
 						intHandler(0);
-						printMsg(stderr, CONNECTION, "FINISHING PROGRAM.\n");
+						printMsg(stderr, MAIN, "FINISHING PROGRAM.\n");
 						break;
 
 					case MSG_RESTART:
 						CONNECTED = 0;
-						printMsg(stderr, CONNECTION, "RESTARTING PROGRAM.\n\n");
+						printMsg(stderr, MAIN, "RESTARTING PROGRAM.\n\n");
 						break;
 
 					case MSG_PING:
@@ -372,6 +373,11 @@ void* control_connection(void* useless){
 						/** @todo Handle bandwith limit */
 						getData(SOCKET_COMMANDS, &value, sizeof(value));
 						limitBandwith(value);
+						break;
+
+					case MSG_START_EXP:
+						keep_waiting = 0;
+						printMsg(stderr, MAIN, "START command received. Starting to measure data\n");
 						break;
 
 					//CAMERA PARAMETERS
@@ -630,11 +636,14 @@ int main(int argc, char** argv){
     // ******** START  THREADS *******
     // *******************************
 
+	pthread_create( &connection_thread, NULL, control_connection, NULL );
+	//while(keep_waiting){
+	//	usleep(500000);
+	//}
 	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
 	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
 	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC_and_temp, NULL );
-	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
 
 	// *******************************
