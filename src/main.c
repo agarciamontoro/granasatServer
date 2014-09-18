@@ -187,6 +187,7 @@ void* capture_images(void* useless){
 			if( (time_passed = diff_times(&old, &current)) < CAPTURE_RATE_NSEC ){
 				difference = nsec_to_timespec(CAPTURE_RATE_NSEC - time_passed);
 				nanosleep( &difference, NULL );
+				printMsg(stderr, DMK41BU02, "%sIF SUCCESSFUL: time_passed = %d\n", KRED, time_passed);
 			}
 			else{
 				if( capture_frame(image_data, &err_number) == EXIT_FAILURE ){
@@ -288,21 +289,39 @@ void* control_LS303DLHC_and_temp(void* useless){
 	return NULL;
 }
 
-void* control_connection(void* useless){
+void* socket_big_control(void* useless){
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	struct timespec old, current, difference;
+	int time_passed = 0;
 	
-	int command, value, count;
-	float fvalue;
+	clock_gettime(CLOCK_MONOTONIC, &old);
 
-	//SELECT SETUP
-	fd_set desc_set;
-	struct timeval timeout;
+	while(CONNECTED){
+		clock_gettime(CLOCK_MONOTONIC, &current);
 
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 500000;
-	//END OF SELECT SETUP
+		if( (time_passed = diff_times(&old, &current)) < CAPTURE_RATE_NSEC ){
+			difference = nsec_to_timespec(CAPTURE_RATE_NSEC - time_passed);
+			nanosleep( &difference, NULL );
+		}
+		else{
+			if(!keep_waiting){
+				sendImage(SOCKET_BIG);
+				printMsg(stderr, CONNECTION, "New image sent\n");
 
+				clock_gettime(CLOCK_MONOTONIC, &old);
+			}
+		}
+
+	}
+}
+
+void* socket_small_control(void* useless){
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	enum LED_ID connection_led = LED_BLU;
 
 	//MAG AND ACC FILE OPENING
 	pthread_rwlock_rdlock( &accelerometer_rw_lock );
@@ -320,6 +339,163 @@ void* control_connection(void* useless){
 		*/
 	}
 
+	//Send magnetometer/accelerometer and temperatures packet
+	while(CONNECTED){
+		/**
+		* @todo Handle write errors
+		*/
+		write(LED_FD, &connection_led, sizeof(connection_led));
+
+		if(!keep_waiting)
+			sendPacket(read_mag, read_acc, SOCKET_SMALL);
+
+		usleep(500000);
+	}
+
+
+	if(read_acc != NULL)
+		fclose(read_acc);
+	
+	if(read_mag != NULL)
+		fclose(read_mag);
+}
+
+void* socket_commands_control(void* useless){
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	int command, value;
+	float fvalue;
+
+	while(CONNECTED){
+			/**@todo Check if the blocking socket messes up the connection handling when joining the threads */
+			command = getCommand(SOCKET_COMMANDS);
+
+			switch(command){
+				//COMMANDS
+				case MSG_PASS:
+					break;
+					
+				case MSG_END:
+					CONNECTED = 0;
+					keep_running = 0;
+					intHandler(0);
+					printMsg(stderr, MAIN, "FINISHING PROGRAM.\n");
+					break;
+
+				case MSG_RESTART:
+					CONNECTED = 0;
+					printMsg(stderr, MAIN, "RESTARTING PROGRAM.\n\n");
+					break;
+
+				case MSG_PING:
+					value = 0;
+					sendData(SOCKET_COMMANDS, &value, sizeof(value));
+					printMsg(stderr, CONNECTION, "MSG_PING received\n\n");
+					break;
+
+				case MSG_SET_BANDWITH:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					limitBandwith(value);
+					break;
+
+				case MSG_START_EXP:
+					keep_waiting = 0;
+					printMsg(stderr, MAIN, "START command received. Starting to measure data\n");
+					break;
+
+				//CAMERA PARAMETERS
+				case MSG_SET_BRIGHTNESS:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					change_parameter(V4L2_CID_BRIGHTNESS, value);
+					break;
+
+				case MSG_SET_GAMMA:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					change_parameter(V4L2_CID_GAMMA, value);
+					break;
+
+				case MSG_SET_GAIN:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					change_parameter(V4L2_CID_GAIN, value);
+					break;
+
+				case MSG_SET_EXP_MODE:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					change_parameter(V4L2_CID_EXPOSURE_AUTO, value);
+					break;
+
+				case MSG_SET_EXP_VAL:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					change_parameter(V4L2_CID_EXPOSURE_ABSOLUTE, value);
+					break;
+
+				//STAR TRACKER PARAMETERS
+				case MSG_SET_STARS:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					changeParameters(threshold, threshold2, ROI, threshold3, value, err);
+					break;
+
+				case MSG_SET_CATALOG:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					changeCatalogs(value);
+					break;
+
+				case MSG_SET_PX_THRESH:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					changeParameters(value, threshold2, ROI, threshold3, stars_used, err);
+					break;
+
+				case MSG_SET_ROI:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					changeParameters(threshold, threshold2, value, threshold3, stars_used, err);
+					break;
+
+				case MSG_SET_POINTS:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					changeParameters(threshold, threshold2, ROI, value, stars_used, err);
+					break;
+
+				case MSG_SET_ERROR:
+					getData(SOCKET_COMMANDS, &fvalue, sizeof(fvalue));
+					changeParameters(threshold, threshold2, ROI, threshold3, stars_used, fvalue);
+					break;
+
+
+				//HORIZON SENSOR PARAMETERS
+				case MSG_SET_BIN_TH:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					HS_changeParameters(value, CAN_THRESH);
+					break;
+
+				case MSG_SET_CANNY_TH:
+					getData(SOCKET_COMMANDS, &value, sizeof(value));
+					HS_changeParameters(BIN_THRESH, value);
+					break;
+
+				//ATTITUDE SYSTEM PARAMETERS
+				case MSG_SET_MODE_AUTO:
+					ADS_changeMode(MODE_AUTO);
+					break;
+
+				case MSG_SET_MODE_STAR:
+					ADS_changeMode(MODE_ST);
+					break;
+
+				case MSG_SET_MODE_HORI:
+					ADS_changeMode(MODE_HS);
+					break;
+
+				default:
+					break;
+			} //END switch
+
+	} //END while ( connected )	
+}
+
+void* control_connection(void* useless){
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	//START LISTENING FOR INCOMING CONNECTIONS
 	LISTEN_COMMANDS = prepareSocket(PORT_COMMANDS);
@@ -341,166 +517,18 @@ void* control_connection(void* useless){
 		else
 			printMsg(stderr, CONNECTION, "%sClient connection refused%s\n", KRED, KRES);
 
-		//TIMES SETUP
-		count = 0;
+		if(CONNECTED){
+			pthread_t socket_big_thread, socket_small_thread, socket_commands_thread;
 
-		enum LED_ID connection_led = LED_BLU;
-		while(CONNECTED){
-			/**
-			* @todo Handle write errors
-			*/
-			write(LED_FD, &connection_led, sizeof(connection_led));
+			pthread_create( &socket_big_thread, NULL, socket_big_control, NULL );
+			pthread_create( &socket_small_thread, NULL, socket_small_control, NULL );
+			pthread_create( &socket_commands_thread, NULL, socket_commands_control, NULL );
 
-			FD_ZERO(&desc_set); //SELECT SETUP
-			FD_SET(SOCKET_COMMANDS, &desc_set); //SELECT SETUP
+			pthread_join( socket_big_thread, NULL );
+			pthread_join( socket_small_thread, NULL );
+			pthread_join( socket_commands_thread, NULL );
+		}
 
-
-			if( select(SOCKET_COMMANDS + 1, &desc_set, NULL, NULL, &timeout) != 0 ){
-				command = getCommand(SOCKET_COMMANDS);
-
-				switch(command){
-					//COMMANDS
-					case MSG_PASS:
-						break;
-						
-					case MSG_END:
-						CONNECTED = 0;
-						keep_running = 0;
-						intHandler(0);
-						printMsg(stderr, MAIN, "FINISHING PROGRAM.\n");
-						break;
-
-					case MSG_RESTART:
-						CONNECTED = 0;
-						printMsg(stderr, MAIN, "RESTARTING PROGRAM.\n\n");
-						break;
-
-					case MSG_PING:
-						value = 0;
-						sendData(SOCKET_COMMANDS, &value, sizeof(value));
-						printMsg(stderr, CONNECTION, "MSG_PING received\n\n");
-						break;
-
-					case MSG_SET_BANDWITH:
-						/** @todo Handle bandwith limit */
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						limitBandwith(value);
-						break;
-
-					case MSG_START_EXP:
-						keep_waiting = 0;
-						printMsg(stderr, MAIN, "START command received. Starting to measure data\n");
-						break;
-
-					//CAMERA PARAMETERS
-					case MSG_SET_BRIGHTNESS:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						change_parameter(V4L2_CID_BRIGHTNESS, value);
-						break;
-
-					case MSG_SET_GAMMA:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						change_parameter(V4L2_CID_GAMMA, value);
-						break;
-
-					case MSG_SET_GAIN:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						change_parameter(V4L2_CID_GAIN, value);
-						break;
-
-					case MSG_SET_EXP_MODE:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						change_parameter(V4L2_CID_EXPOSURE_AUTO, value);
-						break;
-
-					case MSG_SET_EXP_VAL:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						change_parameter(V4L2_CID_EXPOSURE_ABSOLUTE, value);
-						break;
-
-					//STAR TRACKER PARAMETERS
-					case MSG_SET_STARS:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						changeParameters(threshold, threshold2, ROI, threshold3, value, err);
-						break;
-
-					case MSG_SET_CATALOG:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						changeCatalogs(value);
-						break;
-
-					case MSG_SET_PX_THRESH:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						changeParameters(value, threshold2, ROI, threshold3, stars_used, err);
-						break;
-
-					case MSG_SET_ROI:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						changeParameters(threshold, threshold2, value, threshold3, stars_used, err);
-						break;
-
-					case MSG_SET_POINTS:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						changeParameters(threshold, threshold2, ROI, value, stars_used, err);
-						break;
-
-					case MSG_SET_ERROR:
-						getData(SOCKET_COMMANDS, &fvalue, sizeof(fvalue));
-						changeParameters(threshold, threshold2, ROI, threshold3, stars_used, fvalue);
-						break;
-
-
-					//HORIZON SENSOR PARAMETERS
-					case MSG_SET_BIN_TH:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						HS_changeParameters(value, CAN_THRESH);
-						break;
-
-					case MSG_SET_CANNY_TH:
-						getData(SOCKET_COMMANDS, &value, sizeof(value));
-						HS_changeParameters(BIN_THRESH, value);
-						break;
-
-					//ATTITUDE SYSTEM PARAMETERS
-					case MSG_SET_MODE_AUTO:
-						ADS_changeMode(MODE_AUTO);
-						break;
-
-					case MSG_SET_MODE_STAR:
-						ADS_changeMode(MODE_ST);
-						break;
-
-					case MSG_SET_MODE_HORI:
-						ADS_changeMode(MODE_HS);
-						break;
-
-					default:
-						break;
-				} //END switch
-
-			} //END OF SELECT IF
-			else{ //SELECT RETURNS BECAUSE OF THE TIMEOUT
-				//Send magnetometer/accelerometer and temperatures packet
-				if(!keep_waiting)
-					sendPacket(read_mag, read_acc, SOCKET_SMALL);
-
-				//Restart timeout because its content is undefined after select return.
-				timeout.tv_sec = 0;
-				timeout.tv_usec = 500000;
-				
-				//For images sending
-				count++;
-			}
-
-			if(count >= 3){
-				count = 0;
-				if(!keep_waiting){
-					sendImage(SOCKET_BIG);
-					printMsg(stderr, CONNECTION, "Sending image\n");
-				}
-			}
-
-		} //END while ( connected )
 		
 		printMsg(stderr, MAIN, "Closing sockets\n");
 		close(SOCKET_BIG);
@@ -510,11 +538,6 @@ void* control_connection(void* useless){
 		printMsg(stderr, CONNECTION, "All comunication sockets closed.\n");
 	} //END while ( keep_running )
 
-	if(read_acc != NULL)
-		fclose(read_acc);
-	
-	if(read_mag != NULL)
-		fclose(read_mag);
 
 	close(LISTEN_BIG);
 	close(LISTEN_SMALL);

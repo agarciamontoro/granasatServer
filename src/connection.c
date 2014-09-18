@@ -350,7 +350,7 @@ int getData(int sockfd, void* ptr, int n_bytes){
 			int err_num = errno;
 			strerror_r(err_num, error_string, 75);
 
-			printMsg(stderr, CONNECTION, "ERROR reading socket: %s.\n", error_string);
+			//printMsg(stderr, CONNECTION, "ERROR reading socket: %s.\n", error_string);
 			success = 0;
 
 			if(err_num != EAGAIN){
