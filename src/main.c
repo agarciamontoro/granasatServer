@@ -187,7 +187,6 @@ void* capture_images(void* useless){
 			if( (time_passed = diff_times(&old, &current)) < CAPTURE_RATE_NSEC ){
 				difference = nsec_to_timespec(CAPTURE_RATE_NSEC - time_passed);
 				nanosleep( &difference, NULL );
-				printMsg(stderr, DMK41BU02, "%sIF SUCCESSFUL: time_passed = %d\n", KRED, time_passed);
 			}
 			else{
 				if( capture_frame(image_data, &err_number) == EXIT_FAILURE ){
@@ -293,27 +292,11 @@ void* socket_big_control(void* useless){
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	struct timespec old, current, difference;
-	int time_passed = 0;
-	
-	clock_gettime(CLOCK_MONOTONIC, &old);
-
 	while(CONNECTED){
-		clock_gettime(CLOCK_MONOTONIC, &current);
-
-		if( (time_passed = diff_times(&old, &current)) < CAPTURE_RATE_NSEC ){
-			difference = nsec_to_timespec(CAPTURE_RATE_NSEC - time_passed);
-			nanosleep( &difference, NULL );
-		}
-		else{
-			if(!keep_waiting){
-				sendImage(SOCKET_BIG);
+		if(!keep_waiting){
+			if(sendImage(SOCKET_BIG))
 				printMsg(stderr, CONNECTION, "New image sent\n");
-
-				clock_gettime(CLOCK_MONOTONIC, &old);
-			}
 		}
-
 	}
 }
 

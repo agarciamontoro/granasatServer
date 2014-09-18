@@ -239,7 +239,7 @@ extern int keep_waiting;
  * @warning If @p before or @p after are NULL pointers, diff_times() behaviour is undefined.
  * @warning If @p before is greater than @p after, diff_times() behaviour is undefined.
  */
-int diff_times(struct timespec* before, struct timespec* after);
+long int diff_times(struct timespec* before, struct timespec* after);
 
 
 /**
@@ -270,7 +270,7 @@ struct timespec diff_times_spec(struct timespec* before, struct timespec* after)
 
  * @warning If @p nsec is negative, nsec_to_timespec() behaviour is undefined.
  */
-struct timespec nsec_to_timespec(long long nsec);
+struct timespec nsec_to_timespec(long int nsec);
 
 /**
  * @brief Prints @p msg, preceded by the current local time, into the output pointed by @p stream.

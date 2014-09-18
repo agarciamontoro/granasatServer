@@ -41,8 +41,8 @@ int keep_waiting = 1;
  * <b> General behaviour </b> @n
  * The steps performed by diff_times() are the following:
  */
-int diff_times(struct timespec* before, struct timespec* after){
-	int n_nsec_before, n_nsec_after;
+long int diff_times(struct timespec* before, struct timespec* after){
+	long int n_nsec_before, n_nsec_after;
 
 	/**
 	* @details -# Translation of @p before into nanoseconds.
@@ -84,17 +84,17 @@ int diff_times(struct timespec* before, struct timespec* after){
  * The steps performed by diff_times_spec() are the following:
  */
 struct timespec diff_times_spec(struct timespec* before, struct timespec* after){
-	long long n_nsec_before, n_nsec_after;
+	long int n_nsec_before, n_nsec_after;
 
 	/**
 	* @details -# Translation of @p before into nanoseconds.
 	*/
-	n_nsec_before = (long long)before->tv_sec * (long long)NANO_FACTOR + (long long)before->tv_nsec;
+	n_nsec_before = (long int)before->tv_sec * (long int)NANO_FACTOR + (long int)before->tv_nsec;
 
 	/**
 	* @details -# Translation of @p after into nanoseconds.
 	*/
-	n_nsec_after = (long long)after->tv_sec * (long long)NANO_FACTOR + (long long)after->tv_nsec;
+	n_nsec_after = (long int)after->tv_sec * (long int)NANO_FACTOR + (long int)after->tv_nsec;
 
 	/**
 	* @details -# Conversion into @c struct @c timespec of the difference of nanoseconds between
@@ -126,7 +126,7 @@ struct timespec diff_times_spec(struct timespec* before, struct timespec* after)
  * <b> General behaviour </b> @n
  * The steps performed nsec_to_timespec() are the following:
  */
-struct timespec nsec_to_timespec(long long nsec){
+struct timespec nsec_to_timespec(long int nsec){
 	struct timespec res;
 
 	/**
@@ -139,7 +139,7 @@ struct timespec nsec_to_timespec(long long nsec){
 	* @details -# Computing of the remaining number of nanoseconds.
 	* This initialise @c tv_nsec member of a @c struct timespec.
 	*/
-	res.tv_nsec = (long) (nsec % NANO_FACTOR);
+	res.tv_nsec = (long int) (nsec % NANO_FACTOR);
 
 	/**
 	* @details -# Returning of the @c struct @c timespec.

@@ -482,7 +482,7 @@ int sendData(int sockfd, void* ptr, int n_bytes){
 				if(n == 0)
 					printMsg(stderr, CONNECTION, "%s0 bytes sent%s\n", KRED, KRES);
 				bytes_sent += n;
-				printMsg(stderr, CONNECTION, "%d of %d bytes sent.\n", bytes_sent, n_bytes);
+				//printMsg(stderr, CONNECTION, "%d of %d bytes sent.\n", bytes_sent, n_bytes);
 			}
 		}
 	}
