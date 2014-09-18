@@ -788,7 +788,8 @@ int limitBandwith(int limit){
 	if (pid == 0){
 		// This is the child process.  Execute the shell command. /
 		sprintf(command, "%s/BIN/tc.sh", BASE_PATH);
-		sprintf(value, "%dkbit", 4096+limit);
+		int lim_val = limit < 500 ? 500 : limit;
+		sprintf(value, "%dkbit", lim_val);
 		//execl ("/bin/sh", "sh", buffer, (char *) NULL);
 		execl(command, "tc.sh", "restart", value, (char *) NULL);
 		_exit (EXIT_FAILURE);

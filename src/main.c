@@ -494,9 +494,10 @@ void* control_connection(void* useless){
 
 			if(count >= 3){
 				count = 0;
-				printMsg(stderr, CONNECTION, "Sending image\n");
-				if(!keep_waiting)
+				if(!keep_waiting){
 					sendImage(SOCKET_BIG);
+					printMsg(stderr, CONNECTION, "Sending image\n");
+				}
 			}
 
 		} //END while ( connected )
@@ -612,7 +613,7 @@ int main(int argc, char** argv){
     // *******************************
 
 	//Connection limit
-	limitBandwith(5120);
+	limitBandwith(500);
 
 	//Initialise signal
 	signal(SIGINT, intHandler);
