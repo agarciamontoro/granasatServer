@@ -362,13 +362,16 @@ void* socket_commands_control(void* useless){
 				case MSG_END:
 					CONNECTED = 0;
 					keep_running = 0;
-					intHandler(0);
+					//intHandler(0);
 					printMsg(stderr, MAIN, "FINISHING PROGRAM.\n");
+					execl("/sbin/poweroff", "poweroff", (char *) NULL);
 					break;
 
 				case MSG_RESTART:
 					CONNECTED = 0;
+					keep_running = 0;
 					printMsg(stderr, MAIN, "RESTARTING PROGRAM.\n\n");
+					execl("/sbin/reboot", "reboot", (char *) NULL);
 					break;
 
 				case MSG_PING:
