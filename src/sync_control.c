@@ -7,6 +7,8 @@
 
 #include "sync_control.h"
 
+
+char OUTPUT_BASE_PATH[256];
 struct timespec T_ZERO;
 pthread_rwlock_t camera_rw_lock;
 pthread_rwlock_t temperatures_rw_lock;

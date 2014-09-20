@@ -293,18 +293,18 @@ void ST_obtainAttitude2(uint8_t* image_data){
 }
 
 int isHistogramDark(int* histogram){
-	int one_third;
+	int one_fifth;
 	long int sum_dark, sum_bright;
 
-	one_third = 85;
+	one_fifth = 51;
 	sum_dark = sum_bright = 0;
 
 	int i;
-	for (i = 0; i < one_third; ++i){
+	for (i = 0; i < one_fifth; ++i){
 		sum_dark += histogram[i];
 	}
 
-	for (i = one_third; i < 256; ++i){
+	for (i = one_fifth; i < 256; ++i){
 		sum_bright += histogram[i];
 	}
 

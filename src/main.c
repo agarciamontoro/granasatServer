@@ -93,9 +93,9 @@ UGR space projects.
 #include "temperature_control.h"
 
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, horizon_thread;
-#define acc_file_name	BASE_PATH"/OUTPUT/LSM303/accelerometer_measurements.data"
-#define mag_file_name	BASE_PATH"/OUTPUT/LSM303/magnetometer_measurements.data"
-#define temp_file_name	BASE_PATH"/OUTPUT/TEMPs/temperature_measurements.data"
+char acc_file_name[256];//	BASE_PATH"/OUTPUT/LSM303/accelerometer_measurements.data"
+char mag_file_name[256];//	BASE_PATH"/OUTPUT/LSM303/magnetometer_measurements.data"
+char temp_file_name[256];//	BASE_PATH"/OUTPUT/TEMPs/temperature_measurements.data"
 
 void intHandler(int dummy){
 		/** @todo Nice-to-have: Calling printf() from a signal handler is not
@@ -364,14 +364,18 @@ void* socket_commands_control(void* useless){
 					keep_running = 0;
 					//intHandler(0);
 					printMsg(stderr, MAIN, "FINISHING PROGRAM.\n");
-					execl("/sbin/poweroff", "poweroff", (char *) NULL);
+					sleep(1);
+					if(fork() == 0)
+						execl("/sbin/poweroff", "poweroff", (char *) NULL);
 					break;
 
 				case MSG_RESTART:
 					CONNECTED = 0;
 					keep_running = 0;
 					printMsg(stderr, MAIN, "RESTARTING PROGRAM.\n\n");
-					execl("/sbin/reboot", "reboot", (char *) NULL);
+					sleep(1);
+					if(fork() == 0)
+						execl("/sbin/reboot", "reboot", (char *) NULL);
 					break;
 
 				case MSG_PING:
@@ -617,6 +621,18 @@ void* process_images(void* useless){
 }
 
 int main(int argc, char** argv){
+	// *******************************
+    // *****PATHS AND  FILES NAMES****
+    // *******************************
+	sprintf(OUTPUT_BASE_PATH, "%s", argv[1]);
+
+	printf("%s\n", OUTPUT_BASE_PATH);
+
+	sprintf(acc_file_name, "%s%s", OUTPUT_BASE_PATH, "/LSM303/accelerometer_measurements.data");
+	sprintf(mag_file_name, "%s%s", OUTPUT_BASE_PATH, "/LSM303/magnetometer_measurements.data");
+	sprintf(temp_file_name, "%s%s", OUTPUT_BASE_PATH, "/TEMPs/temperature_measurements.data");
+
+
 	// *******************************
     // ***** SYNC  INITIALISATION ****
     // *******************************

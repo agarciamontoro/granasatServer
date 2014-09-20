@@ -248,8 +248,8 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 		param.exp_value_ = -1;
 	}
 
-	sprintf(base_file_name, "%s/OUTPUT/IMGs/IMG_%05d_B%d-Gm%d-Gn%d-M%d-E%d",
-				BASE_PATH,
+	sprintf(base_file_name, "%s/IMGs/IMG_%05d_B%d-Gm%d-Gn%d-M%d-E%d",
+				OUTPUT_BASE_PATH,
 				LAST_IMG_SAVED%10,
 				param.brightness_,
 				param.gamma_,
