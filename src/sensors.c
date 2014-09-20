@@ -186,6 +186,8 @@ double readCPUtemperature(){
 }
 
 int readAndStoreTemperatures(FILE* file){
+	int success = EXIT_SUCCESS;
+
 	static int32_t temperatures[4] = {36000, 31000, 16000, 58376};
 	struct timespec timestamp;
 
@@ -224,6 +226,29 @@ int readAndStoreTemperatures(FILE* file){
 		memcpy(current_temperature + offset, &(timestamp.tv_nsec), TV_NSEC_SIZE);
 		offset += TV_NSEC_SIZE;
 	pthread_rwlock_unlock( &temperatures_rw_lock );
+	
+
+	success = ( ( fwrite(temperatures, sizeof(*temperatures), 4, file) == 4 )
+				&&
+				( fwrite(&(timestamp.tv_sec), 1, TV_SEC_SIZE, file) == TV_SEC_SIZE )
+				&&
+				( fwrite(&(timestamp.tv_nsec), 1, TV_NSEC_SIZE, file) == TV_NSEC_SIZE )
+			  );
+		
+	/**
+	* The following function appears to be useless, but it is completely necessary.
+	* See man 3 fopen to read the following paragraph, where this issue is explained:
+	* Reads  and  writes  may be intermixed on read/write streams in any order.
+	* Note that ANSI C requires that a file positioning function intervene between
+	* output and input, unless an input operation encounters end-of-file.
+	* (If this condition is not met, then a read is allowed  to  return  the  result  of
+	* writes other than the most recent.)  Therefore it is good practice (and indeed
+	*sometimes necessary under Linux) to put an fseek(3) or fgetpos(3) operation
+	* between write and read operations on such a stream.  This operation may be an
+	* apparent no-op (as in fseek(..., 0L, SEEK_CUR) called for  its  synchronizing
+	* side effect.
+	*/
+	fseek(file, 0, SEEK_CUR);
 
 
 	offset = 0;
