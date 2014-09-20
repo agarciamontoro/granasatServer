@@ -54,17 +54,37 @@ void changeCatalogs(int magnitude){
 
 	pthread_mutex_lock ( &mutex_star_tracker );
 
-		free(catalog);
-		catalog=loadCatalog(catalog_string, "r");
+		if( access( catalog_string, F_OK ) != -1 ) {
+			free(catalog);
+			catalog=loadCatalog(catalog_string, "r");
+		}
+		else{
+			printMsg(stderr, STARTRACKER, "%sERROR: Catalog file does not exist\n", KRED);
+		}
 
-		free(k_vector);
-		k_vector = loadKVector(k_vector_string,"r");
+		if( access( k_vector_string, F_OK ) != -1 ) {
+			free(k_vector);
+			k_vector = loadKVector(k_vector_string,"r");
+		}
+		else{
+			printMsg(stderr, STARTRACKER, "%sERROR: K-vector file does not exist\n", KRED);
+		}
 
-		free(stars);
-		stars=loadStars(stars_string,"r");
+		if( access( stars_string, F_OK ) != -1 ) {
+			free(stars);
+			stars=loadStars(stars_string,"r");
+		}
+		else{
+			printMsg(stderr, STARTRACKER, "%sERROR: Stars file does not exist\n", KRED);
+		}
 
-		free(real_vector);
-		real_vector = loadRealVectors(real_vector_string, "r");
+		if( access( real_vector_string, F_OK ) != -1 ) {
+			free(real_vector);
+			real_vector = loadRealVectors(real_vector_string, "r");
+		}
+		else{
+			printMsg(stderr, STARTRACKER, "%sERROR: Real-vector file does not exist\n", KRED);
+		}
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
 
@@ -368,7 +388,7 @@ struct Vector_UnitaryVector loadUnitaries(char * filename,char * opentype){
 
 	if(fp==NULL){
 		fputs("File error",stderr);
-		exit(1);
+		return vector;
 	}else{
 
 		i=0;
@@ -406,7 +426,7 @@ float* loadCatalog( char* filename,char* opentype){
 
 	if(fp==NULL){
 		fputs("File error",stderr);
-		exit(1);
+		return NULL;
 	}else{
 
 		i=0;
@@ -441,7 +461,7 @@ float * loadRealVectors( char* filename,char* opentype){
 
 	if(fp==NULL){
 		fputs("File error",stderr);
-		exit(1);
+		return NULL;
 	}else{
 
 		i=0;
@@ -501,7 +521,7 @@ float* loadKVector(char* filename,char* opentype){
 
 	if(fp==NULL){ // error checking
 		fputs("File error",stderr);
-		exit(1);
+		return NULL;
 	}else{
 
 		i=0;
@@ -557,7 +577,7 @@ float * loadStars(char *filename,char*opentype){
 
 	if(fp==NULL){ // error checking
 		fputs("File error",stderr);
-		exit(1);
+		return NULL;
 	}else{
 
 		i=0;
