@@ -1,6 +1,6 @@
 #Ignore this:
 
-bin/*
+bin/granasatServer
 obj/*
 doc/*
 *.log
