@@ -285,6 +285,13 @@ struct timespec nsec_to_timespec(long int nsec);
  */
 void printMsg( FILE* stream, enum msg_type type, const char* format, ... );
 
+/**
+ * @brief Log a synchronisation file exchanging timestamps with the client.
+ *
+ * @param sockfd Socket file descriptor in which the exchange is done.
+ *
+ * @return Returns nothing.
+ */
 void syncServerClientClocks(int sockfd);
 
 #endif
