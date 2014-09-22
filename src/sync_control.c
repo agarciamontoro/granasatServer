@@ -258,10 +258,11 @@ void syncServerClientClocks(int sockfd){
 
 	if(sync_fd != NULL){
 		//Server timestamp 1 log
-		fwrite(&(TS_1.tv_sec), sizeof(uint32_t), 1, sync_fd);
-		fwrite(&(TS_1.tv_nsec), sizeof(uint32_t), 1, sync_fd);
+		int n = fwrite(&(TS_1.tv_sec), 1, 32, sync_fd);
+		n += fwrite(&(TS_1.tv_nsec), 1, 32, sync_fd);
 		//Client timestamp 1 log
-		fwrite(&timestamp_buffer, sizeof(uint32_t), 2, sync_fd);
+		n += fwrite(&timestamp_buffer, 1, 32*2, sync_fd);
+		printMsg(stderr, MAIN, "New clock synchronisation. %d bytes written\n", n);
 	}
 
 	//Measure of server timestamp 2
