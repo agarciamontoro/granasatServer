@@ -25,6 +25,7 @@
 #define MSG_SET_MODE_HORI	6	//	6.	Set mode to HORIZON SENSOR
 #define MSG_SET_BANDWITH	7	//	7.	Set bandwith limit			(+ int)
 #define MSG_START_EXP		8	//	8.	Start measuring dataline
+#define MSG_SYNC_TIME		9	//	9.	Sync Raspberry and GPS clock(+ timestamp)
 
 	//Camera
 #define MSG_SET_BRIGHTNESS	10	//	10.	Sets brightness				(+ int)

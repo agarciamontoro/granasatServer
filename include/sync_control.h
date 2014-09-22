@@ -74,8 +74,7 @@
 #define PACKET_SIZE		( MAG_FM_SIZE + ACC_FM_SIZE + TEMP_FM_SIZE )
 
 #define BASE_PATH	"/home/pi/GranaSAT"
-
-extern char OUTPUT_BASE_PATH[256];
+#define sync_file_name	"sync_clocks.data"
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
@@ -105,6 +104,7 @@ enum msg_type{
 	SENSORS
 };
 
+extern char OUTPUT_BASE_PATH[256];
 /**
  * @brief T=0 timestamp
  *
@@ -284,5 +284,7 @@ struct timespec nsec_to_timespec(long int nsec);
  * @return Returns nothing.
  */
 void printMsg( FILE* stream, enum msg_type type, const char* format, ... );
+
+void syncServerClientClocks(int sockfd);
 
 #endif

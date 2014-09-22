@@ -19,7 +19,7 @@ SOURCES= $(wildcard $(SRC)/*.c)
 OBJECTS= $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SOURCES))
 
 # Macros for sending new files to remote system with scp
-RECEIVER= pi@192.168.0.200:
+RECEIVER= pi@192.168.1.200:
 GLOBAL_PATH= /home/pi/development/Final
 SEND=N
 

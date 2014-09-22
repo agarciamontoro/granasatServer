@@ -240,3 +240,42 @@ void printMsg(FILE* stream, enum msg_type type, const char* format, ... ) {
 		fflush(stream);
 	pthread_mutex_unlock ( &mutex_print_msg );
 }
+
+void syncServerClientClocks(int sockfd){
+	static int first_time = 1;
+	static FILE* sync_fd = NULL;
+	struct timespec TS_1, TS_2;
+	uint32_t timestamp_buffer[2];
+	char path[256];
+
+	sprintf(path, "%s/LOG/%s", OUTPUT_BASE_PATH, sync_file_name);
+
+	if(first_time){
+		first_time = 0;
+		sync_fd = fopen(path, "w");
+	}
+
+	if(sync_fd == NULL){
+		printMsg(stderr, MAIN, "Reopening the sync file");
+		sync_fd = fopen(sync_file_name, "a");
+	}
+	else{
+		//Measure of server timestamp 1
+		clock_gettime(CLOCK_MONOTONIC, &TS_1);
+		//Receipt of client timestamp 1
+		getData(sockfd, &timestamp_buffer, TIMESTAMP_SIZE);
+
+		//Server timestamp 1 log
+		fwrite(&(TS_1.tv_sec), sizeof(uint32_t), 1, sync_fd);
+		fwrite(&(TS_1.tv_nsec), sizeof(uint32_t), 1, sync_fd);
+		//Client timestamp 1 log
+		fwrite(&timestamp_buffer, sizeof(uint32_t), 2, sync_fd);
+
+		//Measure of server timestamp 2
+		clock_gettime(CLOCK_MONOTONIC, &TS_2);
+		timestamp_buffer[0] = TS_2.tv_sec;
+		timestamp_buffer[1] = TS_2.tv_nsec;
+		//Sending of server timestamp 2
+		sendData(sockfd, &timestamp_buffer, TIMESTAMP_SIZE);
+	}
+}

@@ -394,6 +394,10 @@ void* socket_commands_control(void* useless){
 					printMsg(stderr, MAIN, "START command received. Starting to measure data\n");
 					break;
 
+				case MSG_SYNC_TIME:
+					syncServerClientClocks(SOCKET_COMMANDS);
+					break;
+
 				//CAMERA PARAMETERS
 				case MSG_SET_BRIGHTNESS:
 					getData(SOCKET_COMMANDS, &value, sizeof(value));
