@@ -243,12 +243,13 @@ void printMsg(FILE* stream, enum msg_type type, const char* format, ... ) {
 
 void syncServerClientClocks(int sockfd){
 	struct timespec TS_1;
+	uint32_t* timestamp_buffer;
+	timestamp_buffer = malloc(2*sizeof(*timestamp_buffer));
 
 	//Measure of server timestamp 1
 	clock_gettime(CLOCK_MONOTONIC, &TS_1);
 	//Receipt of client timestamp 1
-	uint32_t timestamp_buffer[2];
-	getData(sockfd, &timestamp_buffer, TIMESTAMP_SIZE);
+	getData(sockfd, timestamp_buffer, TIMESTAMP_SIZE);
 
 	//File opening
 	FILE* sync_fd = NULL;
@@ -258,12 +259,16 @@ void syncServerClientClocks(int sockfd){
 
 	if(sync_fd != NULL){
 		//Server timestamp 1 log
-		int n = fwrite(&(TS_1.tv_sec), 1, 32, sync_fd);
-		n += fwrite(&(TS_1.tv_nsec), 1, 32, sync_fd);
+		int n = fwrite(&(TS_1.tv_sec), 1, 4, sync_fd);
+		n += fwrite(&(TS_1.tv_nsec), 1, 4, sync_fd);
 		//Client timestamp 1 log
-		n += fwrite(&timestamp_buffer, 1, 32*2, sync_fd);
+		n += fwrite(timestamp_buffer, 1, 8, sync_fd);
 		printMsg(stderr, MAIN, "New clock synchronisation. %d bytes written\n", n);
 	}
+
+	printMsg(stderr, MAIN, "Synchronisation data: %u.%u\t%u.%u\n",
+		                    TS_1.tv_sec, TS_1.tv_nsec,
+		                    timestamp_buffer[0], timestamp_buffer[1]);
 
 	//Measure of server timestamp 2
 	struct timespec TS_2;
@@ -272,7 +277,8 @@ void syncServerClientClocks(int sockfd){
 	timestamp_buffer[1] = TS_2.tv_nsec;
 
 	//Sending of server timestamp 2
-	sendData(sockfd, &timestamp_buffer, TIMESTAMP_SIZE);
+	sendData(sockfd, timestamp_buffer, TIMESTAMP_SIZE);
 	
+	free(timestamp_buffer);
 	fclose(sync_fd);
 }
