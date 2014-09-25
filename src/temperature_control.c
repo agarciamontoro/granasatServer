@@ -15,7 +15,7 @@ int enableTempSensors(){
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	char *fileName = "/dev/i2c-1";								// Name of the port we will be using
-	int  address = 0x48;										// Address of the SRF02 shifted right one bit
+	int  address = 0x49;										// Address of the SRF02 shifted right one bit
 	unsigned char buf[10];										// Buffer for data being read/ written on the i2c bus
 
 	if ((DS1621_fd = open(fileName, O_RDWR)) < 0) {					// Open port for reading and writing
@@ -48,7 +48,7 @@ int enableTempSensors(){
 	/////////////////////////////////////////////////////////////////////////////////////
 
 	char *fileName_2 = "/dev/i2c-1";								// Name of the port we will be using
-	address = 0x4d;										// Address of the SRF02 shifted right one bit
+	address = 0x48;										// Address of the SRF02 shifted right one bit
 
 	if ((TC74_fd = open(fileName_2, O_RDWR)) < 0) {					// Open port for reading and writing
 		printf("Failed to open i2c port\n");
