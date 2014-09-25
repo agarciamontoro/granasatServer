@@ -346,7 +346,7 @@ void HS_obtainAttitude(uint8_t* image){
 	//Obtain binary image and obtain canny edges
 	pthread_mutex_lock(&mutex_horizon_sensor);
         cvThreshold(cv_image, frame_thresh, BIN_THRESH, 255, CV_THRESH_BINARY);
-        cvCanny( frame_thresh, frame_canny, BIN_THRESH, BIN_THRESH*2, 3 );
+        cvCanny( frame_thresh, frame_canny, BIN_THRESH, CAN_THRESH, 3 );
     pthread_mutex_unlock(&mutex_horizon_sensor);
 
     //·······························
