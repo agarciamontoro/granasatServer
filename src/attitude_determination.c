@@ -20,7 +20,7 @@ void changeParameters(int __thresh_px, int __thresh_ROI,int __ROI, int __thresh_
 
 	pthread_mutex_unlock ( &mutex_star_tracker );
 
-	printMsg(stderr, STARTRACKER, "New parameters: TH1:%d - TH2:%d - ROI:%d - TH3:%d - STU:%d - ERR:%4.3f\n",
+	printMsg(stderr, STARTRACKER, "New parameters: TH1:%d - TH2:%d - ROI:%d - TH3:%d - STU:%d - ERR:%4.6f\n",
 					threshold, threshold2, ROI, threshold3, stars_used, err);
 }
 
@@ -1007,8 +1007,8 @@ struct UnitaryVector createUnitaryVector(float my_x,float my_y,float f){
 	struct UnitaryVector unitaryVector;
 	float x,y,_f=f; // this is the focal length of the camera used
 
-	x=(my_x-640)*0.00000465; // 0.00000465 is the length in m of a pixel in the image plane
-	y=(my_y-480)*0.00000465;
+	x=(my_x-CENTER_X); // 0.00000465 is the length in m of a pixel in the image plane
+	y=(my_y-CENTER_Y);
 	
 	float x_u= cos( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/_f,2)+pow(y/_f,2) ) ) );
 	float y_u= sin( atan2(y,x) )*cos( 3.14159265/2 -atan( sqrt( pow(x/_f,2)+pow(y/_f,2) ) ) );

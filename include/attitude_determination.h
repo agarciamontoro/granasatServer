@@ -15,7 +15,9 @@
 #define WIDTH 1280
 #define HEIGHT 960
 
-#define FOCAL_LENGTH	0.012
+#define FOCAL_LENGTH	2657
+#define CENTER_X		666
+#define CENTER_Y		440
 
 #define ATT_SIGNAL	SIGRTMIN+1
 
