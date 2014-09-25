@@ -293,22 +293,17 @@ void ST_obtainAttitude2(uint8_t* image_data){
 }
 
 int isHistogramDark(int* histogram){
-	int one_fifth;
-	long int sum_dark, sum_bright;
+	const int ONE_FIFTH = 51;
+	const long int MAX = 995*(1280*960)/1000;
 
-	one_fifth = 51;
-	sum_dark = sum_bright = 0;
+	long int sum_dark = 0;
 
 	int i;
-	for (i = 0; i < one_fifth; ++i){
+	for (i = 0; i < ONE_FIFTH && sum_dark < MAX; ++i){
 		sum_dark += histogram[i];
 	}
 
-	for (i = one_fifth; i < 256; ++i){
-		sum_bright += histogram[i];
-	}
-
-	return sum_dark > sum_bright;
+	return sum_dark > MAX;
 }
 
 /////////////////////////// load functions \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
