@@ -93,6 +93,7 @@ UGR space projects.
 #include "temperature_control.h"
 
 pthread_t capture_thread, LS303DLHC_thread, connection_thread, processing_thread, horizon_thread;
+pthread_t socket_big_thread, socket_small_thread, socket_commands_thread;
 char acc_file_name[256];//	BASE_PATH"/OUTPUT/LSM303/accelerometer_measurements.data"
 char mag_file_name[256];//	BASE_PATH"/OUTPUT/LSM303/magnetometer_measurements.data"
 char temp_file_name[256];//	BASE_PATH"/OUTPUT/TEMPs/temperature_measurements.data"
@@ -123,10 +124,15 @@ void intHandler(int dummy){
 
         pthread_cancel(capture_thread);
         pthread_cancel(LS303DLHC_thread);
-        pthread_cancel(connection_thread);
         pthread_cancel(processing_thread);
-        //pthread_cancel(horizon_thread);
+        pthread_cancel(socket_big_thread);
+        pthread_cancel(socket_small_thread);
+        pthread_cancel(socket_commands_thread);
+        pthread_cancel(connection_thread);
+
         printMsg(stderr, MAIN, "All threads CANCELLED\n", SIGTERM, LED_CONTROL_PID);
+
+        return;
 }
 
 void* capture_images(void* useless){
@@ -181,7 +187,7 @@ void* capture_images(void* useless){
 			}
 		}
 
-		while(camera_connected){
+		while(camera_connected && keep_running){
 			clock_gettime(CLOCK_MONOTONIC, &current);
 
 			if( (time_passed = diff_times(&old, &current)) < CAPTURE_RATE_NSEC ){
@@ -292,7 +298,7 @@ void* socket_big_control(void* useless){
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	while(CONNECTED){
+	while(CONNECTED && keep_running){
 		if(!keep_waiting){
 			if(sendImage(SOCKET_BIG))
 				printMsg(stderr, CONNECTION, "New image sent\n");
@@ -323,7 +329,7 @@ void* socket_small_control(void* useless){
 	}
 
 	//Send magnetometer/accelerometer and temperatures packet
-	while(CONNECTED){
+	while(CONNECTED && keep_running){
 		/**
 		* @todo Handle write errors
 		*/
@@ -350,7 +356,7 @@ void* socket_commands_control(void* useless){
 	int command, value;
 	float fvalue;
 
-	while(CONNECTED){
+	while(CONNECTED && keep_running){
 			/**@todo Check if the blocking socket messes up the connection handling when joining the threads */
 			command = getCommand(SOCKET_COMMANDS);
 
@@ -362,11 +368,10 @@ void* socket_commands_control(void* useless){
 				case MSG_END:
 					CONNECTED = 0;
 					keep_running = 0;
-					//intHandler(0);
 					printMsg(stderr, MAIN, "FINISHING PROGRAM.\n");
 					sleep(1);
 					if(fork() == 0)
-						execl("/sbin/poweroff", "poweroff", (char *) NULL);
+						system("poweroff");
 					break;
 
 				case MSG_RESTART:
@@ -375,7 +380,7 @@ void* socket_commands_control(void* useless){
 					printMsg(stderr, MAIN, "RESTARTING PROGRAM.\n\n");
 					sleep(1);
 					if(fork() == 0)
-						execl("/sbin/reboot", "reboot", (char *) NULL);
+						system("reboot");
 					break;
 
 				case MSG_PING:
@@ -512,8 +517,6 @@ void* control_connection(void* useless){
 			printMsg(stderr, CONNECTION, "%sClient connection refused%s\n", KRED, KRES);
 
 		if(CONNECTED){
-			pthread_t socket_big_thread, socket_small_thread, socket_commands_thread;
-
 			pthread_create( &socket_big_thread, NULL, socket_big_control, NULL );
 			pthread_create( &socket_small_thread, NULL, socket_small_control, NULL );
 			pthread_create( &socket_commands_thread, NULL, socket_commands_control, NULL );
@@ -662,6 +665,7 @@ int main(int argc, char** argv){
 
 	//Initilise clock
 	clock_gettime(CLOCK_MONOTONIC, &T_ZERO);
+	printMsg(stderr, MAIN, "T_ZERO = %lld.%lld\n", T_ZERO.tv_sec, T_ZERO.tv_nsec);
 
 	// *******************************
     // ******** LED CHILD FORK *******
@@ -685,7 +689,6 @@ int main(int argc, char** argv){
 
 	pthread_create( &capture_thread, NULL, capture_images, NULL );
 	pthread_create( &processing_thread, NULL, process_images, NULL );
-	//pthread_create( &horizon_thread, NULL, HS_test, NULL );
 	pthread_create( &LS303DLHC_thread, NULL, control_LS303DLHC_and_temp, NULL );
 	pthread_create( &connection_thread, NULL, control_connection, NULL );
 
@@ -694,7 +697,6 @@ int main(int argc, char** argv){
     // ********  JOIN THREADS  *******
     // *******************************	
 	pthread_join( capture_thread, NULL );
-	//pthread_join( horizon_thread, NULL );
 	pthread_join( processing_thread, NULL );
 	pthread_join( LS303DLHC_thread, NULL );
 	pthread_join( connection_thread, NULL );
@@ -714,8 +716,6 @@ int main(int argc, char** argv){
 	pthread_mutex_destroy( &mutex_star_tracker );
 	pthread_mutex_destroy( &mutex_horizon_sensor );
 	pthread_mutex_destroy( &mutex_print_msg );
-
-	sleep(2);
 
 	printMsg(stderr, MAIN, "Bye. Good luck.\n");
 

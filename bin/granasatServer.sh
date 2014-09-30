@@ -5,6 +5,7 @@ int_trap() {
     echo
     echo "[SCRIPT]: GranaSAT Server interrupted."
     sudo killall -15 granasatServer
+    sleep 10
 }
 
 #Sets the trap
@@ -18,12 +19,17 @@ OUTPUT_FOLDER=`printf "/home/pi/GranaSAT/OUTPUT_%05d" $(expr $LAST_NUMBER + 1 )`
 #Creation of the new log name
 OUTPUT_LOG=`printf "output_%05d.log" $(expr $LAST_NUMBER + 1 )`
 
+#Echo the new folder and log names
+echo "New folder created: $OUTPUT_FOLDER"
+echo "New log file created: $OUTPUT_LOG"
+
 #Creation of the new directories
 mkdir $OUTPUT_FOLDER
 mkdir $OUTPUT_FOLDER/IMGs
 mkdir $OUTPUT_FOLDER/LOG
 mkdir $OUTPUT_FOLDER/LSM303
 mkdir $OUTPUT_FOLDER/TEMPs
-
+	
 #Start server processs
 sudo /home/pi/GranaSAT/BIN/granasatServer $OUTPUT_FOLDER 2>&1 >/dev/null | sudo tee $OUTPUT_FOLDER/LOG/$OUTPUT_LOG
+echo "Script finished"

@@ -15,8 +15,6 @@
 
 #include "DMK41BU02.h"
 
-#define TEST_IMGS_MODE	0
-
 //Device name created using udev rule. See /etc/udev/rules.d/99-DMK41BU02
 //The 99-DMK41BU02 file was created after read the following tutorial: http://www.mythtv.org/wiki/Device_Filenames_and_udev
 const char *dev_name = "/dev/DMK41BU02";
@@ -316,18 +314,7 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 	int offset = 0;
 
 	pthread_rwlock_wrlock( &camera_rw_lock );
-		if(TEST_IMGS_MODE){
-			sprintf(string, "%s/INPUT/IMGs/test_image%d.bmp", BASE_PATH, img_id);
-			prueba = cvLoadImage(string,0);
-			printMsg(stderr, STARTRACKER, "Reading image and processing image %s\n", string);
-			//Actual image to shared buffer
-			memcpy(current_frame + offset, (uint8_t*)prueba->imageData, IMG_DATA_SIZE);
-		}
-		else{
-			//Actual image to shared buffer
-			memcpy(current_frame + offset, p, IMG_DATA_SIZE);
-		}
-
+		memcpy(current_frame + offset, p, IMG_DATA_SIZE);
 		offset += IMG_DATA_SIZE;
 
 		//Actual timestamp to shared buffer
@@ -353,9 +340,6 @@ void process_image(const void *p, int size, struct timespec timestamp, uint8_t* 
 		
 		new_frame_proc = new_frame_send = 1;
 	pthread_rwlock_unlock( &camera_rw_lock );
-
-	if(TEST_IMGS_MODE)
-		cvReleaseImage(&prueba);
 
 	//return data;
 }
