@@ -318,6 +318,7 @@ inline void drawCvLine(CvArr* array, CvLine line, CvScalar color, int thickness,
 
 void HS_obtainAttitude(uint8_t* image){
 	int x,y;
+	int offset = IMG_DATA_SIZE + TIMESTAMP_SIZE + PARAM_ST_SIZE + ATT_MODE_SIZE;
 
     //Image declarations
     IplImage* frame_canny = NULL;
@@ -371,6 +372,8 @@ void HS_obtainAttitude(uint8_t* image){
 	//sequence without non-possible horizons
 	contours = cvEndFindContours(&contour_scanner);
 
+
+	uint32_t approx_x, approx_y;
 	//Process contours and print some information in the GUI
     for( ; contours != 0; contours = contours->h_next ){
 
@@ -380,6 +383,18 @@ void HS_obtainAttitude(uint8_t* image){
 
 		//DISPLAYING
 		printMsg(stderr, HORIZONSENSOR, "Earth centroid: (%.1f, %.1f)\n", earth_centroid.x , earth_centroid.y);
+
+		approx_x = (uint32_t) earth_centroid.x;
+		approx_y = (uint32_t) earth_centroid.y;
+
+		if(horizons_found < 5){
+			pthread_rwlock_wrlock( &camera_rw_lock );
+				memcpy(current_frame + offset, &(approx_x), sizeof(uint32_t));
+				offset += sizeof(uint32_t);
+				memcpy(current_frame + offset, &(approx_y), sizeof(uint32_t));
+				offset += sizeof(uint32_t);
+			pthread_rwlock_unlock( &camera_rw_lock );
+		}
 
 		horizons_found++;
     }

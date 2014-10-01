@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #include "sync_control.h"
+#include "DMK41BU02.h"				// Camera management library
 
 //Structures and typedefs
 struct CvLine{
