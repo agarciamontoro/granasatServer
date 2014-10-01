@@ -353,8 +353,11 @@ void* socket_commands_control(void* useless){
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	int command, value;
+	char command;
+	int value;
 	float fvalue;
+
+	int confirm_shutdown = 0;
 
 	while(CONNECTED && keep_running){
 			/**@todo Check if the blocking socket messes up the connection handling when joining the threads */
@@ -366,12 +369,27 @@ void* socket_commands_control(void* useless){
 					break;
 					
 				case MSG_END:
-					CONNECTED = 0;
-					keep_running = 0;
-					printMsg(stderr, MAIN, "FINISHING PROGRAM.\n");
-					sleep(1);
-					if(fork() == 0)
-						system("poweroff");
+					printMsg(stderr, CONNECTION, "MSG_END received\n\n");
+					command = MSG_REPEAT;
+					sendData(SOCKET_COMMANDS, &command, 1);
+					command = CONFIRM_SHUTDOWN;
+					sendData(SOCKET_COMMANDS, &command, 1);
+					confirm_shutdown = 1;
+					break;
+
+				case MSG_REPEAT:
+					if(confirm_shutdown){
+						printMsg(stderr, CONNECTION, "CONFIRMING SHUTDOWN\n\n");
+						while(!getData(SOCKET_COMMANDS, &command, 1)){}
+						printMsg(stderr, CONNECTION, "COMPARING %d and %d\n\n", command, CONFIRM_SHUTDOWN);
+						if(command == CONFIRM_SHUTDOWN){
+							CONNECTED = 0;
+							keep_running = 0;
+							printMsg(stderr, MAIN, "FINISHING PROGRAM.\n");
+							if(fork() == 0)
+								system("poweroff");
+						}
+					}
 					break;
 
 				case MSG_RESTART:
@@ -384,8 +402,6 @@ void* socket_commands_control(void* useless){
 					break;
 
 				case MSG_PING:
-					value = 0;
-					sendData(SOCKET_COMMANDS, &value, sizeof(value));
 					printMsg(stderr, CONNECTION, "MSG_PING received\n\n");
 					break;
 
@@ -614,7 +630,7 @@ void* process_images(void* useless){
 
 			n_nsec = elapsed.tv_sec * NANO_FACTOR + elapsed.tv_nsec;
 
-			printMsg(stderr, MAIN, "Attitude obtained in %ld s %ldns = %lldns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
+			printMsg(stderr, MAIN, "Attitude obtained in %u s %uns = %lluns\n", elapsed.tv_sec, elapsed.tv_nsec, n_nsec);
 		}
 
 		first = 0;

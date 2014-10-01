@@ -277,8 +277,14 @@ void syncServerClientClocks(int sockfd){
 	timestamp_buffer[1] = TS_2.tv_nsec;
 
 	//Sending of server timestamp 2
+	uint8_t command = MSG_SYNC_TIME;
+	sendData(sockfd, &command, 1);
 	sendData(sockfd, timestamp_buffer, TIMESTAMP_SIZE);
 	
 	free(timestamp_buffer);
 	fclose(sync_fd);
+}
+
+int confirmShutdown(){
+	
 }

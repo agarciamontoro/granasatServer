@@ -10,6 +10,9 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+//Only for the server
+#define CONFIRM_SHUTDOWN	150
+
 // PORT NUMBERS
 #define PORT_COMMANDS     	51717
 #define PORT_BIG_DATA     	51718
@@ -26,7 +29,7 @@
 #define MSG_SET_BANDWITH	7	//	7.	Set bandwith limit			(+ int)
 #define MSG_START_EXP		8	//	8.	Start measuring data
 #define MSG_SYNC_TIME		9	//	9.	Sync Raspberry and GPS clock(+ timestamp)
-
+#define MSG_REPEAT			100	//	100.Ask the client to send a number (+char)
 	//Camera
 #define MSG_SET_BRIGHTNESS	10	//	10.	Sets brightness				(+ int)
 #define MSG_SET_GAMMA		11	//	11.	Sets gamma					(+ int)
