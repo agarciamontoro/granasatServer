@@ -20,7 +20,7 @@ After the results obtained, the most accurate and preferable method is the star 
 
 The experiment flew, successfully, the night of 8 October 2014. Thousands of good images were collected, both for the Horizon Sensor and for the Star Tracker. The scientific and technical results will be exposed in the 22nd ESA Symposium on European Rocket and Balloon Programme & related Research, 7-12 June 2015.
 
-In the meanwhile, enjoy the aurora borealist captured by our camera from the stratosphere:
+In the meanwhile, enjoy the aurora borealis captured by our camera from the stratosphere:
 
 [![Youtube video](https://cloud.githubusercontent.com/assets/3924815/7339020/2846735e-ec60-11e4-8b13-d59831fd01a4.png)](https://www.youtube.com/watch?v=YUlWg6wuCxo)
 
