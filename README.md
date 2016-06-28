@@ -6,6 +6,8 @@ Server side of GranaSAT experiment, selected for BEXUS 19 campaign.
 
 The client side code can be seen in its [GitHub page](https://github.com/M42/granasatClient).
 
+The final Student Experiment Documentation (SED), which includes all the technical details, the software architecture and the results, can be found in the [REXUS/BEXUS page](http://rexusbexus.net/wp-content/uploads/2015/07/BX19_GRANASAT_SED_v5-0_15Jan15-reduced.pdf).
+
 ### Abstract
 
 GranaSAT designed and built a low-cost attitude determination system, a fundamental system for any spacecraft, based in a star sensor, horizon sensor and the magnetic field and acceleration measurements. The same Charge Coupled Device was used for both the star sensor and the horizon sensor. For the star sensor the Lost in Space functionality was designed, the identification algorithm used is a variation of the Matching Group algorithm proposed by Van Benzooijen; for the horizon sensor a simple detection algorithm is proposed, with the circle fitting method based in Umbach
@@ -16,15 +18,23 @@ conditions, but it did not fulfil the 5o accuracy requirement. Finally, for the 
 
 After the results obtained, the most accurate and preferable method is the star sensor, despite its complexity. If low accurate attitude estimation or less complex solutions are required, the horizon sensor or magnetometer and accelerometer sensor solutions are valid for a spacecraft attitude determination system.
 
+### Software
+
+The software architecture is briefly summarized in the following diagram; for technical details and a comprehensive explanation of the code, please read the [SED](http://rexusbexus.net/wp-content/uploads/2015/07/BX19_GRANASAT_SED_v5-0_15Jan15-reduced.pdf) carefully.
+
+<p align="center">
+<img src="https://cloud.githubusercontent.com/assets/3924815/16414769/f565d5f2-3d39-11e6-80f9-57457255d673.png" />
+</p>
+
 ### Flight
 
-The experiment flew, successfully, the night of 8 October 2014. Thousands of good images were collected, both for the Horizon Sensor and for the Star Tracker. The scientific and technical results were exposed in the 22nd ESA Symposium on European Rocket and Balloon Programme & related Research, 7-12 June 2015.
+The experiment flew, successfully, the night of 8 October 2014. Thousands of good images were collected, both for the Horizon Sensor and for the Star Tracker. The scientific and technical results were exposed at the [22nd ESA Symposium on European Rocket and Balloon Programme & related Research](http://pac.spaceflight.esa.int/docs/22nd_ESA_PAC_Symposium_proceedings.pdf), 7-12 June 2015.
 
-The final Student Experiment Documentation, which includes all the technical details, the software architecture and the results, can be found in the [REXUS/BEXUS page](http://rexusbexus.net/wp-content/uploads/2015/07/BX19_GRANASAT_SED_v5-0_15Jan15-reduced.pdf)
+While you read the technical details in the [paper](http://pac.spaceflight.esa.int/docs/22nd_ESA_PAC_Symposium_proceedings.pdf) and the [SED](http://rexusbexus.net/wp-content/uploads/2015/07/BX19_GRANASAT_SED_v5-0_15Jan15-reduced.pdf), you can enjoy the beautiful aurora borealis captured by our camera from the stratosphere :)
 
-You can read the previous document or you can just enjoy the aurora borealis captured by our camera from the stratosphere :)
-
-[![Youtube video](https://cloud.githubusercontent.com/assets/3924815/7339020/2846735e-ec60-11e4-8b13-d59831fd01a4.png)](https://www.youtube.com/watch?v=YUlWg6wuCxo)
+<p align="center">
+<a href="https://www.youtube.com/watch?v=YUlWg6wuCxo"><img src="https://cloud.githubusercontent.com/assets/3924815/7339020/2846735e-ec60-11e4-8b13-d59831fd01a4.png" /></a>
+<p>
 
 ## Do you want to know more about us?
 
